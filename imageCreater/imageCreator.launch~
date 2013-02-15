@@ -1,0 +1,8 @@
+<launch>
+<group ns="imagesCreator">
+  <node name="imageCreatorNode" pkg="imageCreater" type="imageCreator">
+    <!-- Set configuration file of your camera here! -->
+    <param name="xmlConfig"      type="string" value="$(find optris_drivers)/config/12110063.xml"/>  
+  </node>
+</group>
+</launch>

@@ -1,0 +1,7 @@
+<launch>
+<group ns="imagesCreator">
+  <node name="imageCreatorNode" pkg="imageCreater" type="imageCreator">
+    <!-- Set configuration file of your camera here! -->
+  </node>
+</group>
+</launch>
