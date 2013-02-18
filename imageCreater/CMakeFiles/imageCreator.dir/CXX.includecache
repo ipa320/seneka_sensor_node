@@ -19,6 +19,8 @@ cv_bridge/cv_bridge.h
 -
 sensor_msgs/image_encodings.h
 -
+opencv2/core/core.hpp
+/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/src/opencv2/core/core.hpp
 opencv2/imgproc/imgproc.hpp
 -
 opencv2/highgui/highgui.hpp
