@@ -76,9 +76,9 @@ int imageCounter = 0;
 VideoRecorder* videoRecorder = new VideoRecorder();
 
 
-void imageCallback(const sensor_msgs::Image& img)
+void videoCallback(const sensor_msgs::Image& img)
 {
-	ROS_INFO("Image callback method ...");
+	ROS_INFO("Video callback method ...");
 
 	// openCV image pointer
 	cv_bridge::CvImageConstPtr cvptrS;
@@ -115,7 +115,7 @@ int main(int argc, char **argv)
 	// main access point to communications with the ROS system
 	ros::NodeHandle n;
 	ROS_INFO("subscribing for thermal_image_view ...");
-	ros::Subscriber sub = n.subscribe("/optris/thermal_image_view", 2, imageCallback);
+	ros::Subscriber sub = n.subscribe("/optris/thermal_image_view", 2, videoCallback);
 
 	// frequency in Hz
 	ros::Rate loop_rate(SNAPSHOT_INTERVAL);
