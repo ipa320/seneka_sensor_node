@@ -64,12 +64,10 @@
 // ROS message includes
 #include <ros/ros.h>
 #include <sensor_msgs/NavSatFix.h>
-
 #include <diagnostic_msgs/DiagnosticArray.h>
 
 // ROS service includes
 //--
-
 // external includes
 #include <seneka_dgps/Dgps.h>
 
@@ -77,9 +75,7 @@
 //#### node class ####
 class NodeClass
 {
-  //
 public:
-
   ros::NodeHandle nh;
   // topics to publish
   ros::Publisher topicPub_position;
@@ -108,21 +104,16 @@ public:
   {
     // create a handle for this node, initialize node
     nh = ros::NodeHandle("~");
-
     if(!nh.hasParam("port")) ROS_WARN("Used default parameter for port");
     nh.param("port", port, std::string("/dev/ttyUSB0"));
-
     if(!nh.hasParam("baud")) ROS_WARN("Used default parameter for baud");
     nh.param("baud", baud, 38400);
-
     //			syncedSICKStamp = 0;
     syncedROSTime = ros::Time::now();
     //			syncedTimeReady = false;
-
     // implementation of topics to publish
     topicPub_position = nh.advertise<sensor_msgs::NavSatFix>("position", 1);
     topicPub_Diagnostic_ = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
-
     // implementation of topics to subscribe
     //--
 
@@ -138,7 +129,6 @@ public:
   // topic callback functions
   // function will be called when a new message arrives on a topic
   //--
-
   // service callback functions
   // function will be called when a service is querried
   //--
@@ -146,7 +136,6 @@ public:
   // other function declarations
   void publishposition(double* lat)
   {
-
     sensor_msgs::NavSatFix positions;
     positions.latitude= lat[0];
     positions.longitude= lat[1];
@@ -180,7 +169,6 @@ int main(int argc, char** argv)
 {
   // initialize ROS, spezify name of node
   ros::init(argc, argv, "Dgps");
-
   NodeClass nodeClass;
   Dgps dgps;
   int iBaudRate = nodeClass.baud;
@@ -221,11 +209,9 @@ int main(int argc, char** argv)
     {
       ROS_WARN("...no Values available");
     }
-
     //		 sleep and waiting for messages, callbacks
     ros::spinOnce();
     loop_rate.sleep();
   }
   return 0;
-
 }

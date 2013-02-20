@@ -198,7 +198,6 @@ int SerialIO::open()
     //RF_ERR("Open " << m_DeviceName << " failed, error code " << errno);
     std::cout << "Trying to open " << m_DeviceName << " failed: "
         << strerror(errno) << " (Error code " << errno << ")" << std::endl;
-
     return -1;
   }
 
@@ -206,12 +205,9 @@ int SerialIO::open()
   Res = tcgetattr(m_Device, &m_tio);
   if (Res == -1)
   {
-    std::cout << "tcgetattr of " << m_DeviceName << " failed: "
-        << strerror(errno) << " (Error code " << errno << ")" << std::endl;
-
+    std::cout << "tcgetattr of " << m_DeviceName << " failed: "<< strerror(errno) << " (Error code " << errno << ")" << std::endl;
     ::close(m_Device);
     m_Device = -1;
-
     return -1;
   }
 
@@ -240,11 +236,9 @@ int SerialIO::open()
   m_tio.c_cc[VLNEXT] = 22;
   m_tio.c_cc[VEOL2] = 0;	// Second end-of-line
 
-
   // set baud rate
   int iNewBaudrate = int(m_BaudRate * m_Multiplier + 0.5);
   std::cout << "Setting Baudrate to " << iNewBaudrate << std::endl;
-
   int iBaudrateCode = 0;
   bool bBaudrateValid = getBaudrateCode(iNewBaudrate, &iBaudrateCode);
 
@@ -259,7 +253,6 @@ int SerialIO::open()
     ss.custom_divisor = ss.baud_base / iNewBaudrate;
     ioctl( m_Device, TIOCSSERIAL, &ss );
   }
-
 
   // set data format
   m_tio.c_cflag &= ~CSIZE;
@@ -332,8 +325,7 @@ int SerialIO::open()
 
   if (Res == -1)
   {
-    std::cout << "tcsetattr " << m_DeviceName << " failed: "
-        << strerror(errno) << " (Error code " << errno << ")" << std::endl;
+    std::cout << "tcsetattr " << m_DeviceName << " failed: " << strerror(errno) << " (Error code " << errno << ")" << std::endl;
 
     ::close(m_Device);
     m_Device = -1;
@@ -342,7 +334,6 @@ int SerialIO::open()
   }
 
   // set buffer sizes
-
   // set timeout
   setTimeout(m_Timeout);
 
@@ -409,10 +400,7 @@ int SerialIO::readNonBlocking(char *Buffer, int Length)
   int iAvaibleBytes = getSizeRXQueue();
   int iBytesToRead = (Length < iAvaibleBytes) ? Length : iAvaibleBytes;
   ssize_t BytesRead;
-
-
   BytesRead = ::read(m_Device, Buffer, iBytesToRead);
-
 
   // Debug
   //	printf("%2d Bytes read:", BytesRead);
@@ -422,7 +410,6 @@ int SerialIO::readNonBlocking(char *Buffer, int Length)
   //		printf(" %u", (unsigned int) uc );
   //	}
   //	printf("\n");
-
 
   return BytesRead;
 }

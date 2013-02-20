@@ -52,8 +52,6 @@
  ****************************************************************/
 #ifndef _Dgps_H
 #define _Dgps_H
-
-
 #include "SerialIO.h"
 #include <math.h>
 #include <iostream>
@@ -69,7 +67,6 @@
 #include<stdlib.h>
 #include <cstring>
 using namespace std;
-
 /** 
  * Driver class for the laser scanner SICK S300 Professional.
  * This driver only supports use with 500KBaud in cont. mode
@@ -124,7 +121,6 @@ public:
 
   enum
   {
-
     READ_BUF_SIZE = 10000,
     WRITE_BUF_SIZE = 10000
   };
@@ -150,16 +146,10 @@ public:
 
 
 private:
-
   // Constants
-
   // Components
   SerialIO m_SerialIO;
-
   // Functions
-
-
-
 
   unsigned int getUnsignedWord(unsigned char msb, unsigned char lsb)
   {
@@ -167,7 +157,6 @@ private:
   }
 
   unsigned int createCRC(unsigned char *ptrData, int Size);
-
 
 };
 #endif //

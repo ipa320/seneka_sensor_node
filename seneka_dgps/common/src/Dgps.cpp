@@ -51,7 +51,6 @@
  * If not, see <http://www.gnu.org/licenses/>.
  *
  ****************************************************************/
-#include <ros/ros.h>
 #include <seneka_dgps/Dgps.h>
 using namespace std;
 
@@ -82,7 +81,6 @@ bool Dgps::open(const char* pcPort, int iBaudRate)
     return false;
 
   // update scan id (id=8 for slave scanner, else 7)
-
 
   // initialize Serial Interface
   m_SerialIO.setBaudRate(iBaudRate);
@@ -148,8 +146,6 @@ void Dgps::latlong(double* latt)
   latt[0] = ((lat_fract+1)* pow(2,(lat_exp-1023))*180);
   latt[1] = ((lon_fract+1)* pow(2,(lon_exp-1023))*180);
   latt[2] = ((alt_fract+1)* pow(2,(alt_exp-1023))*180);
-  //			latt[2] =25;
-  //			ROS_INFO("...publishing position of DGpsss %1f, %1f,%1f",latt[0],latt[1],latt[2]);
   cout << "latitude="<<latt[0]<<"\t longitude"<<latt[1]<<"\t altitude"<<"\t"<<latt[2]<<endl;
 
 }
