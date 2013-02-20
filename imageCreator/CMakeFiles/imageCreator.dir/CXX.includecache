@@ -6,11 +6,11 @@
 
 #IncludeRegexTransform: 
 
-/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/src/imageCreator.cpp
+/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/src/imageCreator.cpp
 ros/ros.h
-/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/src/ros/ros.h
+/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/src/ros/ros.h
 sensor_msgs/Image.h
-/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/src/sensor_msgs/Image.h
+/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/src/sensor_msgs/Image.h
 ros/ros.h
 -
 image_transport/image_transport.h
@@ -20,7 +20,7 @@ cv_bridge/cv_bridge.h
 sensor_msgs/image_encodings.h
 -
 opencv2/core/core.hpp
-/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/src/opencv2/core/core.hpp
+/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/src/opencv2/core/core.hpp
 opencv2/imgproc/imgproc.hpp
 -
 opencv2/highgui/highgui.hpp

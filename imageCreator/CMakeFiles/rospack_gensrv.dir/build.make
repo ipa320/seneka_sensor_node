@@ -32,10 +32,10 @@ CMAKE_COMMAND = /usr/bin/cmake
 RM = /usr/bin/cmake -E remove -f
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater
+CMAKE_SOURCE_DIR = /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater
+CMAKE_BINARY_DIR = /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator
 
 # Utility rule file for rospack_gensrv.
 
@@ -57,6 +57,6 @@ CMakeFiles/rospack_gensrv.dir/clean:
 .PHONY : CMakeFiles/rospack_gensrv.dir/clean
 
 CMakeFiles/rospack_gensrv.dir/depend:
-	cd /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/CMakeFiles/rospack_gensrv.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/CMakeFiles/rospack_gensrv.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/rospack_gensrv.dir/depend
 

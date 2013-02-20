@@ -108,10 +108,6 @@ void imageCallback(const sensor_msgs::Image& img)
 	}
 }
 
-
-
-
-
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "videoCreator");

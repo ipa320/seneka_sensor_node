@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <projectDescription>
-	<name>imageCreater-RelWithDebInfo@imageCreater</name>
+	<name>imageCreator-RelWithDebInfo@imageCreator</name>
 	<comment></comment>
 	<projects>
 	</projects>
@@ -47,7 +47,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.buildLocation</key>
-					<value>/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater</value>
+					<value>/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.useDefaultBuildCmd</key>
@@ -83,7 +83,7 @@
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.build.location</key>
-					<value>/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater</value>
+					<value>/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator</value>
 				</dictionary>
 				<dictionary>
 					<key>org.eclipse.cdt.make.core.autoBuildTarget</key>
@@ -136,7 +136,7 @@
 		<link>
 			<name>[Targets]/[exe] imageCreator/Source Files/imageCreator.cpp</name>
 			<type>1</type>
-			<location>/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/src/imageCreator.cpp</location>
+			<location>/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/src/imageCreator.cpp</location>
 		</link>
 		<link>
 			<name>[Targets]/[exe] imageCreator/Header Files</name>

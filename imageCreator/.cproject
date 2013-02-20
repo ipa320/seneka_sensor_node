@@ -234,7 +234,7 @@
 <pathentry kind="mac" name="__GXX_RTTI" path="" value="1"/>
 <pathentry kind="mac" name="__EXCEPTIONS" path="" value="1"/>
 <pathentry kind="mac" name="_GNU_SOURCE" path="" value="1"/>
-<pathentry include="/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/include" kind="inc" path="" system="true"/>
+<pathentry include="/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/include" kind="inc" path="" system="true"/>
 <pathentry include="/opt/ros/fuerte/include" kind="inc" path="" system="true"/>
 <pathentry include="/opt/ros/fuerte/include/opencv" kind="inc" path="" system="true"/>
 <pathentry include="/opt/ros/fuerte/stacks/vision_opencv/cv_bridge/include" kind="inc" path="" system="true"/>
@@ -303,14 +303,14 @@
 </target>
 <target name="Build" path="[Targets]/[exe] imageCreator" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>/usr/bin/make</buildCommand>
-<buildArguments>-C "/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater" -j2</buildArguments>
+<buildArguments>-C "/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator" -j2</buildArguments>
 <buildTarget>imageCreator</buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>false</useDefaultCommand>
 </target>
 <target name="Clean" path="[Targets]/[exe] imageCreator" targetID="org.eclipse.cdt.make.MakeTargetBuilder">
 <buildCommand>/usr/bin/cmake</buildCommand>
-<buildArguments>-E chdir "/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater" "/usr/bin/cmake" -P "CMakeFiles/imageCreator.dir/cmake_clean.cmake"</buildArguments>
+<buildArguments>-E chdir "/home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator" "/usr/bin/cmake" -P "CMakeFiles/imageCreator.dir/cmake_clean.cmake"</buildArguments>
 <buildTarget></buildTarget>
 <stopOnError>true</stopOnError>
 <useDefaultCommand>false</useDefaultCommand>
@@ -455,6 +455,6 @@
 </cconfiguration>
 </storageModule>
 <storageModule moduleId="cdtBuildSystem" version="4.0.0">
-<project id="imageCreater.null.1" name="imageCreater"/>
+<project id="imageCreator.null.1" name="imageCreator"/>
 </storageModule>
 </cproject>

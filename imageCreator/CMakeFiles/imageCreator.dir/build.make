@@ -32,10 +32,10 @@ CMAKE_COMMAND = /usr/bin/cmake
 RM = /usr/bin/cmake -E remove -f
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater
+CMAKE_SOURCE_DIR = /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater
+CMAKE_BINARY_DIR = /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator
 
 # Include any dependencies generated for this target.
 include CMakeFiles/imageCreator.dir/depend.make
@@ -63,17 +63,17 @@ CMakeFiles/imageCreator.dir/src/imageCreator.o: /opt/ros/fuerte/share/rosconsole
 CMakeFiles/imageCreator.dir/src/imageCreator.o: /opt/ros/fuerte/stacks/pluginlib/manifest.xml
 CMakeFiles/imageCreator.dir/src/imageCreator.o: /opt/ros/fuerte/share/message_filters/manifest.xml
 CMakeFiles/imageCreator.dir/src/imageCreator.o: /opt/ros/fuerte/stacks/image_common/image_transport/manifest.xml
-	$(CMAKE_COMMAND) -E cmake_progress_report /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/CMakeFiles $(CMAKE_PROGRESS_1)
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/CMakeFiles $(CMAKE_PROGRESS_1)
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Building CXX object CMakeFiles/imageCreator.dir/src/imageCreator.o"
-	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -W -Wall -Wno-unused-parameter -fno-strict-aliasing -pthread -o CMakeFiles/imageCreator.dir/src/imageCreator.o -c /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/src/imageCreator.cpp
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_FLAGS) -W -Wall -Wno-unused-parameter -fno-strict-aliasing -pthread -o CMakeFiles/imageCreator.dir/src/imageCreator.o -c /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/src/imageCreator.cpp
 
 CMakeFiles/imageCreator.dir/src/imageCreator.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/imageCreator.dir/src/imageCreator.i"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -W -Wall -Wno-unused-parameter -fno-strict-aliasing -pthread -E /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/src/imageCreator.cpp > CMakeFiles/imageCreator.dir/src/imageCreator.i
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -W -Wall -Wno-unused-parameter -fno-strict-aliasing -pthread -E /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/src/imageCreator.cpp > CMakeFiles/imageCreator.dir/src/imageCreator.i
 
 CMakeFiles/imageCreator.dir/src/imageCreator.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/imageCreator.dir/src/imageCreator.s"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -W -Wall -Wno-unused-parameter -fno-strict-aliasing -pthread -S /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/src/imageCreator.cpp -o CMakeFiles/imageCreator.dir/src/imageCreator.s
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_FLAGS) -W -Wall -Wno-unused-parameter -fno-strict-aliasing -pthread -S /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/src/imageCreator.cpp -o CMakeFiles/imageCreator.dir/src/imageCreator.s
 
 CMakeFiles/imageCreator.dir/src/imageCreator.o.requires:
 .PHONY : CMakeFiles/imageCreator.dir/src/imageCreator.o.requires
@@ -109,6 +109,6 @@ CMakeFiles/imageCreator.dir/clean:
 .PHONY : CMakeFiles/imageCreator.dir/clean
 
 CMakeFiles/imageCreator.dir/depend:
-	cd /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreater/CMakeFiles/imageCreator.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator /home/cmm-jg/fuerte_workspace/sandbox/seneka/imageCreator/CMakeFiles/imageCreator.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/imageCreator.dir/depend
 
