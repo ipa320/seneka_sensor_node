@@ -1,0 +1,21 @@
+<package>
+  <description brief="videoCreator">
+
+     videoCreator
+
+  </description>
+  <author>cmm-jg</author>
+  <license>BSD</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/videoCreator</url>
+  <depend package="std_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="rospy"/>
+  <depend package="cv_bridge"/>
+  <depend package="roscpp"/>
+  <depend package="opencv2"/>
+  <depend package="image_transport"/>
+
+</package>
+
+
