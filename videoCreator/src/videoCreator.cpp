@@ -4,6 +4,7 @@
  */
 
 #include "ros/ros.h"
+#include <queue>
 #include "sensor_msgs/Image.h"
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
@@ -14,6 +15,7 @@
 #include <opencv2/highgui/highgui.hpp>
 
 namespace enc = sensor_msgs::image_encodings;
+
 
 class VideoRecorder {
 public:
@@ -50,6 +52,8 @@ public:
 	void closeVideo(){
 		videoWriter.release();
 	}
+
+
 private:
 	int codec;
 	int fps;
@@ -66,19 +70,63 @@ private:
 
 };
 
+class FrameRingBuffer {
+public:
+	FrameRingBuffer(){
+		maxRingBufferSize = 1000;
+		releases = 1;
+		vRecoder = new VideoRecorder();
+	}
+
+	void addFrame(cv::Mat frame){
+		if(ringbuffer.size() != maxRingBufferSize)
+			ringbuffer.push(frame);
+		else{
+			ringbuffer.pop();
+			ringbuffer.push(frame);
+		}
+	}
+	void getVideo(){
+		ROS_INFO("creating video on demand ...");
+
+		videoFile << "/home/cmm-jg/Bilder/videoOnDemand" << releases << ".avi";
+
+		std::queue<cv::Mat> tmpRingBuffer = ringbuffer;
+		vRecoder->createVideo(videoFile.str(), tmpRingBuffer.front().cols, tmpRingBuffer.front().rows);
+
+		if(vRecoder->existsVideoRecorder() == true){
+			while(tmpRingBuffer.empty() != true){
+				vRecoder->addFrame(tmpRingBuffer.front());
+				tmpRingBuffer.pop();
+			}
+			vRecoder->closeVideo();
+			releases++;
+		}
+	}
+
+private:
+	std::queue<cv::Mat> ringbuffer;
+	u_int maxRingBufferSize;
+	u_int releases;
+
+	VideoRecorder* vRecoder;
+	std::stringstream videoFile;
+};
+
 void transmitImage(){
-	// TODO: creating a socket connection to remote host
+	// TODO: creating a socket connection to remote or local host
 }
 
-// global attributes
+// global attributes of ros node
 const float SNAPSHOT_INTERVAL = 25;
 int imageCounter = 0;
 VideoRecorder* videoRecorder = new VideoRecorder();
+FrameRingBuffer* fRingBuffer;
 
 
 void videoCallback(const sensor_msgs::Image& img)
 {
-	ROS_INFO("Video callback method ...");
+	//ROS_INFO("Video callback method ...");
 
 	// openCV image pointer
 	cv_bridge::CvImageConstPtr cvptrS;
@@ -95,10 +143,12 @@ void videoCallback(const sensor_msgs::Image& img)
 		// convert the sensor_msgs::Image to cv_bridge::CvImageConstPtr
 		cvptrS = cv_bridge::toCvShare(img, cvptrS, enc::BGR8);
 
+/*
 		// adding image to videoRecorder as frame
 		if(videoRecorder->existsVideoRecorder() == true)
 			videoRecorder->addFrame(cvptrS->image);
-
+*/
+		fRingBuffer->addFrame(cvptrS->image);
 		imageCounter++;
 	}
 	catch (cv_bridge::Exception& e)
@@ -114,15 +164,30 @@ int main(int argc, char **argv)
 
 	// main access point to communications with the ROS system
 	ros::NodeHandle n;
+	fRingBuffer = new FrameRingBuffer();
+
 	ROS_INFO("subscribing for thermal_image_view ...");
 	ros::Subscriber sub = n.subscribe("/optris/thermal_image_view", 2, videoCallback);
 
 	// frequency in Hz
 	ros::Rate loop_rate(SNAPSHOT_INTERVAL);
 
+	// trigger for video on demand
+	int tmpCounter = 0;
+
 	while(ros::ok()){
 		ros::spinOnce();
 		loop_rate.sleep();
+
+		if(tmpCounter==1500){
+			fRingBuffer->getVideo();
+		}
+/*
+		else if (tmpCounter==500) {
+			fRingBuffer->getVideo();
+		}
+*/
+		tmpCounter++;
 	}
 
 	if(videoRecorder->existsVideoRecorder() == true)

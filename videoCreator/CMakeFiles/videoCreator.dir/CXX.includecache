@@ -9,6 +9,8 @@
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoCreator/src/videoCreator.cpp
 ros/ros.h
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoCreator/src/ros/ros.h
+queue
+-
 sensor_msgs/Image.h
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoCreator/src/sensor_msgs/Image.h
 ros/ros.h
