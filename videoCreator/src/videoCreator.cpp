@@ -11,11 +11,14 @@
 #include <cv_bridge/cv_bridge.h>
 #include <sensor_msgs/image_encodings.h>
 #include "opencv2/core/core.hpp"
+#include "opencv2/opencv.hpp"
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <time.h>
 
 namespace enc = sensor_msgs::image_encodings;
 
+int matCounter = 0;
 
 class VideoRecorder {
 public:
@@ -76,9 +79,19 @@ public:
 		maxRingBufferSize = 1000;
 		releases = 1;
 		vRecoder = new VideoRecorder();
-	}
 
+		// mod: fileStorage
+		fs.open("/home/cmm-jg/Bilder/test.yml", cv::FileStorage::WRITE);
+		fs << "name" << "johannes";
+	}
+	~FrameRingBuffer(){
+		fs.release();
+	}
 	void addFrame(cv::Mat frame){
+
+		fs << "matCounter" << frame;
+		matCounter++;
+
 		if(ringbuffer.size() != maxRingBufferSize)
 			ringbuffer.push(frame);
 		else{
@@ -111,6 +124,8 @@ private:
 
 	VideoRecorder* vRecoder;
 	std::stringstream videoFile;
+
+	cv::FileStorage fs;
 };
 
 void transmitImage(){
@@ -179,14 +194,13 @@ int main(int argc, char **argv)
 		ros::spinOnce();
 		loop_rate.sleep();
 
-		if(tmpCounter==1500){
+		if(tmpCounter==1000){
 			fRingBuffer->getVideo();
 		}
-/*
 		else if (tmpCounter==500) {
 			fRingBuffer->getVideo();
 		}
-*/
+
 		tmpCounter++;
 	}
 
