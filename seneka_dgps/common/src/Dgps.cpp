@@ -111,8 +111,8 @@ void Dgps::latlong(double* latt)
   unsigned char Buffer[512];
   char str[10];
   char value[10000]={0};
-  char ch[]={ 0x02, 0x00, 0x06, 0x00, 0x06, 0x03};
-  int length = 6; //No.of bits sending;
+  char ch[]={ 0x02, 0x00, 0x56, 0x03, 0x01, 0x00, 0x00, 0x5a, 0x03 };
+  int length = 9; //No.of bits sending;
   int open,y,bytesread,byteswrite,bin,k=9;
   SerialIO dgps;
   open = dgps.open();
@@ -129,7 +129,7 @@ void Dgps::latlong(double* latt)
     bin = (unsigned char)Buffer[i];//
     dgps.binary(bin,value); // error
   }
-  double lat_fract= 0.0,lat_exp= 0.0,lon_fract= 0.0,lon_exp= 0.0,alt_fract= 0.0,alt_exp;
+  double lat_fract= 0.0,lat_exp= 0.0,lon_fract= 0.0,lon_exp= 0.0,alt_fract= 0.0,alt_exp= 0.0;
   for(int j=1;j<=52; j++)
   {
     lat_fract = lat_fract + (value[75+j]-'0')*pow (0.5,j);
@@ -141,11 +141,11 @@ void Dgps::latlong(double* latt)
   {
     lat_exp = lat_exp  + (value[75-h]-'0')*pow(2,h);
     lon_exp = lon_exp  + (value[139-h]-'0')*pow(2,h);
-    alt_exp = lat_exp  + (value[203-h]-'0')*pow(2,h);
+    alt_exp = alt_exp  + (value[203-h]-'0')*pow(2,h);
   }
   latt[0] = ((lat_fract+1)* pow(2,(lat_exp-1023))*180);
   latt[1] = ((lon_fract+1)* pow(2,(lon_exp-1023))*180);
-  latt[2] = ((alt_fract+1)* pow(2,(alt_exp-1023))*180);
+  latt[2] = ((alt_fract+1) * pow(2,(alt_exp-1023)));
   cout << "latitude="<<latt[0]<<"\t longitude"<<latt[1]<<"\t altitude"<<"\t"<<latt[2]<<endl;
 
 }
