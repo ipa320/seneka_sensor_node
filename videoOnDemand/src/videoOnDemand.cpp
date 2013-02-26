@@ -1,6 +1,8 @@
 /*
- * author: Johannes Goth (cmm-jg)
+ * videoOnDemand.cpp
  *
+ *  Created on: 21.02.2013
+ *      Author: Johannes Goth (cmm-jg)
  */
 
 #include "ros/ros.h"
@@ -17,20 +19,38 @@
 #include <time.h>
 #include "frameManager.h"
 #include "frameManager.cpp"
+
+#include <boost/thread.hpp>
 namespace enc = sensor_msgs::image_encodings;
 
+// global attributes
+frameManager* fManager;
+
+void processFrameCallback(const sensor_msgs::Image& img)
+{
+	//fManager->testFrameManager();
+	fManager->processFrame(img);
+}
+
+void testFkt(){
+	ROS_INFO("subscribing for thermal_image_view ...");
+}
 
 int main(int argc, char **argv)
 {
-	frameManager* fm = new frameManager();
-
-	ros::init(argc, argv, "videoCreator");
+	ros::init(argc, argv, "videoOnDemandNode");
+	// attributes
+	fManager = new frameManager();
 	const float SNAPSHOT_INTERVAL = 25;
-	// main access point to communications with the ROS system
 	ros::NodeHandle n;
 
-	//ROS_INFO("subscribing for thermal_image_view ...");
-	//ros::Subscriber sub = n.subscribe("/optris/thermal_image_view", 2, videoCallback);
+	//boost::thread workerThread(testFkt);
+	//workerThread.join();
+
+
+	ROS_INFO("subscribing for thermal_image_view ...");
+	ros::Subscriber sub = n.subscribe("/optris/thermal_image_view", 2, processFrameCallback);
+
 
 	// frequency in Hz
 	ros::Rate loop_rate(SNAPSHOT_INTERVAL);
@@ -38,8 +58,6 @@ int main(int argc, char **argv)
 	while(ros::ok()){
 		ros::spinOnce();
 		loop_rate.sleep();
-
 	}
-
 	return 0;
 }

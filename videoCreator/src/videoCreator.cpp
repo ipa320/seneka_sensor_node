@@ -1,6 +1,8 @@
 /*
- * author: Johannes Goth (cmm-jg)
+ * videoCreator.cpp
  *
+ *  Created on: 21.02.2013
+ *      Author: Johannes Goth (cmm-jg)
  */
 
 #include "ros/ros.h"
@@ -81,15 +83,15 @@ public:
 		vRecoder = new VideoRecorder();
 
 		// mod: fileStorage
-		fs.open("/home/cmm-jg/Bilder/test.yml", cv::FileStorage::WRITE);
-		fs << "name" << "johannes";
+//		fs.open("/home/cmm-jg/Bilder/test.yml", cv::FileStorage::WRITE);
+//		fs << "name" << "johannes";
 	}
 	~FrameRingBuffer(){
-		fs.release();
+//		fs.release();
 	}
 	void addFrame(cv::Mat frame){
 
-		fs << "matCounter" << frame;
+//		fs << "matCounter" << frame;
 		matCounter++;
 
 		if(ringbuffer.size() != maxRingBufferSize)
@@ -125,7 +127,7 @@ private:
 	VideoRecorder* vRecoder;
 	std::stringstream videoFile;
 
-	cv::FileStorage fs;
+//	cv::FileStorage fs;
 };
 
 void transmitImage(){
@@ -194,13 +196,14 @@ int main(int argc, char **argv)
 		ros::spinOnce();
 		loop_rate.sleep();
 
-		if(tmpCounter==1000){
+		if(tmpCounter==750){
 			fRingBuffer->getVideo();
 		}
+/*
 		else if (tmpCounter==500) {
 			fRingBuffer->getVideo();
 		}
-
+*/
 		tmpCounter++;
 	}
 

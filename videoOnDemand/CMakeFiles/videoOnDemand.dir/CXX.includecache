@@ -9,6 +9,8 @@
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/frameManager.cpp
 frameManager.h
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/frameManager.h
+boost/thread.hpp
+-
 vector
 -
 ros/ros.h
@@ -29,6 +31,26 @@ opencv2/highgui/highgui.hpp
 -
 
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/frameManager.h
+frameManager.h
+/home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/frameManager.h
+vector
+-
+ros/ros.h
+/home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/ros/ros.h
+sensor_msgs/Image.h
+/home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/sensor_msgs/Image.h
+ros/ros.h
+-
+cv_bridge/cv_bridge.h
+-
+opencv2/core/core.hpp
+/home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/opencv2/core/core.hpp
+opencv2/opencv.hpp
+/home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/opencv2/opencv.hpp
+opencv2/imgproc/imgproc.hpp
+-
+opencv2/highgui/highgui.hpp
+-
 
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/videoOnDemand.cpp
 ros/ros.h
@@ -59,6 +81,8 @@ frameManager.h
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/frameManager.h
 frameManager.cpp
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/frameManager.cpp
+boost/thread.hpp
+-
 
 /opt/ros/fuerte/include/XmlRpcDecl.h
 ros/macros.h

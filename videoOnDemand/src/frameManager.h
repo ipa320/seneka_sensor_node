@@ -8,12 +8,31 @@
 #ifndef FRAMEMANAGER_H_
 #define FRAMEMANAGER_H_
 
+
+// own stuff
+#include "frameManager.h"
+// libraries
+//#include <boost/thread.hpp>
+//#include <boost/thread/mutex.hpp>
+#include <vector>
+// ROS includes
+#include "ros/ros.h"
+#include "sensor_msgs/Image.h"
+#include <ros/ros.h>
+// openCV includes
+#include <cv_bridge/cv_bridge.h>
+#include "opencv2/core/core.hpp"
+#include "opencv2/opencv.hpp"
+#include <opencv2/imgproc/imgproc.hpp>
+#include <opencv2/highgui/highgui.hpp>
+
 class frameManager {
 public:
 	frameManager();
 	virtual ~frameManager();
-	void startCaching();
+	void processFrame(const sensor_msgs::Image& img);
 	int getVideo();
+	void testFrameManager();
 
 private:
 
@@ -23,15 +42,26 @@ private:
 	void storeCache(std::vector<cv::Mat>* cache);
 	int createVideo();
 	std::vector<cv::Mat>* getCurrentCache();
+	//boost::mutex* getMutexToCache(bool usedCache);
 
 
-	// variables
-	u_int maxCacheSize;
+
+	// object attributes
+	u_int maxCacheSize;	// in frames
+	u_int maxRecTime; 	// in minutes
 	bool useCacheA;
 	bool useCacheB;
 	std::vector<cv::Mat>* cacheA;
 	std::vector<cv::Mat>* cacheB;
-	std::vector<cv::FileStorage*> storageFiles;
+
+//	boost::mutex mut;
+//	boost::mutex mxCacheA;
+//	boost::mutex mxCacheB;
+
+	u_int currentFileStorageSize;
+
+	u_int currentFileStorage;
+	std::vector<cv::FileStorage*> fileStorages;
 
 
 };
