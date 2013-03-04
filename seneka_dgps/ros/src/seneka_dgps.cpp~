@@ -6,7 +6,7 @@
  * and Automation (IPA)
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * Project name: SENEKA 
+ * Project name:  SENEKA 
  * ROS stack name: DGPS
  * ROS package name: seneka_dgps
  * Description:
@@ -148,7 +148,7 @@ public:
     diagnostics.status.resize(1);
     diagnostics.status[0].level = 0;
     diagnostics.status[0].name = nh.getNamespace();
-    diagnostics.status[0].message = "Dgps running";
+    diagnostics.status[0].message = "Wind sensor running";
     topicPub_Diagnostic_.publish(diagnostics);
   }
 

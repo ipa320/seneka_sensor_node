@@ -75,67 +75,83 @@
 class NodeClass
 {
 public:
-  ros::NodeHandle nh;
-  // topics to publish
-  ros::Publisher topicPub_wind;
-  ros::Publisher topicPub_Diagnostic_;
+	ros::NodeHandle nh;
+	// topics to publish
+	ros::Publisher topicPub_wind;
+	ros::Publisher topicPub_Diagnostic_;
+	// topics to subscribe, callback is called for new messages arriving
+	//--
 
-  // topics to subscribe, callback is called for new messages arriving
-  //--
+	// service servers
+	//--
 
-  // service servers
-  //--
+	// service clients
+	//--
 
-  // service clients
-  //--
+	// global variables
+	std::string port;
+	int baud;
+	ros::Time syncedROSTime;
+	// Constructor
+	NodeClass()
+	{
+		// create a handle for this node, initialize node
+		nh = ros::NodeHandle("~");
+		if(!nh.hasParam("port")) ROS_WARN("Used default parameter for port");
+		nh.param("port", port, std::string("/dev/ttyUSB0"));
+		if(!nh.hasParam("baud")) ROS_WARN("Used default parameter for baud");
+		nh.param("baud", baud, 4800);
+		syncedROSTime = ros::Time::now();
+		// implementation of topics to publish
+		topicPub_wind = nh.advertise<std_msgs::String>("wind", 1);
+		topicPub_Diagnostic_ = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
+		// implementation of topics to subscribe
+		//--
 
-  // global variables
-  std::string port;
-  int baud;
-  ros::Time syncedROSTime;
-  // Constructor
-  NodeClass()
-  {
-    // create a handle for this node, initialize node
-    nh = ros::NodeHandle("~");
-    if(!nh.hasParam("port")) ROS_WARN("Used default parameter for port");
-    nh.param("port", port, std::string("/dev/ttyUSB0"));
-    if(!nh.hasParam("baud")) ROS_WARN("Used default parameter for baud");
-    nh.param("baud", baud, 4800);
-    syncedROSTime = ros::Time::now();
-    // implementation of topics to publish
-    topicPub_wind = nh.advertise<std_msgs::String>("wind", 1);
-    topicPub_Diagnostic_ = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
-    // implementation of topics to subscribe
-    //--
+		// implementation of service servers
+		//--
+	}
 
-    // implementation of service servers
-    //--
-  }
+	// Destructor
+	~NodeClass()
+	{
+	}
 
-  // Destructor
-  ~NodeClass()
-  {
-  }
+	// topic callback functions
+	// function will be called when a new message arrives on a topic
+	//--
+	// service callback functions
+	// function will be called when a service is querried
+	//--
 
-  // topic callback functions
-  // function will be called when a new message arrives on a topic
-  //--
-  // service callback functions
-  // function will be called when a service is querried
-  //--
+	// other function declarations
+	void publishwind(double* dir)
+	{
 
-  // other function declarations
-  void publishwind(double* dir)
-  {
+		std_msgs::String msg;
+		std::stringstream ss;
+		ss << "angle" << dir[0]<<"speed"<<dir[1];
+		msg.data = ss.str();
+		topicPub_wind.publish(msg);
+		ROS_INFO("...publishing wind of windsensor");
 
-    std_msgs::String msg;
-    std::stringstream ss;
-    ss << "angle" << dir[0]<<"speed"<<dir[1];
-    msg.data = ss.str();
-//    topicPub_wind.publish(msg);
-    //       ROS_INFO("...publishing wind of DGps");
-  }
+		diagnostic_msgs::DiagnosticArray diagnostics;
+		diagnostics.status.resize(1);
+		diagnostics.status[0].level = 0;
+		diagnostics.status[0].name = nh.getNamespace();
+		diagnostics.status[0].message = "Wind sensor running";
+		topicPub_Diagnostic_.publish(diagnostics);
+	}
+	void publishError(std::string error_str) {
+		diagnostic_msgs::DiagnosticArray diagnostics;
+		diagnostics.status.resize(1);
+		diagnostics.status[0].level = 2;
+		diagnostics.status[0].name = nh.getNamespace();
+		diagnostics.status[0].message = error_str;
+		topicPub_Diagnostic_.publish(diagnostics);
+	}
+
+
 };
 
 //
@@ -143,68 +159,52 @@ public:
 //#### main programm ####
 int main(int argc, char** argv)
 {
-  // initialize ROS, spezify name of node
-  ros::init(argc, argv, "windsensor");
-  NodeClass nodeClass;
-  windsensor windsensor;
-  int iBaudRate = nodeClass.baud;
-  bool bOpenwindsensor = false, bRecScan = false;
-  double dir[100]= {0};
-  while (!bOpenwindsensor)
-  bool bOpenDgps = false, bRecScan = false;
-  while (!bOpenwindsensor)
-  {
-    ROS_INFO("Opening wind sensor... (port:%s)",nodeClass.port.c_str());
-    bOpenwindsensor = windsensor.open(nodeClass.port.c_str(), iBaudRate);
-    cout<<bOpenwindsensor;
-    // check, if it is the first try to open scanner
-   /* if(!bOpenwindsensor)
-    {
-      ROS_ERROR("...DGPS not available on port %s. Will retry every second.",nodeClass.port.c_str());
-      nodeClass.publishError("...DGPS not available on port");
-    }*/
-    sleep(1); // wait for Dgps to get ready if successfull, or wait befor retrying
-  }
-  //	ROS_INFO("...DGPS opened successfully on port %s",nodeClass.port.c_str());
-  // main loop
-  ros::Rate loop_rate(50); // Hz
-  while(nodeClass.nh.ok())
-  {
-    // read values
-    ROS_DEBUG("Reading Windsensor...");
-    //		for(; ;)
-    //		 publish position
-    if(!bRecScan)
-    {
-      ROS_ERROR("...windsensor not available on port %s. Will retry every second.",nodeClass.port.c_str());
-      //      nodeClass.publishError("...windsensor not available on port");
-      //    }
-      sleep(1); // wait for windsensor to get ready if successfull, or wait before retrying
-    }
-    ROS_INFO("...windsensor opened successfully on port %s",nodeClass.port.c_str());
-    // main loop
-    ros::Rate loop_rate(50); // Hz
-    while(nodeClass.nh.ok())
-    {
-      // read values
-      ROS_DEBUG("Reading windsensor...");
-      windsensor.direction(dir);
-      ROS_INFO("...publishing direction and speed of windsensor %1f, %1f",dir[0],dir[1]);
-      //     publish wind
-      nodeClass.publishwind(dir);
-      if(!bRecScan)
-      {
-        ROS_DEBUG("...publishing wind of windsensor");
-        nodeClass.publishwind(dir);
-      }
-      else
-      {
-        ROS_WARN("...no Values available");
-      }
-      //     sleep and waiting for messages, callbacks
-      ros::spinOnce();
-      loop_rate.sleep();
-    }
-    return 0;
-  }
-}
+	// initialize ROS, spezify name of node
+	ros::init(argc, argv, "windsensor");
+
+	NodeClass nodeClass;
+	windsensor windsensor;
+	int iBaudRate = nodeClass.baud;
+	bool bOpenwindsensor = false, bRecScan = false;
+	double dir[100]= {0};
+	while (!bOpenwindsensor)
+	{
+		ROS_INFO("Opening wind sensor... (port:%s)",nodeClass.port.c_str());
+		bOpenwindsensor = windsensor.open(nodeClass.port.c_str(), iBaudRate);
+		cout<<bOpenwindsensor<<endl;
+		// check, if it is the first try to open scanner
+		if(!bOpenwindsensor)
+		{
+			ROS_ERROR("...windsensor not available on port %s. Will retry every second.",nodeClass.port.c_str());
+			nodeClass.publishError("...DGPS not available on port");
+		}
+		sleep(1); // wait for Windsensorto get ready if successfull, or wait befor retrying
+	}
+	ROS_INFO("...Windsensor opened successfully on port %s",nodeClass.port.c_str());
+	// main loop
+	ros::Rate loop_rate(50); // Hz
+
+		while(nodeClass.nh.ok())
+		{
+			// read values
+			ROS_DEBUG("Reading windsensor...");
+			windsensor.direction(dir);
+			ROS_INFO("...publishing direction and speed of windsensor %1f, %1f",dir[0],dir[1]);
+			//     publish wind
+			nodeClass.publishwind(dir);
+			if(!bRecScan)
+			{
+				ROS_DEBUG("...publishing wind of windsensor");
+				nodeClass.publishwind(dir);
+			}
+			else
+			{
+				ROS_WARN("...no Values available");
+			}
+			//     sleep and waiting for messages, callbacks
+			ros::spinOnce();
+			loop_rate.sleep();
+		}
+		return 0;
+	}
+

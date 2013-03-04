@@ -1,0 +1,8 @@
+11:50:38 **** Build of configuration Debug for project seneka_windsensor ****
+make all 
+Building file: ../ros/src/seneka_windsensor.cpp
+Invoking: Cross G++ Compiler
+g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"ros/src/seneka_windsensor.d" -MT"ros/src/seneka_windsensor.d" -o "ros/src/seneka_windsensor.o" "../ros/src/seneka_windsensor.cpp"
+../ros/src/seneka_windsensor.cpp:65:21: fatal error: ros/ros.h: No such file or directory
+compilation terminated.
+make: *** [ros/src/seneka_windsensor.o] Error 1
