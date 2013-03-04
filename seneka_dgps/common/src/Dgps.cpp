@@ -107,13 +107,14 @@ bool Dgps::open(const char* pcPort, int iBaudRate)
 
 void Dgps::latlong(double* latt)
 {
+  int length;
   cout<<"hello"<<endl;
   unsigned char Buffer[512];
   char str[10];
   char value[10000]={0};
-  char ch[]={ 0x02, 0x00, 0x56, 0x03, 0x01, 0x00, 0x00, 0x5a, 0x03 };
-  int length = 9; //No.of bits sending;
-  int open,y,bytesread,byteswrite,bin,k=9;
+  char ch[]={ 0x02, 0x00, 0x56, 0x03, 0x01, 0x00, 0x00, 0x5a, 0x03 }; //57h reply (basic coding)
+  length = strlen(ch);
+  int open,y,bytesread,byteswrite,bin;
   SerialIO dgps;
   open = dgps.open();
   byteswrite = dgps.write(ch,length);
@@ -124,10 +125,10 @@ void Dgps::latlong(double* latt)
 
   for(int i=0; i < bytesread; i++)
   {
-    printf(" %.2x helloman",(unsigned char)Buffer[i]);
+    printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
     cout<<endl;
     bin = (unsigned char)Buffer[i];//
-    dgps.binary(bin,value); // error
+    dgps.binary(bin,value); // binary conversion
   }
   double lat_fract= 0.0,lat_exp= 0.0,lon_fract= 0.0,lon_exp= 0.0,alt_fract= 0.0,alt_exp= 0.0;
   for(int j=1;j<=52; j++)

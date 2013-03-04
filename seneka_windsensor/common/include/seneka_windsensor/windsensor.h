@@ -7,15 +7,15 @@
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
- * Project name: SENEKA
- * ROS stack name: SENEKA
- * ROS package name: Dgps
+ * Project name: care-o-bot
+ * ROS stack name: cob_driver
+ * ROS package name: cob_sick_s300
  * Description:
  *								
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *			
- * Author: ciby mathew, email:ciby.mathew@ipa.fhg.de
- * Supervised by: ciby mathew, email:ciby.mathew@ipa.fhg.de
+ * Author: Christian Connette, email:christian.connette@ipa.fhg.de
+ * Supervised by: Christian Connette, email:christian.connette@ipa.fhg.de
  *
  * Date of creation: Jan 2009
  * ToDo:
@@ -50,8 +50,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  *
  ****************************************************************/
-#ifndef _Dgps_H
-#define _Dgps_H
+#ifndef _windsensor_H
+#define _windsensor_H
 #include "SerialIO.h"
 #include <math.h>
 #include <iostream>
@@ -102,7 +102,7 @@ using namespace std;
  *	   --> Telegram length (read from telegram) is 1104 bytes (iDataLength)
  */
 
-class Dgps
+class windsensor
 {
 public:
 
@@ -126,10 +126,10 @@ public:
   };
 
   // Constructor
-  Dgps();
+  windsensor();
 
   // Destructor
-  ~Dgps();
+  ~windsensor();
 
   /**
    * Opens serial port.
@@ -142,7 +142,7 @@ public:
   // add sick_lms.GetSickScanResolution();
 
   // add sick_lms.GetSickMeasuringUnits();
-  void latlong(double* lat);
+  void direction(double* dir);
 
 
 private:
