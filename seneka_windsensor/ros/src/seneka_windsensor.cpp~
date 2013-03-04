@@ -7,7 +7,7 @@
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  * Project name: SENEKA
- * ROS stack name:Wind Sensor
+ * ROS stack name: DGPS
  * ROS package name: seneka_dgps
  * Description:
  *
@@ -134,7 +134,7 @@ public:
     ss << "angle" << dir[0]<<"speed"<<dir[1];
     msg.data = ss.str();
 //    topicPub_wind.publish(msg);
-    //       ROS_INFO("...publishing wind ofWind Sensor");
+    //       ROS_INFO("...publishing wind of DGps");
   }
 };
 
