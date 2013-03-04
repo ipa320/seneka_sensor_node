@@ -7,7 +7,7 @@
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  * Project name: SENEKA
- * ROS stack name: DGPS
+ * ROS stack name:Wind Sensor
  * ROS package name: seneka_dgps
  * Description:
  *
@@ -134,7 +134,7 @@ public:
     ss << "angle" << dir[0]<<"speed"<<dir[1];
     msg.data = ss.str();
 //    topicPub_wind.publish(msg);
-    //       ROS_INFO("...publishing wind of DGps");
+    //       ROS_INFO("...publishing wind ofWind Sensor");
   }
 };
 
@@ -148,44 +148,15 @@ int main(int argc, char** argv)
   NodeClass nodeClass;
   windsensor windsensor;
   int iBaudRate = nodeClass.baud;
-<<<<<<< HEAD:ros/src/seneka_windsensor.cpp
   bool bOpenwindsensor = false, bRecScan = false;
   double dir[100]= {0};
   while (!bOpenwindsensor)
-=======
-  bool bOpenDgps = false, bRecScan = false;
-  double lat[100]= {0};
-  while (!bOpenDgps)
->>>>>>> fbcc55d54032a6d5dbd80dff76df2d0bf4c23b2b:seneka_dgps/ros/src/seneka_dgps.cpp
   {
     ROS_INFO("Opening wind sensor... (port:%s)",nodeClass.port.c_str());
     bOpenwindsensor = windsensor.open(nodeClass.port.c_str(), iBaudRate);
     cout<<bOpenwindsensor;
     // check, if it is the first try to open scanner
-<<<<<<< HEAD:ros/src/seneka_windsensor.cpp
     if(!bOpenwindsensor)
-=======
-    if(!bOpenDgps)
-    {
-      ROS_ERROR("...DGPS not available on port %s. Will retry every second.",nodeClass.port.c_str());
-      nodeClass.publishError("...DGPS not available on port");
-    }
-    sleep(1); // wait for Dgps to get ready if successfull, or wait befor retrying
-  }
-  //	ROS_INFO("...DGPS opened successfully on port %s",nodeClass.port.c_str());
-  // main loop
-  ros::Rate loop_rate(50); // Hz
-  while(nodeClass.nh.ok())
-  {
-    // read values
-    ROS_DEBUG("Reading DGPS...");
-    //		for(; ;)
-    dgps.latlong(lat);
-    ROS_INFO("...publishing position of DGps %1f, %1f,%1f",lat[0],lat[1],lat[2]);
-    //		 publish position
-    nodeClass.publishposition(lat);
-    if(!bRecScan)
->>>>>>> fbcc55d54032a6d5dbd80dff76df2d0bf4c23b2b:seneka_dgps/ros/src/seneka_dgps.cpp
     {
       ROS_ERROR("...windsensor not available on port %s. Will retry every second.",nodeClass.port.c_str());
       //      nodeClass.publishError("...windsensor not available on port");
