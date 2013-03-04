@@ -7,15 +7,15 @@
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
- * Project name: SENEKA
- * ROS stack name: SENEKA
- * ROS package name: Dgps
+ * Project name: care-o-bot
+ * ROS stack name: cob_driver
+ * ROS package name: cob_sick_s300
  * Description:
  *								
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *			
- * Author: ciby mathew, email:ciby.mathew@ipa.fhg.de
- * Supervised by: ciby mathew, email:ciby.mathew@ipa.fhg.de
+ * Author: Christian Connette, email:christian.connette@ipa.fhg.de
+ * Supervised by: Christian Connette, email:christian.connette@ipa.fhg.de
  *
  * Date of creation: Jan 2009
  * ToDo:
