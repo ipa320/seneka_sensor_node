@@ -59,7 +59,7 @@
  */
 
 //#include "stdafx.h"
-#include "seneka_dgps/SerialIO.h"
+#include "seneka_windsensor/SerialIO.h"
 #include <math.h>
 #include <iostream>
 #include <errno.h>
@@ -101,7 +101,7 @@ bool getBaudrateCode(int iBaudrate, int* iBaudrateCode)
   const int iBaudsLen = sizeof(baudTable) / sizeof(int);
 
   bool ret = false;
-  *iBaudrateCode = B38400;
+  *iBaudrateCode = B4800;
   int i;
   for( i=0; i<iBaudsLen; i++ ) {
     if( baudTable[i] == iBaudrate ) {
@@ -123,7 +123,7 @@ bool getBaudrateCode(int iBaudrate, int* iBaudrateCode)
 SerialIO::SerialIO()
 : m_DeviceName("/dev/ttyUSB0"),
   m_Device(-1),
-  m_BaudRate(38400),
+  m_BaudRate(4800),
   m_Multiplier(1.0),
   m_ByteSize(8),
   m_StopBits(SB_ONE),
@@ -216,8 +216,8 @@ int SerialIO::open()
   m_tio.c_oflag = 0;
   m_tio.c_cflag = B38400 | CS8 | CREAD | HUPCL | CLOCAL;
   m_tio.c_lflag = 0;
-  cfsetispeed(&m_tio, B38400);
-  cfsetospeed(&m_tio, B38400);
+  cfsetispeed(&m_tio, B4800);
+  cfsetospeed(&m_tio, B4800);
   m_tio.c_cc[VINTR] = 3;	// Interrupt
   m_tio.c_cc[VQUIT] = 28;	// Quit
   m_tio.c_cc[VERASE] = 127;	// Erase

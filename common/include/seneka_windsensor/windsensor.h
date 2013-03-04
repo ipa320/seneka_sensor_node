@@ -50,8 +50,8 @@
  * If not, see <http://www.gnu.org/licenses/>.
  *
  ****************************************************************/
-#ifndef _Dgps_H
-#define _Dgps_H
+#ifndef _windsensor_H
+#define _windsensor_H
 #include "SerialIO.h"
 #include <math.h>
 #include <iostream>
@@ -102,7 +102,7 @@ using namespace std;
  *	   --> Telegram length (read from telegram) is 1104 bytes (iDataLength)
  */
 
-class Dgps
+class windsensor
 {
 public:
 
@@ -126,10 +126,10 @@ public:
   };
 
   // Constructor
-  Dgps();
+  windsensor();
 
   // Destructor
-  ~Dgps();
+  ~windsensor();
 
   /**
    * Opens serial port.
@@ -142,7 +142,7 @@ public:
   // add sick_lms.GetSickScanResolution();
 
   // add sick_lms.GetSickMeasuringUnits();
-  void latlong(double* lat);
+  void direction(double* dir);
 
 
 private:

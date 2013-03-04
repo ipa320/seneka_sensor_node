@@ -26,15 +26,15 @@
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions are met:
  *
- *	 * Redistributions of source code must retain the above copyright
- *	   notice, this list of conditions and the following disclaimer.
- *	 * Redistributions in binary form must reproduce the above copyright
- *	   notice, this list of conditions and the following disclaimer in the
- *	   documentation and/or other materials provided with the distribution.
- *	 * Neither the name of the Fraunhofer Institute for Manufacturing
- *	   Engineering and Automation (IPA) nor the names of its
- *	   contributors may be used to endorse or promote products derived from
- *	   this software without specific prior written permission.
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *   * Neither the name of the Fraunhofer Institute for Manufacturing
+ *     Engineering and Automation (IPA) nor the names of its
+ *     contributors may be used to endorse or promote products derived from
+ *     this software without specific prior written permission.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License LGPL as
@@ -63,14 +63,13 @@
 
 // ROS message includes
 #include <ros/ros.h>
-#include <sensor_msgs/NavSatFix.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
-
 // ROS service includes
 //--
 // external includes
-#include <seneka_dgps/Dgps.h>
-
+#include <seneka_windsensor/windsensor.h>
+#include <std_msgs/String.h>
+#include <sstream>
 //####################
 //#### node class ####
 class NodeClass
@@ -78,7 +77,7 @@ class NodeClass
 public:
   ros::NodeHandle nh;
   // topics to publish
-  ros::Publisher topicPub_position;
+  ros::Publisher topicPub_wind;
   ros::Publisher topicPub_Diagnostic_;
 
   // topics to subscribe, callback is called for new messages arriving
@@ -93,12 +92,7 @@ public:
   // global variables
   std::string port;
   int baud;
-  //		bool inverted;
-  //		std::string frame_id;
   ros::Time syncedROSTime;
-  //		unsigned int syncedSICKStamp;
-  //		bool syncedTimeReady;
-
   // Constructor
   NodeClass()
   {
@@ -107,12 +101,10 @@ public:
     if(!nh.hasParam("port")) ROS_WARN("Used default parameter for port");
     nh.param("port", port, std::string("/dev/ttyUSB0"));
     if(!nh.hasParam("baud")) ROS_WARN("Used default parameter for baud");
-    nh.param("baud", baud, 38400);
-    //			syncedSICKStamp = 0;
+    nh.param("baud", baud, 4800);
     syncedROSTime = ros::Time::now();
-    //			syncedTimeReady = false;
     // implementation of topics to publish
-    topicPub_position = nh.advertise<sensor_msgs::NavSatFix>("position", 1);
+    topicPub_wind = nh.advertise<std_msgs::String>("wind", 1);
     topicPub_Diagnostic_ = nh.advertise<diagnostic_msgs::DiagnosticArray>("/diagnostics", 1);
     // implementation of topics to subscribe
     //--
@@ -134,31 +126,15 @@ public:
   //--
 
   // other function declarations
-  void publishposition(double* lat)
+  void publishwind(double* dir)
   {
-    sensor_msgs::NavSatFix positions;
-    positions.latitude= lat[0];
-    positions.longitude= lat[1];
-    positions.altitude= lat[2];
-    topicPub_position.publish(positions);
-    //			 ROS_INFO("...publishing position of DGps");
 
-    //Diagnostics
-    diagnostic_msgs::DiagnosticArray diagnostics;
-    diagnostics.status.resize(1);
-    diagnostics.status[0].level = 0;
-    diagnostics.status[0].name = nh.getNamespace();
-    diagnostics.status[0].message = "Dgps running";
-    topicPub_Diagnostic_.publish(diagnostics);
-  }
-
-  void publishError(std::string error_str) {
-    diagnostic_msgs::DiagnosticArray diagnostics;
-    diagnostics.status.resize(1);
-    diagnostics.status[0].level = 2;
-    diagnostics.status[0].name = nh.getNamespace();
-    diagnostics.status[0].message = error_str;
-    topicPub_Diagnostic_.publish(diagnostics);
+    std_msgs::String msg;
+    std::stringstream ss;
+    ss << "angle" << dir[0]<<"speed"<<dir[1];
+    msg.data = ss.str();
+//    topicPub_wind.publish(msg);
+    //       ROS_INFO("...publishing wind of DGps");
   }
 };
 
@@ -168,50 +144,49 @@ public:
 int main(int argc, char** argv)
 {
   // initialize ROS, spezify name of node
-  ros::init(argc, argv, "Dgps");
+  ros::init(argc, argv, "windsensor");
   NodeClass nodeClass;
-  Dgps dgps;
+  windsensor windsensor;
   int iBaudRate = nodeClass.baud;
-  bool bOpenDgps = false, bRecScan = false;
-  bool firstTry = true;
-  double lat[100]= {0};
-  while (!bOpenDgps)
+  bool bOpenwindsensor = false, bRecScan = false;
+  double dir[100]= {0};
+  while (!bOpenwindsensor)
   {
-    ROS_INFO("Opening DGPS... (port:%s)",nodeClass.port.c_str());
-    bOpenDgps = dgps.open(nodeClass.port.c_str(), iBaudRate);
+    ROS_INFO("Opening wind sensor... (port:%s)",nodeClass.port.c_str());
+    bOpenwindsensor = windsensor.open(nodeClass.port.c_str(), iBaudRate);
+    cout<<bOpenwindsensor;
     // check, if it is the first try to open scanner
-    if(!bOpenDgps)
+    if(!bOpenwindsensor)
     {
-      ROS_ERROR("...DGPS not available on port %s. Will retry every second.",nodeClass.port.c_str());
-      nodeClass.publishError("...DGPS not available on port");
-      firstTry = false;
+      ROS_ERROR("...windsensor not available on port %s. Will retry every second.",nodeClass.port.c_str());
+      //      nodeClass.publishError("...windsensor not available on port");
+      //    }
+      sleep(1); // wait for windsensor to get ready if successfull, or wait before retrying
     }
-    sleep(1); // wait for Dgps to get ready if successfull, or wait befor retrying
+    ROS_INFO("...windsensor opened successfully on port %s",nodeClass.port.c_str());
+    // main loop
+    ros::Rate loop_rate(50); // Hz
+    while(nodeClass.nh.ok())
+    {
+      // read values
+      ROS_DEBUG("Reading windsensor...");
+      windsensor.direction(dir);
+      ROS_INFO("...publishing direction and speed of windsensor %1f, %1f",dir[0],dir[1]);
+      //     publish wind
+      nodeClass.publishwind(dir);
+      if(!bRecScan)
+      {
+        ROS_DEBUG("...publishing wind of windsensor");
+        nodeClass.publishwind(dir);
+      }
+      else
+      {
+        ROS_WARN("...no Values available");
+      }
+      //     sleep and waiting for messages, callbacks
+      ros::spinOnce();
+      loop_rate.sleep();
+    }
+    return 0;
   }
-  //	ROS_INFO("...DGPS opened successfully on port %s",nodeClass.port.c_str());
-  // main loop
-  ros::Rate loop_rate(50); // Hz
-  while(nodeClass.nh.ok())
-  {
-    // read values
-    ROS_DEBUG("Reading DGPS...");
-    //		for(; ;)
-    dgps.latlong(lat);
-    ROS_INFO("...publishing position of DGps %1f, %1f,%1f",lat[0],lat[1],lat[2]);
-    //		 publish position
-    nodeClass.publishposition(lat);
-    if(!bRecScan)
-    {
-      ROS_DEBUG("...publishing position of DGps");
-      nodeClass.publishposition(lat);
-    }
-    else
-    {
-      ROS_WARN("...no Values available");
-    }
-    //		 sleep and waiting for messages, callbacks
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
-  return 0;
 }
