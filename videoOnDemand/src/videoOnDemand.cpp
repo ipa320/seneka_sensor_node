@@ -44,7 +44,7 @@ int main(int argc, char **argv)
 	const float SNAPSHOT_INTERVAL = 25;
 	ros::NodeHandle n;
 
-	//boost::thread workerThread(testFkt);
+	boost::thread workerThread(testFkt);
 	//workerThread.join();
 
 

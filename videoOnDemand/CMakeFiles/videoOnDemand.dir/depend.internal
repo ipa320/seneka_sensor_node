@@ -5,6 +5,8 @@ CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o
  /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/frameManager.cpp
  /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/frameManager.h
  /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/videoOnDemand.cpp
+ /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/videoRecorder.cpp
+ /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/videoRecorder.h
  /opt/ros/fuerte/include/XmlRpcDecl.h
  /opt/ros/fuerte/include/XmlRpcValue.h
  /opt/ros/fuerte/include/opencv2/calib3d/calib3d.hpp

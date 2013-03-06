@@ -4,6 +4,8 @@
 CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o: src/frameManager.cpp
 CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o: src/frameManager.h
 CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o: src/videoOnDemand.cpp
+CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o: src/videoRecorder.cpp
+CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o: src/videoRecorder.h
 CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o: /opt/ros/fuerte/include/XmlRpcDecl.h
 CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o: /opt/ros/fuerte/include/XmlRpcValue.h
 CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o: /opt/ros/fuerte/include/opencv2/calib3d/calib3d.hpp
