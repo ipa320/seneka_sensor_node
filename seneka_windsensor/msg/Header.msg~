@@ -1,0 +1,7 @@
+Header header
+
+# wind speed [m/s]
+float speed
+
+# wind direction [angle in radians relative to mounting position]
+float direction

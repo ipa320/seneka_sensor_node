@@ -67,96 +67,62 @@
 #include<stdlib.h>
 #include <cstring>
 using namespace std;
-/** 
- * Driver class for the laser scanner SICK S300 Professional.
- * This driver only supports use with 500KBaud in cont. mode
- *
- * S300 header format in continuous mode:
- *	   
- *      | 00 00 00 00 |   4 byte reply header
- *
- *		Now starts the actual telegram
- *
- *      | 00 00 |         data block number (fixed)
- *      | xx xx |         size of data telegram (should be dec 1104)
- *      | FF xx |         last byte decides scanner id, 07 in most cases, but 08 for slave configured scanners
- *      | xx xx |         protocol version
- *      | 0x 00 |         status: 00 00 = normal, 01 00 = lockout
- *      | xx xx xx xx |   scan number
- *      | xx xx |         telegram number
- *      | BB BB |         fixed
- *      | 11 11 |         fixed
- *	       ...            data
- *      | xx xx |         CRC
- *	   
- * 	   Readout of buffer starts with Reply-Header
- *	   Reply-Header:byte 0 to 3 = 4 bytes
- *	   Telegram (as it is stored in the Buffer):	Position in the telegram
- *	   Header: 		bytes 4 to 23 = 20 bytes		bytes 0 to 19
- *	   Data:   		bytes 24 to 1105 = 1082 bytes	bytes 20 to 1101
- *	   CRC:    		bytes 1106, 1107 = 2 bytes		bytes 1102, 1103
- * 
- *	   for easier parsing Reply-Header and Telegram-Header are combined in the folllowing
- *	   --> Headerlength = 24 bytes (iHeaderLength)
- *	   --> Total length in buffer is 1108 bytes
- *	   --> Telegram length (read from telegram) is 1104 bytes (iDataLength)
- */
+
 
 class Dgps
 {
 public:
 
-  // set of parameters which are specific to the SickS300
-  struct ParamType
-  {
-    int iDataLength;	// length of data telegram
-    int iHeaderLength;	// length of telegram header
-    int iNumScanPoints;	// number of measurements in the scan
-    double dScale;		// scaling of the scan (multiply with to get scan in meters)
-    double dStartAngle;	// scan start angle
-    double dStopAngle;	// scan stop angle
-  };
+	// set of parameters which are specific to the SickS300
+	struct ParamType
+	{
+		int iDataLength;	// length of data telegram
+		int iHeaderLength;	// length of telegram header
+		int iNumScanPoints;	// number of measurements in the scan
+		double dScale;		// scaling of the scan (multiply with to get scan in meters)
+		double dStartAngle;	// scan start angle
+		double dStopAngle;	// scan stop angle
+	};
 
-  // storage container for received scanner data
+	// storage container for received scanner data
 
-  enum
-  {
-    READ_BUF_SIZE = 10000,
-    WRITE_BUF_SIZE = 10000
-  };
+	enum
+	{
+		READ_BUF_SIZE = 10000,
+		WRITE_BUF_SIZE = 10000
+	};
 
-  // Constructor
-  Dgps();
+	// Constructor
+	Dgps();
 
-  // Destructor
-  ~Dgps();
+	// Destructor
+	~Dgps();
 
-  /**
-   * Opens serial port.
-   * @param pcPort used "COMx" or "/dev/tty1"
-   * @param iBaudRate baud rate
-   * @param iScanId the scanner id in the data header (7 by default)
-   */
-  bool open(const char* pcPort, int iBaudRate);
+	/**
+	 * Opens serial port.
+	 * @param pcPort used "COMx" or "/dev/tty1"
+	 * @param iBaudRate baud rate
+	 * @param iScanId the scanner id in the data header (7 by default)
+	 */
+	bool open(const char* pcPort, int iBaudRate);
 
-  // add sick_lms.GetSickScanResolution();
+	// add sick_lms.GetSickScanResolution();
 
-  // add sick_lms.GetSickMeasuringUnits();
-  void latlong(double* lat);
-
+	// add sick_lms.GetSickMeasuringUnits();
+	void latlong(double* lat);
 
 private:
-  // Constants
-  // Components
-  SerialIO m_SerialIO;
-  // Functions
+	// Constants
+	// Components
+	SerialIO m_SerialIO;
+	// Functions
 
-  unsigned int getUnsignedWord(unsigned char msb, unsigned char lsb)
-  {
-    return (msb << 8) | lsb;
-  }
+	unsigned int getUnsignedWord(unsigned char msb, unsigned char lsb)
+	{
+		return (msb << 8) | lsb;
+	}
 
-  unsigned int createCRC(unsigned char *ptrData, int Size);
+	unsigned int createCRC(unsigned char *ptrData, int Size);
 
 };
 #endif //

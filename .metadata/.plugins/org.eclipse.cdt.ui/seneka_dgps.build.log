@@ -1,0 +1,11 @@
+17:04:40 **** Build of configuration Debug for project seneka_dgps ****
+make all 
+Building file: ../ros/src/seneka_dgps.cpp
+../ros/src/seneka_dgps.cpp:65:21: fatal error: ros/ros.h: No such file or directory
+Invoking: Cross G++ Compiler
+compilation terminated.
+g++ -O0 -g3 -Wall -c -fmessage-length=0 -MMD -MP -MF"ros/src/seneka_dgps.d" -MT"ros/src/seneka_dgps.d" -o "ros/src/seneka_dgps.o" "../ros/src/seneka_dgps.cpp"
+make: *** [ros/src/seneka_dgps.o] Error 1
+
+17:04:40 Build Finished (took 115ms)
+

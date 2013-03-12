@@ -67,74 +67,68 @@ windsensor::windsensor()
 //-------------------------------------------
 windsensor::~windsensor()
 {
-  m_SerialIO.close();
+	m_SerialIO.close();
 }
 
 
 // ---------------------------------------------------------------------------
 bool windsensor::open(const char* pcPort, int iBaudRate)
 {
-  int bRetSerial;
-  // forwindsensor :default is 4800
-  if (iBaudRate != 4800)
-    return false;
-
-  // update scan id (id=8 for slave scanner, else 7)
-
-  // initialize Serial Interface
-  m_SerialIO.setBaudRate(iBaudRate);
-  m_SerialIO.setDeviceName(pcPort);
-  bRetSerial = m_SerialIO.open();
-  if(bRetSerial == 0)
-  {
-    // Clears the read and transmit buffer.
-    //	    m_iPosReadBuf2 = 0;
-    m_SerialIO.purge();
-    return true;
-  }
-  else
-  {
-    return false;
-  }
+	int bRetSerial;
+	// forwindsensor :default is 4800
+	if (iBaudRate != 4800)
+		return false;
+	// initialize Serial Interface
+	m_SerialIO.setBaudRate(iBaudRate);
+	m_SerialIO.setDeviceName(pcPort);
+	bRetSerial = m_SerialIO.open();
+	if(bRetSerial == 0)
+	{
+		// Clears the read and transmit buffer.
+		//	    m_iPosReadBuf2 = 0;
+		m_SerialIO.purge();
+		return true;
+	}
+	else
+	{
+		return false;
+	}
 }
 
-void windsensor::direction(double* dir)
+void windsensor::direction(float* dir)
 {
-  unsigned char Buffer[512] ={0};
-  int open,bytesread;
-  SerialIO windsensor;
-  open = windsensor.open();
-  int length;
-  sleep(1);
-  bytesread = windsensor.readNonBlocking((char*)Buffer,1020);
-  cout<<"Total number of bytes read"<<bytesread<<"\n"<<endl;;
+	unsigned char Buffer[512] ={0};
+	int open,bytesread;
+	SerialIO windsensor;
+	open = windsensor.open();
+	int length;
+//	sleep(2);
+	bytesread = windsensor.readNonBlocking((char*)Buffer,1020);
+//	cout<<"Total number of bytes read"<<bytesread<<"\n"<<endl;;
 
-  for(int i=0; i < bytesread; i++)
-  {
-    if((Buffer[i])=='$')
-    {
-    printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
-    cout<<endl;
+	for(int i=0; i < bytesread; i++)
+	{
+		if((Buffer[i])=='$')
+		{
+//			printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
+//			cout<<endl;
 
- 
-      if((Buffer[i+1]=='I')&&(Buffer[i+2]=='I')&&(Buffer[i+3]=='M')&&(Buffer[i+4]=='W'))
-      {
-        dir[0] = ((Buffer[i+7]-48)*100 + (Buffer[i+8]-48)*10 +(Buffer[i+9]-48) +.1*(Buffer[i+11]-48));// extracting the value for the angle and speed
-        if(Buffer[i+14]==',')
-         dir[1] = ((Buffer[i+15]-48)*100 + (Buffer[i+16]-48)*10 +(Buffer[i+17]-48) +.1*(Buffer[i+19]-48))*1.852;
-        else
-          dir[1]=-1;
-        if((dir[0] < 0) || (dir[0] > 360))
-          dir[0]=-1;
-        if(dir[1] < 0)
-          dir[1]=-1;
-        cout<<"direction and angle"<<dir[0]<<"\t"<<dir[1]<<endl;
-      }
-      cout<<"\n";
-    }
+			if((Buffer[i+1]=='I')&&(Buffer[i+2]=='I')&&(Buffer[i+3]=='M')&&(Buffer[i+4]=='W')&&(Buffer[i+14]==',')&&(Buffer[i+23]=='A'))
+			{
+				dir[0] = ((Buffer[i+7]-48)*100 + (Buffer[i+8]-48)*10 +(Buffer[i+9]-48) +.1*(Buffer[i+11]-48));// extracting the value for the angle and speed
+				dir[1] = ((Buffer[i+15]-48)*100 + (Buffer[i+16]-48)*10 +(Buffer[i+17]-48) +.1*(Buffer[i+19]-48))*1.852;
+				if((dir[0] < 0.001) || (dir[0] > 360))
+					dir[0]=-1;
+				else
+					dir[0]= dir[0]* 0.0174532925;
+				if(dir[1] < 0)
+					dir[1]=-1;
+				cout<<"direction and angle"<<dir[0]<<"\t"<<dir[1]<<endl;
+			}
+			cout<<"\n";
+		}
 
-//      
-  }
+	}
 
 
 }
