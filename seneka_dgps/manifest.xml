@@ -1,13 +1,13 @@
 <package>
   <description brief="seneka_dgps">
 
-     This package published a laser scan message out of a Sick S300 laser scanner.
+     This package published the latitude,longtitude and altitude of the DGPS.
 
   </description>
   <author>Ciby Mathew</author>
   <license>LGPL</license>
   <review status="unreviewed" notes=""/>
-  <url>http://ros.org/wiki/cob_sick_s300</url>
+  <url></url>
   
   <depend package="roscpp"/>
   <depend package="rostest"/>
@@ -15,6 +15,6 @@
   <depend package="message_filters"/>
   <depend package="diagnostic_msgs"/>
   <depend package="tf"/>
-  <depend package="laser_geometry"/>
+ 
 
 </package>
