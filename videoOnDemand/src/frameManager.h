@@ -27,6 +27,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+
+
+
 class frameManager {
 public:
 	frameManager();
@@ -45,6 +48,7 @@ private:
 	int createVideo();
 	std::vector<cv::Mat>* getCurrentCache();
 	//boost::mutex* getMutexToCache(bool usedCache);
+	void storeFrame(cv::Mat frame);
 
 
 
@@ -63,13 +67,17 @@ private:
 	u_int currentFileStorage;
 	std::vector<cv::FileStorage*> fileStorages;
 
+
 	// threads
 	boost::thread storageThreadA;
 	boost::thread storageThreadB;
+	boost::thread tCaching;
 	bool storageThreadActiveA;
 	bool storageThreadActiveB;
 	boost::thread videoCreatorThread;
 	boost::thread cachingThread;
+
+	boost::thread_group fmThreads;
 
 
 	// mutex stuff (currently not in use)

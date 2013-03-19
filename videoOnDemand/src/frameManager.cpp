@@ -5,15 +5,23 @@
  *      Author: Johannes Goth (cmm-jg)
  */
 
-
-// own stuff
+// std and own includes
 #include "frameManager.h"
-// libraries
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-//#include <boost/thread/mutex.hpp>
+#include "boost_serialization_cvMat.h"
 #include <vector>
-//#include <thread>
+#include <fstream>
+
+// built boost includes
+#include <boost/bind.hpp>
+
+// separately to built boost includes
+#include <boost/thread.hpp>
+#include <boost/archive/binary_oarchive.hpp>
+#include <boost/archive/binary_iarchive.hpp>
+#include <boost/iostreams/filtering_streambuf.hpp>
+#include <boost/iostreams/filter/zlib.hpp>
+//#include <boost/thread/mutex.hpp>
+
 // ROS includes
 #include "ros/ros.h"
 #include "sensor_msgs/Image.h"
@@ -25,6 +33,7 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
+namespace io = boost::iostreams;
 
 //TODO: delete the following methods after develope phase
 
@@ -43,7 +52,7 @@ frameManager::frameManager() {
 	// initialize parameters
 	path = "/home/cmm-jg/Bilder/store";
 	fileNodeLable = "cvMat";
-	maxCacheSize = 200; // 25fps * 30sec = 750frames
+	maxCacheSize = 500; // 25fps * 30sec = 750frames
 	maxRecTime = 2;
 	currentFileStorage = 0;
 	currentFileStorageSize = 0;
@@ -62,6 +71,13 @@ frameManager::frameManager() {
 		cv::FileStorage* tmp = new cv::FileStorage();
 		fileStorages.push_back(tmp);
 	}
+
+
+	//fmThreads.create_thread( boost::bind(&frameManager::storeCache, this, cacheB, &storageThreadActiveB) );
+
+	//storageThreadB = boost::thread();
+	//fmThreads.create_thread(boost::bind(&frameManager::threadTestFkt, this));
+
 }
 
 frameManager::~frameManager() {
@@ -81,6 +97,7 @@ void frameManager::processFrame(const sensor_msgs::Image& img){
 
 		// TODO: thread concept for calling cacheFrame()-method
 		cacheFrame(cvptrS->image);
+		//storeFrame(cvptrS->image);
 
 	}
 	catch (cv_bridge::Exception& e)
@@ -95,6 +112,9 @@ void frameManager::cacheFrame(cv::Mat frame){
 	ROS_INFO("cacheFrame ... ");
 
 	std::vector<cv::Mat>* currentCache = getCurrentCache();
+
+	//tCaching.join();
+	//tCaching = boost::thread(boost::bind(&std::vector<cv::Mat>::push_back, currentCache, frame));
 	currentCache->push_back(frame);
 }
 
@@ -152,7 +172,8 @@ void frameManager::verifyCacheSize(){
 		ROS_INFO(">-> waiting for storageThreadActiveB");
 		storageThreadB.join();
 		storageThreadA = boost::thread(boost::bind(&frameManager::storeCache, this, cacheA, &storageThreadActiveA));
-
+		//fmThreads.join_all();
+		//fmThreads.create_thread( boost::bind(&frameManager::storeCache, this, cacheB, &storageThreadActiveB) );
 //		storeCache(cacheA);
 	}
 	else if (cacheB->size() == maxCacheSize && storageThreadActiveB == false){// && cacheA->size() < maxCacheSize){
@@ -164,62 +185,55 @@ void frameManager::verifyCacheSize(){
 
 		ROS_INFO(">-> waiting for storageThreadActiveA");
 		storageThreadA.join();
-
+		//fmThreads.join_all();
 		// TODO: 	testweiser Aufruf der createVideo() methode nach 3 Durchläufen
 		if(currentFileStorage > 2)
 			createVideo();
 		storageThreadB = boost::thread(boost::bind(&frameManager::storeCache, this, cacheB, &storageThreadActiveB));
 
+		//fmThreads.create_thread( boost::bind(&frameManager::storeCache, this, cacheB, &storageThreadActiveB) );
 //		storeCache(cacheB);
 	}
 }
 
 void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 
-	ROS_INFO(">->-> storeCache ...");
+	ROS_INFO(">->-> storeCache into binary file...");
 
 	// define fileStorage-filename
 	std::stringstream fileName;
-	fileName << path << currentFileStorage << ".yml";
+	fileName << path << currentFileStorage << ".bin";
 
-	fileStorages[currentFileStorage] = new cv::FileStorage();
-	(*fileStorages[currentFileStorage]).open(fileName.str(), cv::FileStorage::WRITE);
+    std::ofstream ofs(fileName.str().c_str(), std::ios::out | std::ios::binary);
 
-	if((*fileStorages[currentFileStorage]).isOpened()){
-		for (std::vector<cv::Mat>::iterator it = cache->begin() ; it != cache->end(); it++){
+    {
+    	// decompressing frame size
+//      io::filtering_streambuf<io::output> out;
+//      out.push(io::zlib_compressor(io::zlib::best_speed));
+//      out.push(ofs);
 
-			std::stringstream elementName;
-			elementName << fileNodeLable << currentFileStorageSize;
+        boost::archive::binary_oarchive oa(ofs);
 
-			// store frame to the current file storage
-			*fileStorages[currentFileStorage] << elementName.str() << *it;
-			currentFileStorageSize++;
-		}
+        // writes each frame which is stored in cache into binary file
+    	for (std::vector<cv::Mat>::iterator it = cache->begin() ; it != cache->end(); it++){
 
-		// close fileStorage-file
-		(*fileStorages[currentFileStorage]).release();
+    		// write frame into binary file, using cv:Mat serialization
+    		oa << *it;
+    	}
+    }
 
-//		TODO: reset currentFileStorageSize just if 750 frames reached
-//		problem: filesStorages können in der momentanen implementierung größer werden wie 750 frames ... abhängig von der chache size
+    // close file
+    ofs.close();
 
-		// reset currentFileStorageSize
-		currentFileStorageSize = 0;
+    // current const. allocation -> has to be adapted dynamic
+    if(currentFileStorage < 4)
+    	currentFileStorage++;
+    else
+    	currentFileStorage = 0;
 
-		// check if max. record time is reached
-		if(currentFileStorage < maxRecTime/0.5)
-			currentFileStorage++;
-		else
-			currentFileStorage = 0;
-
-		// clean cache
-		cache->clear();
-		*threadActive = false;
-		ROS_INFO(">->->-> finished thread");
-	}
-	else{
-		std::cerr << "ERROR: Not able to open " <<  fileName << std::endl;
-		return;
-	}
+	// clean cache
+	cache->clear();
+	*threadActive = false;
 }
 
 int frameManager::getVideo(){
@@ -238,38 +252,53 @@ int frameManager::createVideo(){
 	// 			muss erweitert werden auf bsp 4 input files, je nach gewünschter video länge
 
 	std::stringstream inputFileName;
-	inputFileName << path << (currentFileStorage-1) << ".yml";
+	inputFileName << path << (currentFileStorage-1) << ".bin";
 	std::stringstream outputFileName;
 	outputFileName << "/home/cmm-jg/Bilder/videoOnDemand.avi";
 
 	// open inputFile
-	cv::FileStorage* inputFile = new cv::FileStorage();
-	(*inputFile).open(inputFileName.str(), cv::FileStorage::READ);
-	cv::Mat matInst;
-	std::stringstream matrix;
-	matrix << fileNodeLable << 0;
-	(*inputFile)[matrix.str()] >> matInst;
 
+	cv::Mat loadedFrame;
+    std::ifstream ifs(inputFileName.str().c_str(), std::ios::in | std::ios::binary);
 
-	// create a videoRecorder instance
-	videoRecorder* vRecoder = new videoRecorder();
-	// define the video parameters
-	vRecoder->createVideo(outputFileName.str(), matInst.cols, matInst.rows);
+    // use scope to ensure archive and filtering stream buffer go out of scope
+    // before stream
+    {
+    	// decompressing frame size
+//    	io::filtering_streambuf<io::input> in;
+//    	in.push(io::zlib_decompressor());
+//    	in.push(ifs);
 
-	for(u_int i=0; i<maxCacheSize; i++){
-		std::stringstream matrix;
-		matrix << fileNodeLable << i;
-		(*inputFile)[matrix.str()] >> matInst;
-		vRecoder->addFrame(matInst);
-	}
+    	boost::archive::binary_iarchive ia(ifs);
 
-	// close and release video file
-	vRecoder->releaseVideo();
+    	// create a videoRecorder instance
+    	videoRecorder* vRecoder = new videoRecorder();
 
+    	bool cont = true, firstFrame = true, showFrame = false;
+    	while (cont)
+    	{
+    		std::cout << "loading image from binary file ... "<< std::endl;
+    		if(cont && firstFrame){
+    			cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
+    			// define the video parameters
+    			vRecoder->createVideo(outputFileName.str(), loadedFrame.cols, loadedFrame.rows);
+    			firstFrame = false;
+    		}
+    		else if(cont){
+    			cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
+    			vRecoder->addFrame(loadedFrame);
+    		}
 
-	//	access to a file storage is possible via a file node
-	//	cv::FileNode* n = new cv::FileNode();
-	//	n->size();
+    		if(cont && showFrame){
+    			std::cout << "loading image from binary file ... "<< std::endl;
+        	    cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
+        	    cv::imshow( "Display window", loadedFrame );
+        	    cv::waitKey(0);
+    		}
+    	}
+    	vRecoder->releaseVideo();
+    }
+    ifs.close();
 
 
 	return -1;
