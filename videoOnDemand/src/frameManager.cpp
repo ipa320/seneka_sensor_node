@@ -20,7 +20,6 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
-//#include <boost/thread/mutex.hpp>
 
 // ROS includes
 #include "ros/ros.h"
@@ -52,32 +51,20 @@ frameManager::frameManager() {
 	// initialize parameters
 	path = "/home/cmm-jg/Bilder/store";
 	fileNodeLable = "cvMat";
-	maxCacheSize = 500; // 25fps * 30sec = 750frames
+	maxCacheSize = 200; // 25fps * 30sec = 750frames
 	maxRecTime = 2;
-	currentFileStorage = 0;
-	currentFileStorageSize = 0;
-	useCacheA = true;
-	useCacheB = false;
-	storageThreadActiveA = false;
-	storageThreadActiveB = false;
+	binaryFileIndex = 0;
+	usingCacheA = true;
+	usingCacheB = false;
+	storingCacheA = false;
+	storingCacheB = false;
 	cacheA = new std::vector<cv::Mat>;
 	cacheB = new std::vector<cv::Mat>;
-//	mxCacheA.unlock();
-//	mxCacheB.unlock();
+	binaryFileConst = 4;
 
-	// creates a fileStorages file for each 30 seconds at hard disk drive
-	// and thereby defines the size of the fileStorages-vector
-	for(int i=0; i < (maxRecTime/0.5); i++){
-		cv::FileStorage* tmp = new cv::FileStorage();
-		fileStorages.push_back(tmp);
+	for(int i=0; i < (binaryFileConst); i++){
+		binaryFileMutexes.push_back(new boost::mutex());
 	}
-
-
-	//fmThreads.create_thread( boost::bind(&frameManager::storeCache, this, cacheB, &storageThreadActiveB) );
-
-	//storageThreadB = boost::thread();
-	//fmThreads.create_thread(boost::bind(&frameManager::threadTestFkt, this));
-
 }
 
 frameManager::~frameManager() {
@@ -87,7 +74,7 @@ frameManager::~frameManager() {
 
 void frameManager::processFrame(const sensor_msgs::Image& img){
 
-	ROS_INFO("processFrame ... ");
+	//ROS_INFO("processFrame ... ");
 
 	cv_bridge::CvImageConstPtr cvptrS;
 	try
@@ -109,7 +96,7 @@ void frameManager::processFrame(const sensor_msgs::Image& img){
 
 void frameManager::cacheFrame(cv::Mat frame){
 
-	ROS_INFO("cacheFrame ... ");
+	//ROS_INFO("cacheFrame ... ");
 
 	std::vector<cv::Mat>* currentCache = getCurrentCache();
 
@@ -120,15 +107,15 @@ void frameManager::cacheFrame(cv::Mat frame){
 
 std::vector<cv::Mat>* frameManager::getCurrentCache(){
 
-	ROS_INFO("getCurrentCache ... ");
+	//ROS_INFO("getCurrentCache ... ");
 
 	// checks the sizes of memory buffers and if necessary it will schedule further tasks
 	verifyCacheSize();
 
-	if(useCacheA == true && useCacheB == false){
+	if(usingCacheA == true && usingCacheB == false){
 		return cacheA;
 	}
-	else if (useCacheB == true && useCacheA == false){
+	else if (usingCacheB == true && usingCacheA == false){
 		return cacheB;
 	}
 	else{
@@ -136,62 +123,40 @@ std::vector<cv::Mat>* frameManager::getCurrentCache(){
 		return NULL;
 	}
 }
-/*
-boost::mutex* frameManager::getMutexToCache(bool usedCache){
-	if(usedCache){
-		if(useCacheA == true && useCacheB == false){
-			return &mxCacheA;
-		}
-		else if (useCacheB == true && useCacheA == false){
-			return &mxCacheB;
-		}
-	}else{
-		if(useCacheA == false && useCacheB == true){
-			return &mxCacheA;
-		}
-		else if (useCacheB == false && useCacheA == true){
-			return &mxCacheB;
-		}
-	}
-	std::cerr << "ERROR in getMutexToCache()" << std::endl;
-	return NULL;
-}
-*/
 
 void frameManager::verifyCacheSize(){
 
-	ROS_INFO("verifyCacheSize ... ");
+	//ROS_INFO("verifyCacheSize ... ");
 
-	if(cacheA->size() == maxCacheSize && storageThreadActiveA == false){// && cacheB->size() < maxCacheSize){
+	if(cacheA->size() == maxCacheSize && storingCacheA == false){// && cacheB->size() < maxCacheSize){
 		// cacheA is full -> store frame to fileStorages
 
-		storageThreadActiveA = true;
-		useCacheA = false;
-		useCacheB = true;
+		storingCacheA = true;
+		usingCacheA = false;
+		usingCacheB = true;
 
-		ROS_INFO(">-> waiting for storageThreadActiveB");
-		storageThreadB.join();
-		storageThreadA = boost::thread(boost::bind(&frameManager::storeCache, this, cacheA, &storageThreadActiveA));
-		//fmThreads.join_all();
-		//fmThreads.create_thread( boost::bind(&frameManager::storeCache, this, cacheB, &storageThreadActiveB) );
+		ROS_INFO(">-> waiting for storingCacheB");
+		storingThreadB.join();
+		storingThreadA = boost::thread(boost::bind(&frameManager::storeCache, this, cacheA, &storingCacheA));
+
 //		storeCache(cacheA);
 	}
-	else if (cacheB->size() == maxCacheSize && storageThreadActiveB == false){// && cacheA->size() < maxCacheSize){
+	else if (cacheB->size() == maxCacheSize && storingCacheB == false){// && cacheA->size() < maxCacheSize){
 		// cacheB is full -> store frame to fileStorage
 
-		storageThreadActiveB = true;
-		useCacheB = false;
-		useCacheA = true;
+		storingCacheB = true;
+		usingCacheB = false;
+		usingCacheA = true;
 
-		ROS_INFO(">-> waiting for storageThreadActiveA");
-		storageThreadA.join();
-		//fmThreads.join_all();
+		ROS_INFO(">-> waiting for storingCacheA");
+		storingThreadA.join();
+
 		// TODO: 	testweiser Aufruf der createVideo() methode nach 3 Durchläufen
-		if(currentFileStorage > 2)
-			createVideo();
-		storageThreadB = boost::thread(boost::bind(&frameManager::storeCache, this, cacheB, &storageThreadActiveB));
+		if(binaryFileIndex > 2)
+			creatingVideoThread = boost::thread(boost::bind(&frameManager::createVideo, this));
 
-		//fmThreads.create_thread( boost::bind(&frameManager::storeCache, this, cacheB, &storageThreadActiveB) );
+		storingThreadB = boost::thread(boost::bind(&frameManager::storeCache, this, cacheB, &storingCacheB));
+
 //		storeCache(cacheB);
 	}
 }
@@ -202,12 +167,14 @@ void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 
 	// define fileStorage-filename
 	std::stringstream fileName;
-	fileName << path << currentFileStorage << ".bin";
+	fileName << path << binaryFileIndex << ".bin";
 
     std::ofstream ofs(fileName.str().c_str(), std::ios::out | std::ios::binary);
 
+    // scope is required to ensure archive and filtering stream buffer go out of scope
+    // before stream
     {
-    	// decompressing frame size
+    	// compressing frame size
 //      io::filtering_streambuf<io::output> out;
 //      out.push(io::zlib_compressor(io::zlib::best_speed));
 //      out.push(ofs);
@@ -226,18 +193,19 @@ void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
     ofs.close();
 
     // current const. allocation -> has to be adapted dynamic
-    if(currentFileStorage < 4)
-    	currentFileStorage++;
+    if(binaryFileIndex < binaryFileConst)
+    	binaryFileIndex++;
     else
-    	currentFileStorage = 0;
+    	binaryFileIndex = 0;
 
 	// clean cache
 	cache->clear();
 	*threadActive = false;
+	ROS_INFO(">->->-> finished thread");
 }
 
 int frameManager::getVideo(){
-	// calls create video method
+
 
 	createVideo();
 
@@ -248,11 +216,11 @@ int frameManager::createVideo(){
 
 	ROS_INFO("createVideo ...");
 
-	// TODO: 	video kann erzeugt werden, momentan aus einnem input file
+	// TODO: 	video kann erzeugt werden, momentan aus einem input file
 	// 			muss erweitert werden auf bsp 4 input files, je nach gewünschter video länge
 
 	std::stringstream inputFileName;
-	inputFileName << path << (currentFileStorage-1) << ".bin";
+	inputFileName << path << (binaryFileIndex-1) << ".bin";
 	std::stringstream outputFileName;
 	outputFileName << "/home/cmm-jg/Bilder/videoOnDemand.avi";
 
@@ -261,7 +229,7 @@ int frameManager::createVideo(){
 	cv::Mat loadedFrame;
     std::ifstream ifs(inputFileName.str().c_str(), std::ios::in | std::ios::binary);
 
-    // use scope to ensure archive and filtering stream buffer go out of scope
+    // scope is required to ensure archive and filtering stream buffer go out of scope
     // before stream
     {
     	// decompressing frame size
@@ -277,7 +245,7 @@ int frameManager::createVideo(){
     	bool cont = true, firstFrame = true, showFrame = false;
     	while (cont)
     	{
-    		std::cout << "loading image from binary file ... "<< std::endl;
+    		//std::cout << "loading image from binary file ... "<< std::endl;
     		if(cont && firstFrame){
     			cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
     			// define the video parameters
@@ -297,6 +265,7 @@ int frameManager::createVideo(){
     		}
     	}
     	vRecoder->releaseVideo();
+    	ROS_INFO("finished createVideo ...");
     }
     ifs.close();
 

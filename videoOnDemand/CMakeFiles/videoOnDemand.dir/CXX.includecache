@@ -87,8 +87,6 @@ opencv2/highgui/highgui.hpp
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/videoOnDemand.cpp
 ros/ros.h
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/ros/ros.h
-queue
--
 sensor_msgs/Image.h
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/sensor_msgs/Image.h
 ros/ros.h
@@ -113,8 +111,6 @@ frameManager.h
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/frameManager.h
 frameManager.cpp
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/frameManager.cpp
-boost/thread.hpp
--
 
 /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/videoRecorder.cpp
 videoRecorder.h

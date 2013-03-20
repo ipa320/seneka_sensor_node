@@ -15,7 +15,6 @@
 #include "videoRecorder.cpp"
 // libraries
 #include <boost/thread.hpp>
-//#include <boost/thread/mutex.hpp>
 #include <vector>
 // ROS includes
 #include "ros/ros.h"
@@ -47,7 +46,6 @@ private:
 	void storeCache(std::vector<cv::Mat>* cache, bool* threadActive);
 	int createVideo();
 	std::vector<cv::Mat>* getCurrentCache();
-	//boost::mutex* getMutexToCache(bool usedCache);
 	void storeFrame(cv::Mat frame);
 
 
@@ -55,35 +53,32 @@ private:
 	// cache attributes and references (memory buffers)
 	u_int maxCacheSize;	// in frames
 	u_int maxRecTime; 	// in minutes
-	bool useCacheA;
-	bool useCacheB;
+	bool usingCacheA;
+	bool usingCacheB;
 	std::vector<cv::Mat>* cacheA;
 	std::vector<cv::Mat>* cacheB;
 
 	// file storage parameters
 	std::string path;
 	std::string fileNodeLable;
-	u_int currentFileStorageSize;
-	u_int currentFileStorage;
-	std::vector<cv::FileStorage*> fileStorages;
+	u_int binaryFileIndex;
+	std::vector<boost::mutex*> binaryFileMutexes;
 
 
 	// threads
-	boost::thread storageThreadA;
-	boost::thread storageThreadB;
+	boost::thread storingThreadA;
+	boost::thread storingThreadB;
 	boost::thread tCaching;
-	bool storageThreadActiveA;
-	bool storageThreadActiveB;
-	boost::thread videoCreatorThread;
+	bool storingCacheA;
+	bool storingCacheB;
+	boost::thread creatingVideoThread;
 	boost::thread cachingThread;
 
-	boost::thread_group fmThreads;
+	u_int binaryFileConst;
 
 
 	// mutex stuff (currently not in use)
 	//	boost::mutex mut;
-	//	boost::mutex mxCacheA;
-	//	boost::mutex mxCacheB;
 
 };
 

@@ -19,7 +19,6 @@ public:
 	virtual ~videoRecorder();
 	void createVideo(std::string vf, int frameWidth, int frameHeight);
 	void addFrame(cv::Mat frame);
-	bool isVideoRecorderActive();
 	void releaseVideo();
 
 private:
@@ -32,7 +31,6 @@ private:
 	int fps;					// frame per second
 	int frameWidth;
 	int frameHeight;
-	bool videocreated;
 	cv::VideoWriter videoWriter;
 	std::string videoFileName;
 	CvSize videoSize;

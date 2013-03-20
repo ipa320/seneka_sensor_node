@@ -6,7 +6,6 @@
  */
 
 #include "ros/ros.h"
-#include <queue>
 #include "sensor_msgs/Image.h"
 #include <ros/ros.h>
 #include <image_transport/image_transport.h>
@@ -20,7 +19,6 @@
 #include "frameManager.h"
 #include "frameManager.cpp"
 
-#include <boost/thread.hpp>
 namespace enc = sensor_msgs::image_encodings;
 
 // global attributes
@@ -28,12 +26,7 @@ frameManager* fManager;
 
 void processFrameCallback(const sensor_msgs::Image& img)
 {
-	//fManager->testFrameManager();
 	fManager->processFrame(img);
-}
-
-void testFkt(){
-	ROS_INFO("subscribing for thermal_image_view ...");
 }
 
 int main(int argc, char **argv)
@@ -44,13 +37,8 @@ int main(int argc, char **argv)
 	const float SNAPSHOT_INTERVAL = 25;
 	ros::NodeHandle n;
 
-	boost::thread workerThread(testFkt);
-	//workerThread.join();
-
-
 	ROS_INFO("subscribing for thermal_image_view ...");
 	ros::Subscriber sub = n.subscribe("/optris/thermal_image_view", 2, processFrameCallback);
-
 
 	// frequency in Hz
 	ros::Rate loop_rate(SNAPSHOT_INTERVAL);

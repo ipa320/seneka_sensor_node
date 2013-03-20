@@ -10,22 +10,19 @@
 // public member functions
 
 videoRecorder::videoRecorder(){
-	videocreated = false;
 	codec = CV_FOURCC('D','I','V','X');
+	//codec = CV_FOURCC('3','I','V,'2');
 	fps = 25;
 	frameWidth = 0;
 	frameHeight = 0;
 }
 
-videoRecorder::~videoRecorder(){
-	// TODO: delete open pointers
-}
+videoRecorder::~videoRecorder(){}
 
 void videoRecorder::createVideo(std::string vf, int frameWidth, int frameHeight){
 	videoFileName = vf;
 	videoSize.height = frameHeight;		// cv::mat obj.rows
 	videoSize.width = frameWidth;		// cv::mat obj.cols
-	videocreated = true;				// to provide only on active video recorder (better would be a singleton pattern)
 	openVideo();
 }
 
@@ -36,10 +33,6 @@ void videoRecorder::addFrame(cv::Mat frame){
 		ROS_ERROR("Video file is closed ...");
 }
 
-bool videoRecorder::isVideoRecorderActive(){
-	return videocreated;
-}
-
 void videoRecorder::releaseVideo(){
 	videoWriter.release();
 }
@@ -47,5 +40,11 @@ void videoRecorder::releaseVideo(){
 // private member functions
 
 void videoRecorder::openVideo(){
-	videoWriter.open(videoFileName, codec, fps, videoSize, 1);
+	if(!videoWriter.isOpened()){
+		videoWriter.open(videoFileName, codec, fps, videoSize, 1);
+	}
+	else{
+		ROS_ERROR("Video is still open ...!");
+	}
+
 }
