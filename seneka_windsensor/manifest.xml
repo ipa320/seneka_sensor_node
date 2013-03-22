@@ -1,0 +1,20 @@
+<package>
+  <description brief="seneka_windsensor">
+
+     This package published the wind direction and angle .
+
+  </description>
+  <author>Ciby Mathew</author>
+  <license>LGPL</license>
+  <review status="unreviewed" notes=""/>
+  <url></url>
+  
+  <depend package="roscpp"/>
+  <depend package="rostest"/>
+  <depend package="std_msgs"/>
+  <depend package="sensor_msgs"/>
+  <depend package="message_filters"/>
+  <depend package="diagnostic_msgs"/>
+  <depend package="tf"/>
+
+</package>
