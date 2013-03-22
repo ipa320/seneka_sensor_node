@@ -73,25 +73,6 @@ class Dgps
 {
 public:
 
-	// set of parameters which are specific to the SickS300
-	struct ParamType
-	{
-		int iDataLength;	// length of data telegram
-		int iHeaderLength;	// length of telegram header
-		int iNumScanPoints;	// number of measurements in the scan
-		double dScale;		// scaling of the scan (multiply with to get scan in meters)
-		double dStartAngle;	// scan start angle
-		double dStopAngle;	// scan stop angle
-	};
-
-	// storage container for received scanner data
-
-	enum
-	{
-		READ_BUF_SIZE = 10000,
-		WRITE_BUF_SIZE = 10000
-	};
-
 	// Constructor
 	Dgps();
 
@@ -100,15 +81,10 @@ public:
 
 	/**
 	 * Opens serial port.
-	 * @param pcPort used "COMx" or "/dev/tty1"
+	 * @param pcPort used "COMx" or "/dev/ttyUSB0"
 	 * @param iBaudRate baud rate
-	 * @param iScanId the scanner id in the data header (7 by default)
 	 */
 	bool open(const char* pcPort, int iBaudRate);
-
-	// add sick_lms.GetSickScanResolution();
-
-	// add sick_lms.GetSickMeasuringUnits();
 	void latlong(double* lat);
 
 private:
@@ -126,3 +102,4 @@ private:
 
 };
 #endif //
+

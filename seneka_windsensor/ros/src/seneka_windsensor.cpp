@@ -135,7 +135,7 @@ public:
 	void publishwind(float* dir)
 	{
 		seneka_windsensor::WindData value;
-		value.speed = 0.3;
+		value.speed =dir[0];
 		value.direction = dir[1];
 		topicPub_wind.publish(value);
 

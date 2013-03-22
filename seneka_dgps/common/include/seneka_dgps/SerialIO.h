@@ -105,16 +105,16 @@ public:
 	 * Sets the device name
 	 * @param Name 'COM1', 'COM2', ...
 	 */
-	void binary (int dec, char* value);
+	void binary (int dec, char* binary);
 	/**
-	 * decimal to binary conversion
-	 * Sets the baudrate.
-	 * @param BaudRate baudrate.
+	 * decimal to binary conversion, the value is stored in as ASCII
 	 */
-	void latlongcalc(char *value, double* lat);
+	//void latlongcalc(char *value, double* lat);
 	/*
 	 * binary values to latitude and longtitude
 	 */
+	void alphatointeg(char* binary, int* value);
+	//To convert alphabet to integer for more readability
 
 	void setDeviceName(const char *Name) { m_DeviceName = Name; }
 
@@ -258,3 +258,4 @@ protected:
 };
 
 #endif //_SerialIO_H
+

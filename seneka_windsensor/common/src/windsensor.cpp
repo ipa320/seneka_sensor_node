@@ -61,7 +61,9 @@ typedef unsigned char BYTE;
 //-----------------------------------------------
 windsensor::windsensor()
 {
-
+	//set the units of wind sped and direction
+	//	speed=1;// to change to knot
+	//	angle=1; //to change to degree
 }
 
 //-------------------------------------------
@@ -97,34 +99,64 @@ bool windsensor::open(const char* pcPort, int iBaudRate)
 
 void windsensor::direction(float* dir)
 {
+
 	unsigned char Buffer[512] ={0};
 	int open,bytesread;
 	SerialIO windsensor;
 	open = windsensor.open();
 	int length;
-//	sleep(2);
+	//	sleep(2);
 	bytesread = windsensor.readNonBlocking((char*)Buffer,1020);
-//	cout<<"Total number of bytes read"<<bytesread<<"\n"<<endl;;
+	//	cout<<"Total number of bytes read"<<bytesread<<"\n"<<endl;;
 
-	for(int i=0; i < bytesread; i++)
+	for(int i=0; i < bytesread; i++) //the wind angle is in degrees and direction is in knots by default
 	{
 		if((Buffer[i])=='$')
 		{
-//			printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
-//			cout<<endl;
+			//			printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
+			//			cout<<endl;
 
 			if((Buffer[i+1]=='I')&&(Buffer[i+2]=='I')&&(Buffer[i+3]=='M')&&(Buffer[i+4]=='W')&&(Buffer[i+14]==',')&&(Buffer[i+23]=='A'))
 			{
 				dir[0] = ((Buffer[i+7]-48)*100 + (Buffer[i+8]-48)*10 +(Buffer[i+9]-48) +.1*(Buffer[i+11]-48));// extracting the value for the angle and speed
-				dir[1] = ((Buffer[i+15]-48)*100 + (Buffer[i+16]-48)*10 +(Buffer[i+17]-48) +.1*(Buffer[i+19]-48))*1.852;
-				if((dir[0] < 0.001) || (dir[0] > 360))
+				dir[1] = ((Buffer[i+15]-48)*100 + (Buffer[i+16]-48)*10 +(Buffer[i+17]-48) +.1*(Buffer[i+19]-48));
+				if((dir[0] < 0.001) || (dir[0] > 360))// To check one more time is the value is in bounds
 					dir[0]=-1;
-				else
-					dir[0]= dir[0]* 0.0174532925;
 				if(dir[1] < 0)
 					dir[1]=-1;
+				if((dir[0] != -1)||((dir[1] != -1)))
+				{
+					switch(speed)
+					{
+						case 1:
+							cout<<"knots"<<endl;
+							break;
+						case 2:
+							dir[1]=dir[1]* 0.514444;
+							cout<<"m/s"<<endl;
+							break;
+
+						default:
+							dir[1]=dir[1]*1.852;
+							cout<<"km/h"<<endl;
+							break;
+					}
+					switch(angle)
+					{
+						case 1:
+							cout<<"degree"<<endl;
+							break;
+
+						default:
+							dir[0]=dir[0]*0.0174532925;
+							cout<<"radian"<<endl;
+							break;
+					}
+				}else
+					cout<<"Incorrect values"<<endl;
 				cout<<"direction and angle"<<dir[0]<<"\t"<<dir[1]<<endl;
 			}
+
 			cout<<"\n";
 		}
 
@@ -132,3 +164,4 @@ void windsensor::direction(float* dir)
 
 
 }
+

@@ -140,38 +140,9 @@ SerialIO::~SerialIO()
 {
 	close();
 }
-void SerialIO::latlongcalc(char* value, double* lat)
-{
 
-	//	cout<<"Entered latlongcalc";
-	double lat_fract= 0.0,lat_exp= 0.0,lon_fract= 0.0,lon_exp= 0.0,alt_fract= 0.0,alt_exp;
-	for(int j=1;j<=52; j++)
-	{
-		lat_fract = lat_fract + (value[75+j]-'0')*pow (0.5,j);
-		lon_fract = lon_fract + (value[139 +j]-'0')*pow (0.5,j);
-		alt_fract = alt_fract + (value[203 +j]-'0')*pow (0.5,j);
 
-	}
-	for(int h=0;h<=10; h++)
-	{
-		lat_exp = lat_exp  + (value[75-h]-'0')*pow(2,h);
-		lon_exp = lon_exp  + (value[139-h]-'0')*pow(2,h);
-		alt_exp = lat_exp  + (value[203-h]-'0')*pow(2,h);
-	}
-	lat[0] = ((lat_fract+1)* pow(2,(lat_exp-1023))*180);
-	lat[1] = ((lon_fract+1)* pow(2,(lon_exp-1023))*180);
-	lat[2] = ((alt_fract+1)* pow(2,(alt_exp-1023))*180);
-	lat[2] =1.000;
-	cout << "latitude="<<lat[0]<<"\t longitude"<<lat[1]<<"\t altitude"<<"\t"<<lat[2];
-
-	//	 for(int m=0;m<32;m++)
-	//		    {
-	//		    	  cout << "The binary of the given number is: " << (value[m]-'0')<< endl; //for printing iin binary
-	//		    }
-
-}
-
-void SerialIO::binary (int dec, char* value)
+void SerialIO::binary (int dec, char* binary)
 {
 	char bin8[]  = "00000000";
 	for (int pos = 7; pos >= 0; --pos)
@@ -180,9 +151,15 @@ void SerialIO::binary (int dec, char* value)
 			bin8[pos] = '1';
 		dec /= 2;
 	}
-	strcat(value,bin8);
+	strcat(binary,bin8);
 }
-
+void SerialIO::alphatointeg(char* binary,int* value)
+{
+	for(int i=0;i<strlen(binary);i++)
+	{
+		value[i] = (binary[i]-'0');
+	}
+}
 
 int SerialIO::open()
 {
@@ -456,4 +433,5 @@ int SerialIO::getSizeRXQueue()
 	}
 	return cbInQue;
 }
+
 
