@@ -51,8 +51,10 @@ private:
 
 
 	// cache attributes and references (memory buffers)
-	u_int maxCacheSize;	// in frames
-	u_int maxRecTime; 	// in minutes
+	u_int fpv;			// frames per video
+	u_int fpc; 			// frames per cache
+	u_int fpb; 			// frames per binary
+	bool fullVideoAvailable;
 	bool usingCacheA;
 	bool usingCacheB;
 	std::vector<cv::Mat>* cacheA;
@@ -60,7 +62,6 @@ private:
 
 	// file storage parameters
 	std::string path;
-	std::string fileNodeLable;
 	u_int binaryFileIndex;
 	std::vector<boost::mutex*> binaryFileMutexes;
 
@@ -73,9 +74,6 @@ private:
 	bool storingCacheB;
 	boost::thread creatingVideoThread;
 	boost::thread cachingThread;
-
-	u_int binaryFileConst;
-
 
 	// mutex stuff (currently not in use)
 	//	boost::mutex mut;

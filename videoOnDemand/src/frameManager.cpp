@@ -50,19 +50,19 @@ frameManager::frameManager() {
 
 	// initialize parameters
 	path = "/home/cmm-jg/Bilder/store";
-	fileNodeLable = "cvMat";
-	maxCacheSize = 200; // 25fps * 30sec = 750frames
-	maxRecTime = 2;
+	fpv = 400;//3000; 	// frame per video -> 120 sec = 3000 frames
+	fpc = 100;		// frames per cache -> 4 sec = 100 frames
+	fpb = fpc;		// frames per binary
 	binaryFileIndex = 0;
+	fullVideoAvailable = false;
 	usingCacheA = true;
 	usingCacheB = false;
 	storingCacheA = false;
 	storingCacheB = false;
 	cacheA = new std::vector<cv::Mat>;
 	cacheB = new std::vector<cv::Mat>;
-	binaryFileConst = 4;
 
-	for(int i=0; i < (binaryFileConst); i++){
+	for(int i=0; i < (fpv/fpb); i++){
 		binaryFileMutexes.push_back(new boost::mutex());
 	}
 }
@@ -128,7 +128,7 @@ void frameManager::verifyCacheSize(){
 
 	//ROS_INFO("verifyCacheSize ... ");
 
-	if(cacheA->size() == maxCacheSize && storingCacheA == false){// && cacheB->size() < maxCacheSize){
+	if(cacheA->size() == fpc && storingCacheA == false){
 		// cacheA is full -> store frame to fileStorages
 
 		storingCacheA = true;
@@ -138,10 +138,9 @@ void frameManager::verifyCacheSize(){
 		ROS_INFO(">-> waiting for storingCacheB");
 		storingThreadB.join();
 		storingThreadA = boost::thread(boost::bind(&frameManager::storeCache, this, cacheA, &storingCacheA));
-
 //		storeCache(cacheA);
 	}
-	else if (cacheB->size() == maxCacheSize && storingCacheB == false){// && cacheA->size() < maxCacheSize){
+	else if (cacheB->size() == fpc && storingCacheB == false){
 		// cacheB is full -> store frame to fileStorage
 
 		storingCacheB = true;
@@ -152,11 +151,12 @@ void frameManager::verifyCacheSize(){
 		storingThreadA.join();
 
 		// TODO: 	testweiser Aufruf der createVideo() methode nach 3 Durchläufen
-		if(binaryFileIndex > 2)
-			creatingVideoThread = boost::thread(boost::bind(&frameManager::createVideo, this));
+		if(binaryFileIndex > 2 && fullVideoAvailable == true)
+			getVideo();
+
+		std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
 
 		storingThreadB = boost::thread(boost::bind(&frameManager::storeCache, this, cacheB, &storingCacheB));
-
 //		storeCache(cacheB);
 	}
 }
@@ -164,7 +164,7 @@ void frameManager::verifyCacheSize(){
 void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 
 	ROS_INFO(">->-> storeCache into binary file...");
-
+	std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
 	// define fileStorage-filename
 	std::stringstream fileName;
 	fileName << path << binaryFileIndex << ".bin";
@@ -193,10 +193,14 @@ void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
     ofs.close();
 
     // current const. allocation -> has to be adapted dynamic
-    if(binaryFileIndex < binaryFileConst)
+    if(binaryFileIndex < (fpv/fpb))
     	binaryFileIndex++;
-    else
+    else{
+    	if(fullVideoAvailable == false)
+    		fullVideoAvailable = true;
     	binaryFileIndex = 0;
+    }
+
 
 	// clean cache
 	cache->clear();
@@ -206,69 +210,86 @@ void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 
 int frameManager::getVideo(){
 
-
-	createVideo();
-
-	return -1;
+	if(fullVideoAvailable == true){
+		creatingVideoThread = boost::thread(boost::bind(&frameManager::createVideo, this));
+		return 1;
+	}
+	else
+		return -1;
 }
 
 int frameManager::createVideo(){
 
 	ROS_INFO("createVideo ...");
 
-	// TODO: 	video kann erzeugt werden, momentan aus einem input file
-	// 			muss erweitert werden auf bsp 4 input files, je nach gewünschter video länge
-
 	std::stringstream inputFileName;
-	inputFileName << path << (binaryFileIndex-1) << ".bin";
 	std::stringstream outputFileName;
 	outputFileName << "/home/cmm-jg/Bilder/videoOnDemand.avi";
 
-	// open inputFile
+	// create a videoRecorder instance
+	videoRecorder* vRecoder = new videoRecorder();
+	bool firstFrame = true;
 
-	cv::Mat loadedFrame;
-    std::ifstream ifs(inputFileName.str().c_str(), std::ios::in | std::ios::binary);
+	int currentIndex = binaryFileIndex + 1;
+	int numBinaries = fpv/fpb;
 
-    // scope is required to ensure archive and filtering stream buffer go out of scope
-    // before stream
-    {
-    	// decompressing frame size
-//    	io::filtering_streambuf<io::input> in;
-//    	in.push(io::zlib_decompressor());
-//    	in.push(ifs);
+	// add all binaries which are required (numBinaries) into a video
+	for(int i=0; i < numBinaries; i++){
+		std::stringstream inputFileName;
+		cv::Mat loadedFrame;
 
-    	boost::archive::binary_iarchive ia(ifs);
+		if(currentIndex < numBinaries-1){
+			// load currentIndex - numBinaries-1
+			inputFileName << path << (currentIndex) << ".bin";
+			currentIndex++;
+		}
+		else{
+			// load currentIndex - numBinaries-1
+			inputFileName << path << (currentIndex-numBinaries-1) << ".bin";
+			currentIndex++;
+		}
 
-    	// create a videoRecorder instance
-    	videoRecorder* vRecoder = new videoRecorder();
+		// open inputFile
+	    std::ifstream ifs(inputFileName.str().c_str(), std::ios::in | std::ios::binary);
 
-    	bool cont = true, firstFrame = true, showFrame = false;
-    	while (cont)
-    	{
-    		//std::cout << "loading image from binary file ... "<< std::endl;
-    		if(cont && firstFrame){
-    			cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
-    			// define the video parameters
-    			vRecoder->createVideo(outputFileName.str(), loadedFrame.cols, loadedFrame.rows);
-    			firstFrame = false;
-    		}
-    		else if(cont){
-    			cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
-    			vRecoder->addFrame(loadedFrame);
-    		}
+	    // scope is required to ensure archive and filtering stream buffer go out of scope
+	    // before stream
+	    {
+	    	// decompressing frame size
+	//    	io::filtering_streambuf<io::input> in;
+	//    	in.push(io::zlib_decompressor());
+	//    	in.push(ifs);
 
-    		if(cont && showFrame){
-    			std::cout << "loading image from binary file ... "<< std::endl;
-        	    cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
-        	    cv::imshow( "Display window", loadedFrame );
-        	    cv::waitKey(0);
-    		}
-    	}
-    	vRecoder->releaseVideo();
-    	ROS_INFO("finished createVideo ...");
-    }
-    ifs.close();
+	    	boost::archive::binary_iarchive ia(ifs);
 
+	    	bool cont = true, showFrame = false;
+	    	while (cont)
+	    	{
+	    		//std::cout << "loading image from binary file ... "<< std::endl;
+	    		if(cont && firstFrame){
+	    			cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
+	    			// define the video parameters
+	    			vRecoder->createVideo(outputFileName.str(), loadedFrame.cols, loadedFrame.rows);
+	    			firstFrame = false;
+	    		}
+	    		else if(cont){
+	    			cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
+	    			vRecoder->addFrame(loadedFrame);
+	    		}
+
+	    		if(cont && showFrame){
+	    			std::cout << "loading image from binary file ... "<< std::endl;
+	        	    cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
+	        	    cv::imshow( "Display window", loadedFrame );
+	        	    cv::waitKey(0);
+	    		}
+	    	}
+	    	ifs.close();
+	    }
+	}
+	// release video
+	vRecoder->releaseVideo();
+	ROS_INFO("finished createVideo ...");
 
 	return -1;
 }
