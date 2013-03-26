@@ -148,6 +148,19 @@ ROSBUILD_gensrv_lisp/fast:
 .PHONY : ROSBUILD_gensrv_lisp/fast
 
 #=============================================================================
+# Target rules for targets named ROSBUILD_gensrv_py
+
+# Build rule for target.
+ROSBUILD_gensrv_py: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 ROSBUILD_gensrv_py
+.PHONY : ROSBUILD_gensrv_py
+
+# fast build rule for target.
+ROSBUILD_gensrv_py/fast:
+	$(MAKE) -f CMakeFiles/ROSBUILD_gensrv_py.dir/build.make CMakeFiles/ROSBUILD_gensrv_py.dir/build
+.PHONY : ROSBUILD_gensrv_py/fast
+
+#=============================================================================
 # Target rules for targets named clean-test-results
 
 # Build rule for target.
@@ -226,6 +239,19 @@ rospack_gensrv/fast:
 .PHONY : rospack_gensrv/fast
 
 #=============================================================================
+# Target rules for targets named rospack_gensrv_all
+
+# Build rule for target.
+rospack_gensrv_all: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 rospack_gensrv_all
+.PHONY : rospack_gensrv_all
+
+# fast build rule for target.
+rospack_gensrv_all/fast:
+	$(MAKE) -f CMakeFiles/rospack_gensrv_all.dir/build.make CMakeFiles/rospack_gensrv_all.dir/build
+.PHONY : rospack_gensrv_all/fast
+
+#=============================================================================
 # Target rules for targets named test
 
 # Build rule for target.
@@ -291,6 +317,19 @@ tests/fast:
 .PHONY : tests/fast
 
 #=============================================================================
+# Target rules for targets named vTester
+
+# Build rule for target.
+vTester: cmake_check_build_system
+	$(MAKE) -f CMakeFiles/Makefile2 vTester
+.PHONY : vTester
+
+# fast build rule for target.
+vTester/fast:
+	$(MAKE) -f CMakeFiles/vTester.dir/build.make CMakeFiles/vTester.dir/build
+.PHONY : vTester/fast
+
+#=============================================================================
 # Target rules for targets named videoOnDemand
 
 # Build rule for target.
@@ -302,6 +341,21 @@ videoOnDemand: cmake_check_build_system
 videoOnDemand/fast:
 	$(MAKE) -f CMakeFiles/videoOnDemand.dir/build.make CMakeFiles/videoOnDemand.dir/build
 .PHONY : videoOnDemand/fast
+
+# target to build an object file
+src/vTester.o:
+	$(MAKE) -f CMakeFiles/vTester.dir/build.make CMakeFiles/vTester.dir/src/vTester.o
+.PHONY : src/vTester.o
+
+# target to preprocess a source file
+src/vTester.i:
+	$(MAKE) -f CMakeFiles/vTester.dir/build.make CMakeFiles/vTester.dir/src/vTester.i
+.PHONY : src/vTester.i
+
+# target to generate assembly for a file
+src/vTester.s:
+	$(MAKE) -f CMakeFiles/vTester.dir/build.make CMakeFiles/vTester.dir/src/vTester.s
+.PHONY : src/vTester.s
 
 # target to build an object file
 src/videoOnDemand.o:
@@ -328,6 +382,7 @@ help:
 	@echo "... ROSBUILD_genmsg_lisp"
 	@echo "... ROSBUILD_gensrv_cpp"
 	@echo "... ROSBUILD_gensrv_lisp"
+	@echo "... ROSBUILD_gensrv_py"
 	@echo "... clean-test-results"
 	@echo "... edit_cache"
 	@echo "... rebuild_cache"
@@ -336,12 +391,17 @@ help:
 	@echo "... rospack_genmsg"
 	@echo "... rospack_genmsg_libexe"
 	@echo "... rospack_gensrv"
+	@echo "... rospack_gensrv_all"
 	@echo "... test"
 	@echo "... test-future"
 	@echo "... test-results"
 	@echo "... test-results-run"
 	@echo "... tests"
+	@echo "... vTester"
 	@echo "... videoOnDemand"
+	@echo "... src/vTester.o"
+	@echo "... src/vTester.i"
+	@echo "... src/vTester.s"
 	@echo "... src/videoOnDemand.o"
 	@echo "... src/videoOnDemand.i"
 	@echo "... src/videoOnDemand.s"

@@ -204,7 +204,7 @@ ROSPACK_EXE:FILEPATH=/opt/ros/fuerte/bin/rospack
 USERCONFIG:FILEPATH=USERCONFIG-NOTFOUND
 
 //Path to a file.
-_file_name:FILEPATH=/home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/videoOnDemand.cpp
+_file_name:FILEPATH=/home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/src/vTester.cpp
 
 //Value Computed by CMake
 videoOnDemand_BINARY_DIR:STATIC=/home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand

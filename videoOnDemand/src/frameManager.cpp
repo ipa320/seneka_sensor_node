@@ -43,6 +43,7 @@ void frameManager::threadTestFkt(){
 
 void frameManager::testFrameManager(){
 	ROS_INFO("testing ... frameManager ...!!");
+
 }
 
 // public methods
@@ -151,8 +152,8 @@ void frameManager::verifyCacheSize(){
 		storingThreadA.join();
 
 		// TODO: 	testweiser Aufruf der createVideo() methode nach 3 Durchläufen
-		if(binaryFileIndex > 2 && fullVideoAvailable == true)
-			getVideo();
+//		if(binaryFileIndex > 2 && fullVideoAvailable == true)
+//			getVideo();
 
 		std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
 
@@ -168,6 +169,12 @@ void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 	// define fileStorage-filename
 	std::stringstream fileName;
 	fileName << path << binaryFileIndex << ".bin";
+
+//	if(binaryFileMutexes[binaryFileIndex]->try_lock() == true){
+//		binaryFileMutexes[binaryFileIndex]->lock();
+//	}
+//	else
+
 
     std::ofstream ofs(fileName.str().c_str(), std::ios::out | std::ios::binary);
 

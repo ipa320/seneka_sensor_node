@@ -42,9 +42,33 @@ CMAKE_BINARY_DIR = /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand
 # Include the progress variables for this target.
 include CMakeFiles/ROSBUILD_gensrv_cpp.dir/progress.make
 
-CMakeFiles/ROSBUILD_gensrv_cpp:
+CMakeFiles/ROSBUILD_gensrv_cpp: srv_gen/cpp/include/videoOnDemand/getVideo.h
+
+srv_gen/cpp/include/videoOnDemand/getVideo.h: srv/getVideo.srv
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/roscpp/rosbuild/scripts/gensrv_cpp.py
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/roscpp/rosbuild/scripts/genmsg_cpp.py
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/roslib/bin/gendeps
+srv_gen/cpp/include/videoOnDemand/getVideo.h: manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/std_msgs/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/geometry_msgs/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/sensor_msgs/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/roslang/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/rospy/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/roscpp/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/stacks/vision_opencv/opencv2/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/stacks/vision_opencv/cv_bridge/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/ros/core/rosbuild/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/roslib/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/rosconsole/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/stacks/pluginlib/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/share/message_filters/manifest.xml
+srv_gen/cpp/include/videoOnDemand/getVideo.h: /opt/ros/fuerte/stacks/image_common/image_transport/manifest.xml
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/CMakeFiles $(CMAKE_PROGRESS_1)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold "Generating srv_gen/cpp/include/videoOnDemand/getVideo.h"
+	/opt/ros/fuerte/share/roscpp/rosbuild/scripts/gensrv_cpp.py /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/srv/getVideo.srv
 
 ROSBUILD_gensrv_cpp: CMakeFiles/ROSBUILD_gensrv_cpp
+ROSBUILD_gensrv_cpp: srv_gen/cpp/include/videoOnDemand/getVideo.h
 ROSBUILD_gensrv_cpp: CMakeFiles/ROSBUILD_gensrv_cpp.dir/build.make
 .PHONY : ROSBUILD_gensrv_cpp
 

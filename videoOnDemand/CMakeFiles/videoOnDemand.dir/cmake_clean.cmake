@@ -1,4 +1,7 @@
 FILE(REMOVE_RECURSE
+  "src/videoOnDemand/srv"
+  "srv_gen"
+  "srv_gen"
   "CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o"
   "bin/videoOnDemand.pdb"
   "bin/videoOnDemand"

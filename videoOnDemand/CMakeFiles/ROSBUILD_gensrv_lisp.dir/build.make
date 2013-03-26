@@ -42,9 +42,40 @@ CMAKE_BINARY_DIR = /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand
 # Include the progress variables for this target.
 include CMakeFiles/ROSBUILD_gensrv_lisp.dir/progress.make
 
-CMakeFiles/ROSBUILD_gensrv_lisp:
+CMakeFiles/ROSBUILD_gensrv_lisp: srv_gen/lisp/getVideo.lisp
+CMakeFiles/ROSBUILD_gensrv_lisp: srv_gen/lisp/_package.lisp
+CMakeFiles/ROSBUILD_gensrv_lisp: srv_gen/lisp/_package_getVideo.lisp
+
+srv_gen/lisp/getVideo.lisp: srv/getVideo.srv
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/roslisp/rosbuild/scripts/genmsg_lisp.py
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/roslib/bin/gendeps
+srv_gen/lisp/getVideo.lisp: manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/std_msgs/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/geometry_msgs/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/sensor_msgs/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/roslang/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/rospy/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/roscpp/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/stacks/vision_opencv/opencv2/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/stacks/vision_opencv/cv_bridge/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/ros/core/rosbuild/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/roslib/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/rosconsole/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/stacks/pluginlib/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/share/message_filters/manifest.xml
+srv_gen/lisp/getVideo.lisp: /opt/ros/fuerte/stacks/image_common/image_transport/manifest.xml
+	$(CMAKE_COMMAND) -E cmake_progress_report /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/CMakeFiles $(CMAKE_PROGRESS_1)
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --blue --bold "Generating srv_gen/lisp/getVideo.lisp, srv_gen/lisp/_package.lisp, srv_gen/lisp/_package_getVideo.lisp"
+	/opt/ros/fuerte/share/roslisp/rosbuild/scripts/genmsg_lisp.py /home/cmm-jg/fuerte_workspace/sandbox/seneka/videoOnDemand/srv/getVideo.srv
+
+srv_gen/lisp/_package.lisp: srv_gen/lisp/getVideo.lisp
+
+srv_gen/lisp/_package_getVideo.lisp: srv_gen/lisp/getVideo.lisp
 
 ROSBUILD_gensrv_lisp: CMakeFiles/ROSBUILD_gensrv_lisp
+ROSBUILD_gensrv_lisp: srv_gen/lisp/getVideo.lisp
+ROSBUILD_gensrv_lisp: srv_gen/lisp/_package.lisp
+ROSBUILD_gensrv_lisp: srv_gen/lisp/_package_getVideo.lisp
 ROSBUILD_gensrv_lisp: CMakeFiles/ROSBUILD_gensrv_lisp.dir/build.make
 .PHONY : ROSBUILD_gensrv_lisp
 

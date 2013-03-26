@@ -1,4 +1,7 @@
 FILE(REMOVE_RECURSE
+  "src/videoOnDemand/srv"
+  "srv_gen"
+  "srv_gen"
   "CMakeFiles/rospack_genmsg"
 )
 

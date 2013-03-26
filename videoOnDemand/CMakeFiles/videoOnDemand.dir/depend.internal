@@ -103,3 +103,4 @@ CMakeFiles/videoOnDemand.dir/src/videoOnDemand.o
  /opt/ros/fuerte/stacks/image_common/image_transport/include/image_transport/subscriber.h
  /opt/ros/fuerte/stacks/image_common/image_transport/include/image_transport/transport_hints.h
  /opt/ros/fuerte/stacks/vision_opencv/cv_bridge/include/cv_bridge/cv_bridge.h
+ srv_gen/cpp/include/videoOnDemand/getVideo.h

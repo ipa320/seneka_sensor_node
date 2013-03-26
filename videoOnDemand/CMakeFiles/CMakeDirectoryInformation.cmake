@@ -17,6 +17,7 @@ SET(CMAKE_C_INCLUDE_PATH
   "/opt/ros/fuerte/stacks/image_common/image_transport/include"
   "/opt/ros/fuerte/stacks/pluginlib/include"
   "/opt/ros/fuerte/stacks/pluginlib"
+  "srv_gen/cpp/include"
   )
 SET(CMAKE_CXX_INCLUDE_PATH ${CMAKE_C_INCLUDE_PATH})
 SET(CMAKE_Fortran_INCLUDE_PATH ${CMAKE_C_INCLUDE_PATH})
