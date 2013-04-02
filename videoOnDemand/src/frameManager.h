@@ -35,8 +35,6 @@ public:
 	virtual ~frameManager();
 	void processFrame(const sensor_msgs::Image& img);
 	int getVideo();
-	void testFrameManager();
-	static void threadTestFkt();
 
 private:
 
@@ -48,13 +46,12 @@ private:
 	std::vector<cv::Mat>* getCurrentCache();
 	void storeFrame(cv::Mat frame);
 
-
-
 	// cache attributes and references (memory buffers)
 	u_int fpv;			// frames per video
 	u_int fpc; 			// frames per cache
 	u_int fpb; 			// frames per binary
 	bool fullVideoAvailable;
+	bool createVideoActive;
 	bool usingCacheA;
 	bool usingCacheB;
 	std::vector<cv::Mat>* cacheA;
@@ -66,7 +63,7 @@ private:
 	std::vector<boost::mutex*> binaryFileMutexes;
 
 
-	// threads
+	// threads parameters
 	boost::thread storingThreadA;
 	boost::thread storingThreadB;
 	boost::thread tCaching;
@@ -74,10 +71,6 @@ private:
 	bool storingCacheB;
 	boost::thread creatingVideoThread;
 	boost::thread cachingThread;
-
-	// mutex stuff (currently not in use)
-	//	boost::mutex mut;
-
 };
 
 #endif /* FRAMEMANAGERH_ */

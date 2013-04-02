@@ -34,19 +34,7 @@
 
 namespace io = boost::iostreams;
 
-//TODO: delete the following methods after develope phase
-
-void frameManager::threadTestFkt(){
-	// TODO: empty - has to be deleted after testing
-	ROS_INFO("testing ... threadTestFkt ...!!");
-}
-
-void frameManager::testFrameManager(){
-	ROS_INFO("testing ... frameManager ...!!");
-
-}
-
-// public methods
+// public member functions
 frameManager::frameManager() {
 
 	// initialize parameters
@@ -56,6 +44,7 @@ frameManager::frameManager() {
 	fpb = fpc;		// frames per binary
 	binaryFileIndex = 0;
 	fullVideoAvailable = false;
+	createVideoActive = false;
 	usingCacheA = true;
 	usingCacheB = false;
 	storingCacheA = false;
@@ -63,7 +52,7 @@ frameManager::frameManager() {
 	cacheA = new std::vector<cv::Mat>;
 	cacheB = new std::vector<cv::Mat>;
 
-	for(int i=0; i < (fpv/fpb); i++){
+	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
 	}
 }
@@ -74,7 +63,6 @@ frameManager::~frameManager() {
 }
 
 void frameManager::processFrame(const sensor_msgs::Image& img){
-
 	//ROS_INFO("processFrame ... ");
 
 	cv_bridge::CvImageConstPtr cvptrS;
@@ -82,11 +70,8 @@ void frameManager::processFrame(const sensor_msgs::Image& img){
 	{
 		// convert the sensor_msgs::Image to cv_bridge::CvImageConstPtr
 		cvptrS = cv_bridge::toCvShare(img, cvptrS, sensor_msgs::image_encodings::BGR8);
-
-		// TODO: thread concept for calling cacheFrame()-method
+		// buffers image into memory
 		cacheFrame(cvptrS->image);
-		//storeFrame(cvptrS->image);
-
 	}
 	catch (cv_bridge::Exception& e)
 	{
@@ -96,21 +81,16 @@ void frameManager::processFrame(const sensor_msgs::Image& img){
 }
 
 void frameManager::cacheFrame(cv::Mat frame){
-
 	//ROS_INFO("cacheFrame ... ");
 
 	std::vector<cv::Mat>* currentCache = getCurrentCache();
-
-	//tCaching.join();
-	//tCaching = boost::thread(boost::bind(&std::vector<cv::Mat>::push_back, currentCache, frame));
 	currentCache->push_back(frame);
 }
 
 std::vector<cv::Mat>* frameManager::getCurrentCache(){
-
 	//ROS_INFO("getCurrentCache ... ");
 
-	// checks the sizes of memory buffers and if necessary it will schedule further tasks
+	// proofs the sizes of memory buffers and if necessary it will schedule further tasks
 	verifyCacheSize();
 
 	if(usingCacheA == true && usingCacheB == false){
@@ -126,7 +106,6 @@ std::vector<cv::Mat>* frameManager::getCurrentCache(){
 }
 
 void frameManager::verifyCacheSize(){
-
 	//ROS_INFO("verifyCacheSize ... ");
 
 	if(cacheA->size() == fpc && storingCacheA == false){
@@ -136,10 +115,9 @@ void frameManager::verifyCacheSize(){
 		usingCacheA = false;
 		usingCacheB = true;
 
-		ROS_INFO(">-> waiting for storingCacheB");
+		ROS_INFO("Waiting for storingCacheB");
 		storingThreadB.join();
 		storingThreadA = boost::thread(boost::bind(&frameManager::storeCache, this, cacheA, &storingCacheA));
-//		storeCache(cacheA);
 	}
 	else if (cacheB->size() == fpc && storingCacheB == false){
 		// cacheB is full -> store frame to fileStorage
@@ -148,34 +126,23 @@ void frameManager::verifyCacheSize(){
 		usingCacheB = false;
 		usingCacheA = true;
 
-		ROS_INFO(">-> waiting for storingCacheA");
+//		std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
+		ROS_INFO("Waiting for storingCacheA");
 		storingThreadA.join();
-
-		// TODO: 	testweiser Aufruf der createVideo() methode nach 3 Durchläufen
-//		if(binaryFileIndex > 2 && fullVideoAvailable == true)
-//			getVideo();
-
-		std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
-
 		storingThreadB = boost::thread(boost::bind(&frameManager::storeCache, this, cacheB, &storingCacheB));
-//		storeCache(cacheB);
 	}
 }
 
 void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 
-	ROS_INFO(">->-> storeCache into binary file...");
+	ROS_INFO("storeCache into binary file...");
 	std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
 	// define fileStorage-filename
 	std::stringstream fileName;
 	fileName << path << binaryFileIndex << ".bin";
 
-//	if(binaryFileMutexes[binaryFileIndex]->try_lock() == true){
-//		binaryFileMutexes[binaryFileIndex]->lock();
-//	}
-//	else
-
-
+	// lock current binary file as output
+	binaryFileMutexes[binaryFileIndex]->lock();
     std::ofstream ofs(fileName.str().c_str(), std::ios::out | std::ios::binary);
 
     // scope is required to ensure archive and filtering stream buffer go out of scope
@@ -198,6 +165,8 @@ void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 
     // close file
     ofs.close();
+    // unlock current binary file
+    binaryFileMutexes[binaryFileIndex]->unlock();
 
     // current const. allocation -> has to be adapted dynamic
     if(binaryFileIndex < (fpv/fpb))
@@ -212,23 +181,28 @@ void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 	// clean cache
 	cache->clear();
 	*threadActive = false;
-	ROS_INFO(">->->-> finished thread");
+	ROS_INFO("finished storingThread");
 }
 
 int frameManager::getVideo(){
 
 	if(fullVideoAvailable == true){
-		creatingVideoThread = boost::thread(boost::bind(&frameManager::createVideo, this));
-		return 1;
+		if(createVideoActive == false){
+			creatingVideoThread = boost::thread(boost::bind(&frameManager::createVideo, this));
+			return 1;
+		}
+		else
+			return -1;
 	}
 	else
-		return -1;
+		return -2;
 }
 
 int frameManager::createVideo(){
 
 	ROS_INFO("createVideo ...");
 
+	createVideoActive = true;
 	std::stringstream inputFileName;
 	std::stringstream outputFileName;
 	outputFileName << "/home/cmm-jg/Bilder/videoOnDemand.avi";
@@ -237,25 +211,32 @@ int frameManager::createVideo(){
 	videoRecorder* vRecoder = new videoRecorder();
 	bool firstFrame = true;
 
-	int currentIndex = binaryFileIndex + 1;
+	int currentIndex = binaryFileIndex + 2; // start binary for video
+											// selecting binaryFileIndex + 2 to get a buffer
+											// for storing new frames to a binary
 	int numBinaries = fpv/fpb;
 
 	// add all binaries which are required (numBinaries) into a video
 	for(int i=0; i < numBinaries; i++){
 		std::stringstream inputFileName;
 		cv::Mat loadedFrame;
+		int mutexID;
 
-		if(currentIndex < numBinaries-1){
+		if(currentIndex <= numBinaries-1){
 			// load currentIndex - numBinaries-1
 			inputFileName << path << (currentIndex) << ".bin";
+			mutexID = currentIndex;
 			currentIndex++;
 		}
 		else{
 			// load currentIndex - numBinaries-1
-			inputFileName << path << (currentIndex-numBinaries-1) << ".bin";
+			inputFileName << path << (currentIndex-numBinaries) << ".bin";
+			mutexID = currentIndex-numBinaries;
 			currentIndex++;
 		}
 
+		// lock current binary file as input
+		binaryFileMutexes[mutexID]->lock();
 		// open inputFile
 	    std::ifstream ifs(inputFileName.str().c_str(), std::ios::in | std::ios::binary);
 
@@ -292,11 +273,13 @@ int frameManager::createVideo(){
 	    		}
 	    	}
 	    	ifs.close();
+	    	// unlock current binary file
+	    	binaryFileMutexes[mutexID]->unlock();
 	    }
 	}
 	// release video
 	vRecoder->releaseVideo();
+	createVideoActive = false;
 	ROS_INFO("finished createVideo ...");
-
 	return -1;
 }

@@ -32,14 +32,28 @@ void processFrameCallback(const sensor_msgs::Image& img)
 
 bool getVideoCallback(videoOnDemand::getVideo::Request &req, videoOnDemand::getVideo::Response &res){
 
-	std::cout << "call by vTester ..." << std::endl;
-	// start video creation
-	int state = fManager->getVideo();
+	int state = 0;
+	std::cout << "Remote getVideo call ..." << std::endl;
 
-	if (state == 1)
-		return true;
+	// start video creation
+	if(req.creatVideo == 1)
+		state = fManager->getVideo();
 	else
-		return false;
+		ROS_ERROR("Unknown getVideo-service command %d", (int)req.creatVideo);
+
+	if (state == 1){
+		res.releasedVideo = 1;
+		return true;
+	}
+	else if(state == -1){
+		res.releasedVideo = -1;
+		return true;
+	}
+	else if(state == -2){
+		res.releasedVideo = -2;
+		return true;
+	}
+	return false;
 }
 
 int main(int argc, char **argv)
