@@ -23,6 +23,7 @@ int main(int argc, char **argv)
 		ROS_ERROR("Video recorder is busy !!");
 	else if((int)srv.response.releasedVideo == -2)
 		ROS_ERROR("NO complete video available !!");
-
+	else
+		ROS_ERROR("Connection to Server failed");
 	return 0;
 }
