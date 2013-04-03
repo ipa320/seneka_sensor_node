@@ -9,7 +9,7 @@
 
 // public member functions
 
-videoRecorder::videoRecorder(){
+VideoRecorder::VideoRecorder(){
 	codec = CV_FOURCC('D','I','V','X');
 	//codec = CV_FOURCC('3','I','V,'2');
 	fps = 25;
@@ -17,29 +17,29 @@ videoRecorder::videoRecorder(){
 	frameHeight = 0;
 }
 
-videoRecorder::~videoRecorder(){}
+VideoRecorder::~VideoRecorder(){}
 
-void videoRecorder::createVideo(std::string vf, int frameWidth, int frameHeight){
+void VideoRecorder::createVideo(std::string vf, int frameWidth, int frameHeight){
 	videoFileName = vf;
 	videoSize.height = frameHeight;		// cv::mat obj.rows
 	videoSize.width = frameWidth;		// cv::mat obj.cols
 	openVideo();
 }
 
-void videoRecorder::addFrame(cv::Mat frame){
+void VideoRecorder::addFrame(cv::Mat frame){
 	if(videoWriter.isOpened() == true)
 		videoWriter.write(frame);
 	else
 		ROS_ERROR("Video file is closed ...");
 }
 
-void videoRecorder::releaseVideo(){
+void VideoRecorder::releaseVideo(){
 	videoWriter.release();
 }
 
 // private member functions
 
-void videoRecorder::openVideo(){
+void VideoRecorder::openVideo(){
 	if(!videoWriter.isOpened()){
 		videoWriter.open(videoFileName, codec, fps, videoSize, 1);
 	}

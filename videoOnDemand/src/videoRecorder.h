@@ -11,12 +11,12 @@
 // ROS includes
 #include "ros/ros.h"
 
-class videoRecorder {
+class VideoRecorder {
 public:
 
 	// public member functions
-	videoRecorder();
-	virtual ~videoRecorder();
+	VideoRecorder();
+	virtual ~VideoRecorder();
 	void createVideo(std::string vf, int frameWidth, int frameHeight);
 	void addFrame(cv::Mat frame);
 	void releaseVideo();

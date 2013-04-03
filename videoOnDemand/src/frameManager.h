@@ -29,10 +29,11 @@
 
 
 
-class frameManager {
+class FrameManager {
 public:
-	frameManager();
-	virtual ~frameManager();
+	FrameManager();
+	FrameManager(ros::NodeHandle &nHandler);
+	virtual ~FrameManager();
 	void processFrame(const sensor_msgs::Image& img);
 	int getVideo();
 
@@ -58,7 +59,8 @@ private:
 	std::vector<cv::Mat>* cacheB;
 
 	// file storage parameters
-	std::string path;
+	std::string binaryFilePath;
+	std::string videoFilePath;
 	u_int binaryFileIndex;
 	std::vector<boost::mutex*> binaryFileMutexes;
 

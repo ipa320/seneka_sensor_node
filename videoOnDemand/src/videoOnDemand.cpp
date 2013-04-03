@@ -23,7 +23,7 @@
 namespace enc = sensor_msgs::image_encodings;
 
 // global attributes
-frameManager* fManager;
+FrameManager* fManager;
 
 void processFrameCallback(const sensor_msgs::Image& img)
 {
@@ -58,11 +58,11 @@ bool getVideoCallback(videoOnDemand::getVideo::Request &req, videoOnDemand::getV
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "videoOnDemandNode");
+	ros::init(argc, argv, "VODNODE");
 	// attributes
-	fManager = new frameManager();
+	ros::NodeHandle nHandler("VODNODE");
 	const float SNAPSHOT_INTERVAL = 25;
-	ros::NodeHandle nHandler;
+	fManager = new FrameManager(nHandler);
 
 	ROS_INFO("advertising getVideo service ...");
 	ros::ServiceServer service = nHandler.advertiseService("getVideo", getVideoCallback);

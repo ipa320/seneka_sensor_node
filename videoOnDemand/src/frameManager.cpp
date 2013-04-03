@@ -35,11 +35,12 @@
 namespace io = boost::iostreams;
 
 // public member functions
-frameManager::frameManager() {
+FrameManager::FrameManager() {
 
 	// initialize parameters
-	path = "/home/cmm-jg/Bilder/store";
-	fpv = 400;//3000; 	// frame per video -> 120 sec = 3000 frames
+	binaryFilePath = "/home/cmm-jg/Bilder/container";
+	videoFilePath = "/home/cmm-jg/Bilder/videoOnDemand.avi";
+	fpv = 400;	 	// frame per video -> 120 sec = 3000 frames
 	fpc = 100;		// frames per cache -> 4 sec = 100 frames
 	fpb = fpc;		// frames per binary
 	binaryFileIndex = 0;
@@ -57,12 +58,43 @@ frameManager::frameManager() {
 	}
 }
 
-frameManager::~frameManager() {
+FrameManager::FrameManager(ros::NodeHandle &nHandler) {
+
+	// initialize configurable parameters
+	int tmp_fpv, tmp_fpc, tmp_fpb;
+
+	nHandler.getParam("framesPerVideo", tmp_fpv);
+	nHandler.getParam("framesPerCache", tmp_fpc);
+	nHandler.getParam("framesPerBinary", tmp_fpb);
+	nHandler.getParam("binaryFilePath", binaryFilePath);
+	nHandler.getParam("videoFilePath", videoFilePath);
+
+	if(tmp_fpv>0) fpv=(u_int)tmp_fpv;
+	if(tmp_fpc>0) fpc=(u_int)tmp_fpc;
+	if(tmp_fpb>0) fpb=(u_int)tmp_fpb;
+
+	// initialize fixed parameters
+	binaryFileIndex = 0;
+	fullVideoAvailable = false;
+	createVideoActive = false;
+	usingCacheA = true;
+	usingCacheB = false;
+	storingCacheA = false;
+	storingCacheB = false;
+	cacheA = new std::vector<cv::Mat>;
+	cacheB = new std::vector<cv::Mat>;
+
+	for(int i=0; i < (int)(fpv/fpb)+1; i++){
+		binaryFileMutexes.push_back(new boost::mutex());
+	}
+}
+
+FrameManager::~FrameManager() {
 	delete cacheA;
 	delete cacheB;
 }
 
-void frameManager::processFrame(const sensor_msgs::Image& img){
+void FrameManager::processFrame(const sensor_msgs::Image& img){
 	//ROS_INFO("processFrame ... ");
 
 	cv_bridge::CvImageConstPtr cvptrS;
@@ -80,14 +112,14 @@ void frameManager::processFrame(const sensor_msgs::Image& img){
 	}
 }
 
-void frameManager::cacheFrame(cv::Mat frame){
+void FrameManager::cacheFrame(cv::Mat frame){
 	//ROS_INFO("cacheFrame ... ");
 
 	std::vector<cv::Mat>* currentCache = getCurrentCache();
 	currentCache->push_back(frame);
 }
 
-std::vector<cv::Mat>* frameManager::getCurrentCache(){
+std::vector<cv::Mat>* FrameManager::getCurrentCache(){
 	//ROS_INFO("getCurrentCache ... ");
 
 	// proofs the sizes of memory buffers and if necessary it will schedule further tasks
@@ -105,7 +137,7 @@ std::vector<cv::Mat>* frameManager::getCurrentCache(){
 	}
 }
 
-void frameManager::verifyCacheSize(){
+void FrameManager::verifyCacheSize(){
 	//ROS_INFO("verifyCacheSize ... ");
 
 	if(cacheA->size() == fpc && storingCacheA == false){
@@ -117,7 +149,7 @@ void frameManager::verifyCacheSize(){
 
 		ROS_INFO("Waiting for storingCacheB");
 		storingThreadB.join();
-		storingThreadA = boost::thread(boost::bind(&frameManager::storeCache, this, cacheA, &storingCacheA));
+		storingThreadA = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheA, &storingCacheA));
 	}
 	else if (cacheB->size() == fpc && storingCacheB == false){
 		// cacheB is full -> store frame to fileStorage
@@ -129,17 +161,17 @@ void frameManager::verifyCacheSize(){
 //		std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
 		ROS_INFO("Waiting for storingCacheA");
 		storingThreadA.join();
-		storingThreadB = boost::thread(boost::bind(&frameManager::storeCache, this, cacheB, &storingCacheB));
+		storingThreadB = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheB, &storingCacheB));
 	}
 }
 
-void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
+void FrameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 
 	ROS_INFO("storeCache into binary file...");
-	std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
+	//std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
 	// define fileStorage-filename
 	std::stringstream fileName;
-	fileName << path << binaryFileIndex << ".bin";
+	fileName << binaryFilePath << binaryFileIndex << ".bin";
 
 	// lock current binary file as output
 	binaryFileMutexes[binaryFileIndex]->lock();
@@ -184,11 +216,11 @@ void frameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 	ROS_INFO("finished storingThread");
 }
 
-int frameManager::getVideo(){
+int FrameManager::getVideo(){
 
 	if(fullVideoAvailable == true){
 		if(createVideoActive == false){
-			creatingVideoThread = boost::thread(boost::bind(&frameManager::createVideo, this));
+			creatingVideoThread = boost::thread(boost::bind(&FrameManager::createVideo, this));
 			return 1;
 		}
 		else
@@ -198,17 +230,14 @@ int frameManager::getVideo(){
 		return -2;
 }
 
-int frameManager::createVideo(){
+int FrameManager::createVideo(){
 
 	ROS_INFO("createVideo ...");
 
 	createVideoActive = true;
-	std::stringstream inputFileName;
-	std::stringstream outputFileName;
-	outputFileName << "/home/cmm-jg/Bilder/videoOnDemand.avi";
 
 	// create a videoRecorder instance
-	videoRecorder* vRecoder = new videoRecorder();
+	VideoRecorder* vRecoder = new VideoRecorder();
 	bool firstFrame = true;
 
 	int currentIndex = binaryFileIndex + 2; // start binary for video
@@ -224,13 +253,13 @@ int frameManager::createVideo(){
 
 		if(currentIndex <= numBinaries-1){
 			// load currentIndex - numBinaries-1
-			inputFileName << path << (currentIndex) << ".bin";
+			inputFileName << binaryFilePath << (currentIndex) << ".bin";
 			mutexID = currentIndex;
 			currentIndex++;
 		}
 		else{
 			// load currentIndex - numBinaries-1
-			inputFileName << path << (currentIndex-numBinaries) << ".bin";
+			inputFileName << binaryFilePath << (currentIndex-numBinaries) << ".bin";
 			mutexID = currentIndex-numBinaries;
 			currentIndex++;
 		}
@@ -257,7 +286,7 @@ int frameManager::createVideo(){
 	    		if(cont && firstFrame){
 	    			cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
 	    			// define the video parameters
-	    			vRecoder->createVideo(outputFileName.str(), loadedFrame.cols, loadedFrame.rows);
+	    			vRecoder->createVideo(videoFilePath, loadedFrame.cols, loadedFrame.rows);
 	    			firstFrame = false;
 	    		}
 	    		else if(cont){

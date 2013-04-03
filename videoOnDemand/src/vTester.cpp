@@ -7,7 +7,7 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "vTester");
 
 	ros::NodeHandle n;
-	ros::ServiceClient client = n.serviceClient<videoOnDemand::getVideo>("getVideo");
+	ros::ServiceClient client = n.serviceClient<videoOnDemand::getVideo>("seneka/VODNODE/getVideo");
 	videoOnDemand::getVideo srv;
 
 	ROS_INFO("Connecting to Server ...");
@@ -23,7 +23,6 @@ int main(int argc, char **argv)
 		ROS_ERROR("Video recorder is busy !!");
 	else if((int)srv.response.releasedVideo == -2)
 		ROS_ERROR("NO complete video available !!");
-
 
 	return 0;
 }
