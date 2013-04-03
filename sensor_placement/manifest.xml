@@ -1,0 +1,17 @@
+<package>
+  <description brief="sensor_placement">
+
+     sensor_placement holds code for optimal sensor placement algorithms with particle swarm optimization for the SENEKA project at Fraunhofer IPA.
+
+  </description>
+  <author>Florian Mirus</author>
+  <license>LGPL</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/sensor_placement</url>
+  <depend package="roslib"/>
+  <depend package="roscpp"/>
+  <depend package="std_msgs"/>
+
+</package>
+
+
