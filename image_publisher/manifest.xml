@@ -1,7 +1,7 @@
 <package>
   <description brief="image_publisher">
 
-     image_publisher
+     image_publisher provides images Sony Block Camera using Pleora iPort SB Pro
 
   </description>
   <author>Rajib Banik</author>
