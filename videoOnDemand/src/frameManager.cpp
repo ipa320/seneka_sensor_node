@@ -40,9 +40,11 @@ FrameManager::FrameManager() {
 	// initialize parameters
 	binaryFilePath = "/home/cmm-jg/Bilder/container";
 	videoFilePath = "/home/cmm-jg/Bilder/videoOnDemand.avi";
-	fpv = 400;	 	// frame per video -> 120 sec = 3000 frames
-	fpc = 100;		// frames per cache -> 4 sec = 100 frames
+	fpv = 400;	 	// frame per video -> 40 sec * 10 frames = 400 frames
+	fpc = 100;		// frames per cache -> 10 sec * 10 frames = 100 frames
 	fpb = fpc;		// frames per binary
+	vfr = 10;
+	videoCodec = CV_FOURCC('D','I','V','X');
 	binaryFileIndex = 0;
 	fullVideoAvailable = false;
 	createVideoActive = false;
@@ -61,19 +63,22 @@ FrameManager::FrameManager() {
 FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 
 	// initialize configurable parameters
-	int tmp_fpv, tmp_fpc, tmp_fpb;
+	int tmp_fpv, tmp_fpc, tmp_fpb, tmp_vfr;
 
 	nHandler.getParam("framesPerVideo", tmp_fpv);
 	nHandler.getParam("framesPerCache", tmp_fpc);
 	nHandler.getParam("framesPerBinary", tmp_fpb);
+	nHandler.getParam("videoFrameRate", tmp_vfr);
 	nHandler.getParam("binaryFilePath", binaryFilePath);
 	nHandler.getParam("videoFilePath", videoFilePath);
 
 	if(tmp_fpv>0) fpv=(u_int)tmp_fpv;
 	if(tmp_fpc>0) fpc=(u_int)tmp_fpc;
 	if(tmp_fpb>0) fpb=(u_int)tmp_fpb;
+	if(tmp_vfr>0) vfr=(u_int)tmp_vfr;
 
 	// initialize fixed parameters
+	videoCodec = CV_FOURCC('D','I','V','X');
 	binaryFileIndex = 0;
 	fullVideoAvailable = false;
 	createVideoActive = false;
@@ -168,7 +173,6 @@ void FrameManager::verifyCacheSize(){
 void FrameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 
 	ROS_INFO("storeCache into binary file...");
-	//std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
 	// define fileStorage-filename
 	std::stringstream fileName;
 	fileName << binaryFilePath << binaryFileIndex << ".bin";
@@ -237,7 +241,7 @@ int FrameManager::createVideo(){
 	createVideoActive = true;
 
 	// create a videoRecorder instance
-	VideoRecorder* vRecoder = new VideoRecorder();
+	VideoRecorder* vRecoder = new VideoRecorder(vfr, videoCodec);
 	bool firstFrame = true;
 
 	int currentIndex = binaryFileIndex + 2; // start binary for video

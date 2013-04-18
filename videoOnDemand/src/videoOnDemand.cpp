@@ -58,10 +58,10 @@ bool getVideoCallback(videoOnDemand::getVideo::Request &req, videoOnDemand::getV
 
 int main(int argc, char **argv)
 {
+
 	ros::init(argc, argv, "VODNODE");
 	// attributes
 	ros::NodeHandle nHandler("VODNODE");
-	const float SNAPSHOT_INTERVAL = 25;
 	fManager = new FrameManager(nHandler);
 
 	ROS_INFO("advertising getVideo service ...");
@@ -69,13 +69,6 @@ int main(int argc, char **argv)
 	ROS_INFO("subscribing for thermal_image_view ...");
 	ros::Subscriber sub = nHandler.subscribe("/optris/thermal_image_view", 2, processFrameCallback);
 
-
-	// frequency in Hz
-	ros::Rate loop_rate(SNAPSHOT_INTERVAL);
-
-	while(ros::ok()){
-		ros::spinOnce();
-		loop_rate.sleep();
-	}
+	ros::spin();
 	return 0;
 }

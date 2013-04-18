@@ -24,12 +24,22 @@ rosbuild_gensrv()
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
 #target_link_libraries(${PROJECT_NAME} another_library)
-rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
+
+rosbuild_add_boost_directories()
+
+# inlcude termo cam converter 
+#INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
+#LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
+#LINK_LIBRARIES(PIImager ImageProcessing udev)
+
+# create executables
+rosbuild_add_executable(vTester src/vTester.cpp)
 rosbuild_add_executable(videoOnDemand src/videoOnDemand.cpp)
+# boost linking
 rosbuild_link_boost(videoOnDemand thread)
 rosbuild_link_boost(videoOnDemand serialization)
 rosbuild_link_boost(videoOnDemand iostreams)
-rosbuild_add_executable(vTester src/vTester.cpp)
+

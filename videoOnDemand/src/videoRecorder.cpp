@@ -12,7 +12,14 @@
 VideoRecorder::VideoRecorder(){
 	codec = CV_FOURCC('D','I','V','X');
 	//codec = CV_FOURCC('3','I','V,'2');
-	fps = 25;
+	fps = 10;
+	frameWidth = 0;
+	frameHeight = 0;
+}
+
+VideoRecorder::VideoRecorder(u_int fps, int codec){
+	this->codec = codec;
+	this->fps = fps;
 	frameWidth = 0;
 	frameHeight = 0;
 }

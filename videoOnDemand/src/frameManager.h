@@ -64,6 +64,9 @@ private:
 	u_int binaryFileIndex;
 	std::vector<boost::mutex*> binaryFileMutexes;
 
+	// output video parameters
+	u_int vfr;			// video frame rate
+	int videoCodec; 	// Codec for video coding eg. CV_FOURCC('D','I','V','X')
 
 	// threads parameters
 	boost::thread storingThreadA;

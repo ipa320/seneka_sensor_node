@@ -36,8 +36,9 @@ namespace boost {
 			ar & matType;	// size of the stored element type e.g. integer
 			size_t dataSize = m.cols * m.rows * m.elemSize();
 
-			//cout << "Writing matrix data rows, cols, elemSize, type, datasize: (" << m.rows << "," << m.cols << "," << m.elemSize() << "," << m.type() << "," << dataSize << ")" << endl;
-
+			std::cout << "Writing matrix data rows, cols, elemSize, type, datasize: (" << m.rows << "," << m.cols << "," << m.elemSize() << "," << m.type() << "," << dataSize << ")" << std::endl;
+			std::cout << "data: " << (int)m.data[113] << std::endl;
+			std::cout << "channels: " << m.channels() << std::endl;
 			// save cv::Mat image data
 			for (size_t dc = 0; dc < dataSize; ++dc) {
 				ar & m.data[dc];
