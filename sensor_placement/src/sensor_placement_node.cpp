@@ -121,6 +121,21 @@ sensor_placement_node::~sensor_placement_node()
   delete[] targets_;
 }
 
+// function for the particle swarm optimization
+void sensor_placement_node::particleSwarmOptimization()
+{
+  cout << "starting particle swarm optimization algorithm" << endl;
+  cout <<  endl;
+  cout << "getting targets from specified map and area of interest!" << endl;
+  getTargets();
+  cout << "initializing particle swarm" << endl;
+  initializePSO();
+  cout << "optzimization step" << endl;
+  PSOptimize();
+  cout << "optimization done with coverage result: " << best_cov_ << "per cent" << endl;
+}
+
+
 void sensor_placement_node::getTargets()
 {
   // to be done

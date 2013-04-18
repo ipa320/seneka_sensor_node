@@ -136,6 +136,11 @@ public:
 
   // declaration of ros publishers
 
+  // *************************** functions ***************************
+
+  // function for the particle swarm optimization
+  void particleSwarmOptimization();
+
   // function to get an array of targets from the map and the area of interest specified as polygon
   void getTargets();
 

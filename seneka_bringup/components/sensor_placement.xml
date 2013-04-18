@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- start sensor_placement -->
+  <node name="sensor_placement" pkg="sensor_placement" type="sensor_placement_node" respawn="true" >
+    <!--rosparam file="$(find seneka_config)/config/sensor_placement.yaml" command="load"/-->
+    <!-- input -->
+    <!--remap from="in_example" to="/example_topic"/-->
+    <!-- output -->
+    <!--remap from="out_example" to="/example_topic"/-->
+  </node>
+	
+</launch>
