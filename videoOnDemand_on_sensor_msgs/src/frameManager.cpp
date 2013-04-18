@@ -203,7 +203,7 @@ void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* thre
 	binaryFileMutexes[binaryFileIndex]->unlock();
 
 	// current const. allocation -> has to be adapted dynamic
-	if(binaryFileIndex < (fpv/fpb))
+	if(binaryFileIndex < (fpv/fpb)-1)
 		binaryFileIndex++;
 	else{
 		if(fullVideoAvailable == false)
@@ -254,7 +254,7 @@ int FrameManager::createVideo(){
 		std::stringstream inputFileName;
 		int mutexID;
 
-		if(currentIndex <= numBinaries-1){
+		if(currentIndex < numBinaries-1){
 			// load currentIndex - numBinaries-1
 			inputFileName << binaryFilePath << (currentIndex) << ".bin";
 			mutexID = currentIndex;

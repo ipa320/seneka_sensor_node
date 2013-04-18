@@ -1,8 +1,8 @@
 /*
- * boost_serialization_cvMat.h
+ * boost_serialization_sensor_msgs_image.h
  *
- *  Created on: 19.03.2013
- *      Author: cmm-jg
+ *  Created on: 18.04.2013
+ *      Author: Author: Johannes Goth (cmm-jg)
  */
 
 #ifndef BOOST_SERIALIZATION_CVMAT_H_
@@ -19,8 +19,8 @@
 // The macro BOOST_SERIALIZATION_SPLIT_MEMBER() generates code which invokes the save or load depending on whether the archive is used for saving or loading.
 BOOST_SERIALIZATION_SPLIT_FREE(sensor_msgs::Image)
 
-/* Serialization of cv:Mat
- * Define serialization of cv:Mat with specific save and load functions, which are used by boot::archive to store the cv:Mat into a archive file (e.g. text or binary format) */
+/* Serialization of sensor_msgs::Image
+ * Define serialization of sensor_msgs::Image with specific save and load functions, which are used by boot::archive to store the sensor_msgs::Image into a archive file (e.g. text or binary format) */
 namespace boost {
 	namespace serialization {
 
@@ -33,17 +33,12 @@ namespace boost {
 			ar & m.encoding;
 			ar & m.is_bigendian;
 			ar & m.step;
-			//ar & m.data;
-
 
 			size_t dataSize = m.data.size();
-			//std::cout << "size: " << dataSize << std::endl;
-
 
 			for (size_t dc = 0; dc < dataSize; ++dc) {
 				ar & m.data[dc];
 			}
-
 		}
 
 		template<class Archive>
@@ -55,7 +50,6 @@ namespace boost {
 			ar & m.encoding;
 			ar & m.is_bigendian;
 			ar & m.step;
-			//ar & m.data;
 
 			//std::cout << "reading matrix data rows, cols, elemSize, type, datasize: (" << m.height << "," << m.width << "," << m.encoding << "," << ")" << std::endl;
 
@@ -66,7 +60,6 @@ namespace boost {
 				ar & tmp;
 				m.data.push_back(tmp);
 			}
-			//ar & make_nvp("data",m.data);
 		}
 
 
