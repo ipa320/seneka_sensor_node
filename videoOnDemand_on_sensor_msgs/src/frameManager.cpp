@@ -69,7 +69,7 @@ FrameManager::FrameManager() {
 FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 
 	// initialize configurable parameters
-	int tmp_fpv, tmp_fpc, tmp_fpb, tmp_vfr;
+	int tmp_fpv, tmp_fpc, tmp_fpb, tmp_vfr, tmp_PaletteScalingMethod, tmp_Palette, minTemperature, maxTemperature;
 
 	nHandler.getParam("framesPerVideo", tmp_fpv);
 	nHandler.getParam("framesPerCache", tmp_fpc);
@@ -77,11 +77,21 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	nHandler.getParam("videoFrameRate", tmp_vfr);
 	nHandler.getParam("binaryFilePath", binaryFilePath);
 	nHandler.getParam("videoFilePath", videoFilePath);
+	nHandler.getParam("showFrame", showFrame);
+	nHandler.getParam("minTemperature", minTemperature);
+	nHandler.getParam("maxTemperature", maxTemperature);
+	nHandler.getParam("PaletteScalingMethod", tmp_PaletteScalingMethod);
+	nHandler.getParam("Palette", tmp_Palette);
+
 
 	if(tmp_fpv>0) fpv=(u_int)tmp_fpv;
 	if(tmp_fpc>0) fpc=(u_int)tmp_fpc;
 	if(tmp_fpb>0) fpb=(u_int)tmp_fpb;
 	if(tmp_vfr>0) vfr=(u_int)tmp_vfr;
+
+	iBuilder.setPaletteScalingMethod((optris::EnumOptrisPaletteScalingMethod)tmp_PaletteScalingMethod);
+	iBuilder.setPalette((optris::EnumOptrisColoringPalette)tmp_Palette);
+	iBuilder.setManualTemperatureRange((float)minTemperature, (float)maxTemperature);
 
 	// initialize fixed parameters
 	videoCodec = CV_FOURCC('D','I','V','X');
@@ -94,12 +104,6 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	storingCacheB = false;
 	cacheA = new std::vector<sensor_msgs::Image>;
 	cacheB = new std::vector<sensor_msgs::Image>;
-
-	// TODO: make as configurable params
-	iBuilder.setPaletteScalingMethod(optris::eMinMax);
-	iBuilder.setPalette(optris::eIron);
-	iBuilder.setManualTemperatureRange((float)20, (float)40);
-	showFrame = true;
 
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
@@ -144,7 +148,7 @@ void FrameManager::verifyCacheSize(){
 	//ROS_INFO("verifyCacheSize ... ");
 
 	if(cacheA->size() == fpc && storingCacheA == false){
-		// cacheA is full -> store frame to fileStorages
+		// cacheA is full -> store frames into binary file
 
 		storingCacheA = true;
 		usingCacheA = false;
@@ -155,13 +159,12 @@ void FrameManager::verifyCacheSize(){
 		storingThreadA = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheA, &storingCacheA));
 	}
 	else if (cacheB->size() == fpc && storingCacheB == false){
-		// cacheB is full -> store frame to fileStorage
+		// cacheB is full -> store frames into binary file
 
 		storingCacheB = true;
 		usingCacheB = false;
 		usingCacheA = true;
 
-		//		std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
 		ROS_INFO("Waiting for storingCacheA");
 		storingThreadA.join();
 		storingThreadB = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheB, &storingCacheB));
@@ -178,25 +181,25 @@ void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* thre
 
 	// lock current binary file as output
 	binaryFileMutexes[binaryFileIndex]->lock();
+	// open outputFile
 	std::ofstream ofs(fileName.str().c_str(), std::ios::out | std::ios::binary);
 
 	// scope is required to ensure archive and filtering stream buffer go out of scope
 	// before stream
 	{
-		// compressing frame size
-		//      io::filtering_streambuf<io::output> out;
-		//      out.push(io::zlib_compressor(io::zlib::best_speed));
-		//      out.push(ofs);
+//		 	 //compressing frame size
+//		      io::filtering_streambuf<io::output> out;
+//		      out.push(io::zlib_compressor(io::zlib::best_speed));
+//		      out.push(ofs);
 
 		boost::archive::binary_oarchive oa(ofs);
 
 		// writes each frame which is stored in cache into binary file
 		for (std::vector<sensor_msgs::Image>::iterator it = cache->begin() ; it != cache->end(); it++){
-			// write frame into binary file, using cv:Mat serialization
+			// writes frame per frame into binary file, using sensor_msgs::Image serialization
 			oa << *it;
 		}
 	}
-
 	// close file
 	ofs.close();
 	// unlock current binary file
@@ -210,8 +213,6 @@ void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* thre
 			fullVideoAvailable = true;
 		binaryFileIndex = 0;
 	}
-
-
 	// clean cache
 	cache->clear();
 	*threadActive = false;
@@ -219,9 +220,11 @@ void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* thre
 }
 
 int FrameManager::getVideo(){
-
+	// a full video is available if the minimal count of frames is reached (minimal count = frame per video)
 	if(fullVideoAvailable == true){
+		// it is only possible to create one video at a time
 		if(createVideoActive == false){
+			// starts creating the video in a seperate thread
 			creatingVideoThread = boost::thread(boost::bind(&FrameManager::createVideo, this));
 			return 1;
 		}
@@ -243,10 +246,11 @@ int FrameManager::createVideo(){
 	bool firstFrame = true;
 	unsigned int frameCount = 0;
 
-	/* start point binary for video
-	 * selecting binaryFileIndex + 2 to get a buffer for storing new frames to a binary
+	/* start binary for video creation
+	 * selecting binaryFileIndex + 1 to get the oldest binary file,
+	 * which includes the first frame for the video creation
 	 */
-	int currentIndex = binaryFileIndex + 2;
+	int currentIndex = binaryFileIndex + 1;
 	int numBinaries = fpv/fpb;
 
 	// add all binaries which are required (numBinaries) into a video
@@ -254,16 +258,19 @@ int FrameManager::createVideo(){
 		std::stringstream inputFileName;
 		int mutexID;
 
-		if(currentIndex < numBinaries-1){
+		if(currentIndex < numBinaries){
 			// load currentIndex - numBinaries-1
 			inputFileName << binaryFilePath << (currentIndex) << ".bin";
 			mutexID = currentIndex;
+			std::cout << "currentIndex: " << currentIndex << " mutexID: " << mutexID << std::endl;
 			currentIndex++;
+
 		}
 		else{
 			// load currentIndex - numBinaries-1
 			inputFileName << binaryFilePath << (currentIndex-numBinaries) << ".bin";
 			mutexID = currentIndex-numBinaries;
+			std::cout << "currentIndex: " << currentIndex << " mutexID: " << mutexID << std::endl;
 			currentIndex++;
 		}
 
@@ -275,33 +282,37 @@ int FrameManager::createVideo(){
 		// scope is required to ensure archive and filtering stream buffer go out of scope
 		// before stream
 		{
-			// decompressing frame size
-			//    	io::filtering_streambuf<io::input> in;
-			//    	in.push(io::zlib_decompressor());
-			//    	in.push(ifs);
+//			// decompressing frame size
+//			io::filtering_streambuf<io::input> in;
+//			in.push(io::zlib_decompressor());
+//			in.push(ifs);
 
 			boost::archive::binary_iarchive ia(ifs);
 
-			bool cont = true;
-			while (cont)
+			bool hasContent = true;
+			while (hasContent)
 			{
 				sensor_msgs::Image loadedFrame;
-				//std::cout << "loading image from binary file ... "<< std::endl;
 				if(firstFrame){
-					cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
-					if (cont == true){
-						cv::Mat mat = converter(&loadedFrame, &frameCount);
-						// define the video parameters
+					// try to read a temperature image from binary file
+					hasContent = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
+					if (hasContent == true){
+						// convert temperature image (sensor_msgs::Image) to RGB image (cv::Mat)
+						cv::Mat mat = convertTemperatureValuesToRGB(&loadedFrame, &frameCount);
+						// define video parameters
 						vRecoder->createVideo(videoFilePath, mat.cols, mat.rows);
+						// add frame to video
 						vRecoder->addFrame(mat);
 						firstFrame = false;
 					}
 
 				}
 				else{
-					cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
-					if (cont == true)
-						vRecoder->addFrame(converter(&loadedFrame, &frameCount));
+					// try to read a temperature image from binary file
+					hasContent = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
+					// convert and add frame to video
+					if (hasContent == true)
+						vRecoder->addFrame(convertTemperatureValuesToRGB(&loadedFrame, &frameCount));
 				}
 			}
 			ifs.close();
@@ -317,17 +328,16 @@ int FrameManager::createVideo(){
 	return -1;
 }
 
-cv::Mat FrameManager::converter(sensor_msgs::Image* frame, unsigned int* frameCount){
+cv::Mat FrameManager::convertTemperatureValuesToRGB(sensor_msgs::Image* frame, unsigned int* frameCount){
 
 	unsigned char* buffer = NULL;
-
 	buffer = new unsigned char[frame->width * frame->height * 3];
 
 	iBuilder.setSize(frame->width, frame->height, false);
-
 	const unsigned char* data = &(*frame).data[0];
 	iBuilder.convertTemperatureToPaletteImage((unsigned short*)data, buffer);
 
+	// create RGB sensor_msgs::image
 	sensor_msgs::Image rgb_img;
 	rgb_img.header.frame_id = "thermal_image_view";
 	rgb_img.height 	        = frame->height;
@@ -347,9 +357,11 @@ cv::Mat FrameManager::converter(sensor_msgs::Image* frame, unsigned int* frameCo
 	cv_bridge::CvImageConstPtr cvptrS;
 	try
 	{
-		// convert the sensor_msgs::Image to cv_bridge::CvImageConstPtr
+		// convert the sensor_msgs::Image to cv_bridge::CvImageConstPtr (cv::Mat)
 		cvptrS = cv_bridge::toCvShare(rgb_img, cvptrS, sensor_msgs::image_encodings::BGR8);
 		cv::Mat mat = cvptrS->image;
+
+		// show frame, if configured in the launch file
 		if(showFrame)
 			displayFrame(&mat);
 	}

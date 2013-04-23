@@ -1,3 +1,10 @@
+/*
+ * vTester.cpp
+ *
+ *  Created on: 23.04.2013
+ *      Author: Johannes Goth (cmm-jg)
+ */
+
 #include "ros/ros.h"
 #include "videoOnDemand_on_sensor_msgs/getVideo.h"
 

@@ -27,11 +27,9 @@
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/highgui/highgui.hpp>
 
-
-
-
 class FrameManager {
 public:
+	// public member functions
 	FrameManager();
 	FrameManager(ros::NodeHandle &nHandler);
 	virtual ~FrameManager();
@@ -40,7 +38,7 @@ public:
 
 private:
 
-	// private memeber functions
+	// private member functions
 	void cacheFrame(sensor_msgs::Image frame);
 	void verifyCacheSize();
 	void storeCache(std::vector<sensor_msgs::Image>* cache, bool* threadActive);
@@ -48,7 +46,7 @@ private:
 	std::vector<sensor_msgs::Image>* getCurrentCache();
 	void storeFrame(sensor_msgs::Image frame);
 	void displayFrame(cv::Mat* mat);
-	cv::Mat converter(sensor_msgs::Image* frame, unsigned int* frameCount);
+	cv::Mat convertTemperatureValuesToRGB(sensor_msgs::Image* frame, unsigned int* frameCount);
 
 	// cache attributes and references (memory buffers)
 	u_int fpv;			// frames per video
