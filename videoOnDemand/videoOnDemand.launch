@@ -2,7 +2,7 @@
 <group ns="seneka">
   <node name="VODNODE" pkg="videoOnDemand" type="videoOnDemand">
   
-	<param name="framesPerVideo"        type="int"    value="400"/>
+	<param name="framesPerVideo"        type="int"    value="200"/>
 	<param name="framesPerCache"        type="int"    value="100"/>
 	<param name="framesPerBinary"       type="int"    value="100"/>
 	<param name="videoFrameRate"        type="int"    value="10"/>

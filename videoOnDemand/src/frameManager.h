@@ -46,6 +46,7 @@ private:
 	int createVideo();
 	std::vector<cv::Mat>* getCurrentCache();
 	void storeFrame(cv::Mat frame);
+	void displayFrame(cv::Mat* mat);
 
 	// cache attributes and references (memory buffers)
 	u_int fpv;			// frames per video
@@ -67,6 +68,7 @@ private:
 	// output video parameters
 	u_int vfr;			// video frame rate
 	int videoCodec; 	// Codec for video coding eg. CV_FOURCC('D','I','V','X')
+	bool showFrame;
 
 	// threads parameters
 	boost::thread storingThreadA;

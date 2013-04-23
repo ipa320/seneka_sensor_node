@@ -54,6 +54,7 @@ FrameManager::FrameManager() {
 	storingCacheB = false;
 	cacheA = new std::vector<cv::Mat>;
 	cacheB = new std::vector<cv::Mat>;
+	showFrame = true;
 
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
@@ -88,6 +89,8 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	storingCacheB = false;
 	cacheA = new std::vector<cv::Mat>;
 	cacheB = new std::vector<cv::Mat>;
+
+	showFrame = true;
 
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
@@ -205,7 +208,7 @@ void FrameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
     binaryFileMutexes[binaryFileIndex]->unlock();
 
     // current const. allocation -> has to be adapted dynamic
-    if(binaryFileIndex < (fpv/fpb))
+    if(binaryFileIndex < (fpv/fpb)-1)
     	binaryFileIndex++;
     else{
     	if(fullVideoAvailable == false)
@@ -244,9 +247,11 @@ int FrameManager::createVideo(){
 	VideoRecorder* vRecoder = new VideoRecorder(vfr, videoCodec);
 	bool firstFrame = true;
 
-	int currentIndex = binaryFileIndex + 2; // start binary for video
-											// selecting binaryFileIndex + 2 to get a buffer
-											// for storing new frames to a binary
+	/* start binary for video creation
+	 * selecting binaryFileIndex + 1 to get the oldest binary file,
+	 * which includes the first frame for the video creation
+	 */
+	int currentIndex = binaryFileIndex + 1;
 	int numBinaries = fpv/fpb;
 
 	// add all binaries which are required (numBinaries) into a video
@@ -255,16 +260,18 @@ int FrameManager::createVideo(){
 		cv::Mat loadedFrame;
 		int mutexID;
 
-		if(currentIndex <= numBinaries-1){
+		if(currentIndex < numBinaries){
 			// load currentIndex - numBinaries-1
 			inputFileName << binaryFilePath << (currentIndex) << ".bin";
 			mutexID = currentIndex;
+			std::cout << "currentIndex: " << currentIndex << " mutexID: " << mutexID << std::endl;
 			currentIndex++;
 		}
 		else{
 			// load currentIndex - numBinaries-1
 			inputFileName << binaryFilePath << (currentIndex-numBinaries) << ".bin";
 			mutexID = currentIndex-numBinaries;
+			std::cout << "currentIndex: " << currentIndex << " mutexID: " << mutexID << std::endl;
 			currentIndex++;
 		}
 
@@ -276,33 +283,35 @@ int FrameManager::createVideo(){
 	    // scope is required to ensure archive and filtering stream buffer go out of scope
 	    // before stream
 	    {
-	    	// decompressing frame size
-	//    	io::filtering_streambuf<io::input> in;
-	//    	in.push(io::zlib_decompressor());
-	//    	in.push(ifs);
+//	    	// decompressing frame size
+//	    	io::filtering_streambuf<io::input> in;
+//	    	in.push(io::zlib_decompressor());
+//	    	in.push(ifs);
 
 	    	boost::archive::binary_iarchive ia(ifs);
 
-	    	bool cont = true, showFrame = false;
-	    	while (cont)
+	    	bool hasContent = true;
+	    	while (hasContent)
 	    	{
-	    		//std::cout << "loading image from binary file ... "<< std::endl;
-	    		if(cont && firstFrame){
-	    			cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
-	    			// define the video parameters
-	    			vRecoder->createVideo(videoFilePath, loadedFrame.cols, loadedFrame.rows);
-	    			firstFrame = false;
-	    		}
-	    		else if(cont){
-	    			cont = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
-	    			vRecoder->addFrame(loadedFrame);
-	    		}
+	    		if(firstFrame){
+	    			hasContent = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
+	    			if(hasContent){
+	    				vRecoder->createVideo(videoFilePath, loadedFrame.cols, loadedFrame.rows);
+	    				vRecoder->addFrame(loadedFrame);
+	    				firstFrame = false;
 
-	    		if(cont && showFrame){
-	    			std::cout << "loading image from binary file ... "<< std::endl;
-	        	    cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
-	        	    cv::imshow( "Display window", loadedFrame );
-	        	    cv::waitKey(0);
+	    				if(showFrame)
+	    					displayFrame(&loadedFrame);
+	    			}
+	    		}
+	    		else{
+	    			hasContent = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
+	    			if(hasContent){
+	    				vRecoder->addFrame(loadedFrame);
+	    				if(showFrame)
+	    					displayFrame(&loadedFrame);
+	    			}
+
 	    		}
 	    	}
 	    	ifs.close();
@@ -315,4 +324,9 @@ int FrameManager::createVideo(){
 	createVideoActive = false;
 	ROS_INFO("finished createVideo ...");
 	return -1;
+}
+void FrameManager::displayFrame(cv::Mat* mat){
+	cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
+	cv::imshow( "Display window", *mat );
+	cv::waitKey(1);
 }
