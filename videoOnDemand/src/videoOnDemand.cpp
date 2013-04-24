@@ -67,6 +67,7 @@ int main(int argc, char **argv)
 	ROS_INFO("advertising getVideo service ...");
 	ros::ServiceServer service = nHandler.advertiseService("getVideo", getVideoCallback);
 	ROS_INFO("subscribing for thermal_image_view ...");
+	// subscribed on topic THERMAL_IMAGE_VIEW
 	ros::Subscriber sub = nHandler.subscribe("/optris/thermal_image_view", 2, processFrameCallback);
 
 	ros::spin();

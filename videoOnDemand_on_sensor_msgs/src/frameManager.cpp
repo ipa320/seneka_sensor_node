@@ -60,6 +60,7 @@ FrameManager::FrameManager() {
 	iBuilder.setPalette(optris::eIron);
 	iBuilder.setManualTemperatureRange((float)20, (float)40);
 	showFrame = false;
+	snapshotRunning = false;
 
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
@@ -105,6 +106,9 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	cacheA = new std::vector<sensor_msgs::Image>;
 	cacheB = new std::vector<sensor_msgs::Image>;
 
+	snapshotRunning = false;
+	startSnapshots(5000);
+
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
 	}
@@ -117,6 +121,7 @@ FrameManager::~FrameManager() {
 
 void FrameManager::processFrame(const sensor_msgs::Image& img){
 	//ROS_INFO("processFrame ... ");
+	// caching current frame in memory
 	cacheFrame(img);
 }
 
@@ -129,7 +134,8 @@ void FrameManager::cacheFrame(sensor_msgs::Image frame){
 std::vector<sensor_msgs::Image>* FrameManager::getCurrentCache(){
 	//ROS_INFO("getCurrentCache ... ");
 
-	// proofs the sizes of memory buffers and if necessary it will schedule further tasks
+	// verifying the sizes of memory buffers
+	// and if necessary it will schedule further tasks
 	verifyCacheSize();
 
 	if(usingCacheA == true && usingCacheB == false){
@@ -174,7 +180,6 @@ void FrameManager::verifyCacheSize(){
 void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* threadActive){
 
 	ROS_INFO("storeCache into binary file...");
-	//std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
 	// define fileStorage-filename
 	std::stringstream fileName;
 	fileName << binaryFilePath << binaryFileIndex << ".bin";
@@ -205,7 +210,6 @@ void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* thre
 	// unlock current binary file
 	binaryFileMutexes[binaryFileIndex]->unlock();
 
-	// current const. allocation -> has to be adapted dynamic
 	if(binaryFileIndex < (fpv/fpb)-1)
 		binaryFileIndex++;
 	else{
@@ -224,7 +228,7 @@ int FrameManager::getVideo(){
 	if(fullVideoAvailable == true){
 		// it is only possible to create one video at a time
 		if(createVideoActive == false){
-			// starts creating the video in a seperate thread
+			// starts creating the video in a separate thread
 			creatingVideoThread = boost::thread(boost::bind(&FrameManager::createVideo, this));
 			return 1;
 		}
@@ -346,7 +350,8 @@ cv::Mat FrameManager::convertTemperatureValuesToRGB(sensor_msgs::Image* frame, u
 	rgb_img.step		    = frame->width*3;
 	rgb_img.data.resize(rgb_img.height*rgb_img.step);
 
-	rgb_img.header.seq      = *frameCount++;
+	*frameCount = *frameCount + 1;
+	rgb_img.header.seq      = *frameCount;
 	rgb_img.header.stamp    = ros::Time::now();
 
 	for(unsigned int i=0; i< frame->width* frame->height*3; i++)
@@ -377,3 +382,54 @@ void FrameManager::displayFrame(cv::Mat* mat){
 	cv::imshow( "Display window", *mat );
 	cv::waitKey(1);
 }
+
+int FrameManager::startSnapshots(int interval){
+
+	if(!snapshotRunning){
+		snapshotThread = boost::thread(boost::bind(&FrameManager::createSnapshots, this, interval));
+		snapshotRunning = true;
+		return 1;
+	}
+	else
+		return -1;
+}
+
+int FrameManager::stopSnapshots(int interval){
+	snapshotThread.interrupt();
+	return 1;
+}
+
+void FrameManager::createSnapshots(int interval){
+	ROS_INFO("Starting creating snapshots ...");
+	unsigned int imageCounter = 0;
+
+	while(true){
+		std::stringstream imgFile;
+		std::vector<sensor_msgs::Image>* currentCache = getCurrentCache();
+
+		if(currentCache->size() > 0){
+			sensor_msgs::Image img = currentCache->at(currentCache->size()-1);
+
+			// file name and path to the image files
+			// file name is the current system time stamp
+			imgFile << "/home/cmm-jg/Bilder/snapshots/" << ros::Time::now() << ".jpg";
+
+			// create JPEG image
+			cv::Mat m = convertTemperatureValuesToRGB(&img, &imageCounter);
+//			displayFrame(&m);
+			cv::imwrite(imgFile.str(), m);
+
+			try{
+				// set thread sleeping for the chosen interval
+				boost::this_thread::sleep(boost::posix_time::milliseconds(interval));
+		    }
+		    catch(boost::thread_interrupted const& )
+		    {
+		    	snapshotRunning = false;
+		    	ROS_INFO("Stopping creating snapshots ...");
+		    }
+		}
+	}
+}
+
+

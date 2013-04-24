@@ -8,6 +8,7 @@
 	<param name="videoFrameRate"        type="int"    value="10"/>
 	<param name="binaryFilePath"        type="string" value="/home/cmm-jg/Bilder/container"/>
 	<param name="videoFilePath"         type="string" value="/home/cmm-jg/Bilder/videoOnDemand.avi"/>
+	<param name="showFrame"				type="bool"   value="true"/>
       
   </node>
 </group>

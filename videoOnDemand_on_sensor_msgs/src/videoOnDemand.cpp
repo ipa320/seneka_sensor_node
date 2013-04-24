@@ -62,13 +62,12 @@ int main(int argc, char **argv)
 	ros::init(argc, argv, "VODNODE");
 	// attributes
 	ros::NodeHandle nHandler("VODNODE");
-	//const float SNAPSHOT_INTERVAL = 25;
 	fManager = new FrameManager(nHandler);
 
 	ROS_INFO("advertising getVideo service ...");
 	ros::ServiceServer service = nHandler.advertiseService("getVideo", getVideoCallback);
-	ROS_INFO("subscribing for thermal_image_view ...");
-	//ros::Subscriber sub = nHandler.subscribe("/optris/thermal_image_view", 2, processFrameCallback);
+	ROS_INFO("subscribing for thermal_image ...");
+	// subscribed on topic THERMAL_IMAGE
 	ros::Subscriber sub = nHandler.subscribe("/optris/thermal_image", 2, processFrameCallback);
 
 	ros::spin();

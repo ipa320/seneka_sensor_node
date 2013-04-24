@@ -35,6 +35,7 @@ public:
 	virtual ~FrameManager();
 	void processFrame(const sensor_msgs::Image& img);
 	int getVideo();
+	void createSnapshots(int interval);
 
 private:
 
@@ -47,6 +48,11 @@ private:
 	void storeFrame(sensor_msgs::Image frame);
 	void displayFrame(cv::Mat* mat);
 	cv::Mat convertTemperatureValuesToRGB(sensor_msgs::Image* frame, unsigned int* frameCount);
+	int startSnapshots(int interval);
+	int stopSnapshots(int interval);
+	int startLiveStream();
+	int stopLiveStream();
+
 
 	// cache attributes and references (memory buffers)
 	u_int fpv;			// frames per video
@@ -81,6 +87,8 @@ private:
 	bool storingCacheB;
 	boost::thread creatingVideoThread;
 	boost::thread cachingThread;
+	boost::thread snapshotThread;
+	bool snapshotRunning;
 };
 
 #endif /* FRAMEMANAGERH_ */

@@ -72,6 +72,7 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	nHandler.getParam("videoFrameRate", tmp_vfr);
 	nHandler.getParam("binaryFilePath", binaryFilePath);
 	nHandler.getParam("videoFilePath", videoFilePath);
+	nHandler.getParam("showFrame", showFrame);
 
 	if(tmp_fpv>0) fpv=(u_int)tmp_fpv;
 	if(tmp_fpc>0) fpc=(u_int)tmp_fpc;
@@ -89,8 +90,6 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	storingCacheB = false;
 	cacheA = new std::vector<cv::Mat>;
 	cacheB = new std::vector<cv::Mat>;
-
-	showFrame = true;
 
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
@@ -130,7 +129,8 @@ void FrameManager::cacheFrame(cv::Mat frame){
 std::vector<cv::Mat>* FrameManager::getCurrentCache(){
 	//ROS_INFO("getCurrentCache ... ");
 
-	// proofs the sizes of memory buffers and if necessary it will schedule further tasks
+	// verifying the sizes of memory buffers
+	// and if necessary it will schedule further tasks
 	verifyCacheSize();
 
 	if(usingCacheA == true && usingCacheB == false){
@@ -149,7 +149,7 @@ void FrameManager::verifyCacheSize(){
 	//ROS_INFO("verifyCacheSize ... ");
 
 	if(cacheA->size() == fpc && storingCacheA == false){
-		// cacheA is full -> store frame to fileStorages
+		// cacheA is full -> store frames into binary file
 
 		storingCacheA = true;
 		usingCacheA = false;
@@ -160,13 +160,12 @@ void FrameManager::verifyCacheSize(){
 		storingThreadA = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheA, &storingCacheA));
 	}
 	else if (cacheB->size() == fpc && storingCacheB == false){
-		// cacheB is full -> store frame to fileStorage
+		// cacheB is full -> store frames into binary file
 
 		storingCacheB = true;
 		usingCacheB = false;
 		usingCacheA = true;
 
-//		std::cout << "thread ID: "<< boost::this_thread::get_id() << std::endl;
 		ROS_INFO("Waiting for storingCacheA");
 		storingThreadA.join();
 		storingThreadB = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheB, &storingCacheB));
@@ -196,7 +195,6 @@ void FrameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 
         // writes each frame which is stored in cache into binary file
     	for (std::vector<cv::Mat>::iterator it = cache->begin() ; it != cache->end(); it++){
-
     		// write frame into binary file, using cv:Mat serialization
     		oa << *it;
     	}
@@ -207,7 +205,6 @@ void FrameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
     // unlock current binary file
     binaryFileMutexes[binaryFileIndex]->unlock();
 
-    // current const. allocation -> has to be adapted dynamic
     if(binaryFileIndex < (fpv/fpb)-1)
     	binaryFileIndex++;
     else{
@@ -224,9 +221,11 @@ void FrameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 }
 
 int FrameManager::getVideo(){
-
+	// a full video is available if the minimal count of frames is reached (minimal count = frame per video)
 	if(fullVideoAvailable == true){
+		// it is only possible to create one video at a time
 		if(createVideoActive == false){
+			// starts creating the video in a separate thread
 			creatingVideoThread = boost::thread(boost::bind(&FrameManager::createVideo, this));
 			return 1;
 		}
