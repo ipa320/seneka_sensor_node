@@ -62,10 +62,13 @@
 #include <tf/tf.h>
 #include <ros/console.h>
 #include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/Vector3.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <std_msgs/String.h> 
 #include <std_msgs/String.h> 
 
 // external includes
@@ -85,8 +88,13 @@ private:
   // std-vector storing the personal best solution of the particle
   std::vector<seneka_sensor_model::FOV_2D_model> pers_best_;
 
-  // target-array
-  int *targets_;
+  // target vectors
+  std::vector<int> targets_x_;
+  std::vector<int> targets_y_;
+
+  // perimeter vectors
+  std::vector<int> perimeter_x_;
+  std::vector<int> perimeter_y_;
 
   // number of sensors
   int sensor_num_;
@@ -101,10 +109,10 @@ private:
   double pers_best_coverage_;
 
   // coverage matrix in row-major order (sensors in rows, target in columns)
-  int *coverage_matrix_;
+  std::vector<int> coverage_matrix_;
 
   // actual area of interest to be covered by the sensor nodes
-  geometry_msgs::Polygon area_of_interest_;
+  geometry_msgs::PolygonStamped area_of_interest_;
 
   // actual map
   nav_msgs::OccupancyGrid map_;
@@ -145,10 +153,39 @@ public:
   // function that sets the member variable sensor_num_ and reserves capacity for vector sensors_
   void setSensorNum(int num_of_sensors);
 
+  // function that sets the member variables targets_x_ and targets_y_
+  void setTargets(std::vector<int> in_x, std::vector<int> in_y);
+
+  // function that sets the member variables perimeter_x_ and perimeter_y_
+  void setPerimeter(std::vector<int> in_x, std::vector<int> in_y);
+
+  // function that sets the map
+  void setMap(nav_msgs::OccupancyGrid new_map);
+
+  // function that sets the area of interest
+  void setAreaOfInterest(geometry_msgs::PolygonStamped new_poly);
+
+  // ********************** coordinate functions **********************
+
+  // functions to calculate between map (grid) and world coordinates
+  double mapToWorldX(int map_x);
+  double mapToWorldY(int map_y);
+  int worldToMapX(double world_x);
+  int worldToMapY(double world_y);
+
   // ************************ update functions ************************
+
+  // function to place the sensors randomly on the perimeter
+  void placeSensorsRandomlyOnPerimeter();
+
+  // function to initialize the sensors velocities randomly
+  void initializeRandomSensorVelocities();
 
   // function to update particle during PSO
   void updateParticle(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3);
+
+  // function to calculate the actual  and personal best coverage
+  void calcCoverage();
 
   // function to calculate coverage matrix
   void calcCoverageMatrix();
@@ -157,9 +194,16 @@ public:
   bool checkMultipleCoverage(int target);
 
   // function to check coverage of given sensor and target
-  bool checkCoverage(seneka_sensor_model::FOV_2D_model sensor, int target);
+  bool checkCoverage(seneka_sensor_model::FOV_2D_model sensor, int target_x, int target_y);
 
   // ************************* help functions *************************
+
+  // functions to calculate the norm of a 2D/3D vector
+  double vecNorm(double x, double y, double z = 0);
+  double vecNorm(geometry_msgs::Vector3 v);
+
+  // function to calculate the dot product of two vectors
+  double vecDotProd(geometry_msgs::Vector3 v, geometry_msgs::Vector3 w);
 
   // function to generate random number in given interval
   double randomNumber(double low, double high);

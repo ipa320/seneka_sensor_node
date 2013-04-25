@@ -57,6 +57,17 @@ sensor_placement_node::sensor_placement_node()
   nh_ = ros::NodeHandle();
   pnh_ = ros::NodeHandle("~");
 
+  // ros subscribers
+
+  // ros publishers
+  poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_poly",1);
+
+  // ros service servers
+  ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
+
+  // ros service clients
+  sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
+
   // get parameters from parameter server if possible
   if(!pnh_.hasParam("number_of_sensors"))
   {
@@ -107,38 +118,110 @@ sensor_placement_node::sensor_placement_node()
   }
   pnh_.param("c3",PSO_param_3_,1.49445);
 
-  // initiliaze targets 
-  targets_ = NULL;
-
   // initialize best coverage
   best_cov_ = 0;
+
+  // initialize other variables
+  map_received_ = false;
+  poly_received_ = true;
+  targets_saved_ = false;
+
+  if(poly_.polygon.points.empty())
+  {
+    geometry_msgs::Point32 p_test;
+    p_test.x = -10;
+    p_test.y = 0;
+    p_test.z = 0;
+
+    poly_.polygon.points.push_back(p_test);
+
+    p_test.x = 10;
+    p_test.y = 0;
+    p_test.z = 0;
+
+    poly_.polygon.points.push_back(p_test);
+
+    p_test.x = 10;
+    p_test.y = 20;
+    p_test.z = 0;
+
+    poly_.polygon.points.push_back(p_test);
+
+    p_test.x = -10;
+    p_test.y = 20;
+    p_test.z = 0;
+
+    poly_.polygon.points.push_back(p_test);
+
+    poly_.header.frame_id = "/map";
+  }
+
+  area_of_interest_ = poly_;
 
 }
 
 // destructor
-sensor_placement_node::~sensor_placement_node()
-{
-  delete[] targets_;
-}
+sensor_placement_node::~sensor_placement_node(){}
 
-// function for the particle swarm optimization
-void sensor_placement_node::particleSwarmOptimization()
+bool sensor_placement_node::getTargets()
 {
-  cout << "starting particle swarm optimization algorithm" << endl;
-  cout <<  endl;
-  cout << "getting targets from specified map and area of interest!" << endl;
-  getTargets();
-  cout << "initializing particle swarm" << endl;
-  initializePSO();
-  cout << "optzimization step" << endl;
-  PSOptimize();
-  cout << "optimization done with coverage result: " << best_cov_ << "per cent" << endl;
-}
+  // initialize result
+  bool result = false;
 
+  if(map_received_ == true)
+  { 
+    // only if we received a map, we can get targets
+    if(poly_received_ == false)
+    {
+      // if no polygon was specified, we consider the non-occupied grid cells as targets
+      for(unsigned int i = 0; i < map_.info.width; i++)
+      {
+        for(unsigned int j = 0; j < map_.info.height; j++)
+        {
+          if(map_.data[ j * map_.info.width + i] == 0)
+          {
+            targets_x_.push_back(i);
+            targets_y_.push_back(j);
+          }
+        }
+      }
+      result = true;
+    }
+    else
+    {
+      // if area of interest polygon was specified, we consider the non-occupied grid cells within the polygon as targets
+      for(unsigned int i = 0; i < map_.info.width; i++)
+      {
+        for(unsigned int j = 0; j < map_.info.height; j++)
+        {
+          // calculate world coordinates from map coordinates of given target
+          geometry_msgs::Pose2D world_Coord;
+          world_Coord.x = mapToWorldX(i);
+          world_Coord.y = mapToWorldX(j);
+          world_Coord.theta = 0;
 
-void sensor_placement_node::getTargets()
-{
-  // to be done
+          if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1 || 
+             pointInPolygon(world_Coord, area_of_interest_.polygon) == 0 )
+          {
+            if(map_.data[ j * map_.info.width + i] == 0)
+            {
+              targets_x_.push_back(i);
+              targets_y_.push_back(j);
+
+              if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0 )
+              {
+                perimeter_x_.push_back(i);
+                perimeter_y_.push_back(j);
+              }
+            }
+          }
+        }
+      }
+      result = true;
+    }
+  }
+  
+  return result;
 }
 
 // function to initialize PSO-Algorithm
@@ -153,7 +236,36 @@ void sensor_placement_node::initializePSO()
   particle_swarm_.assign(particle_num_,dummy_particle);
 
   // initialze the global best solution
-  global_best_.assign(sensor_num_, dummy_2D_model.getSensorPose());
+  global_best_.reserve(sensor_num_);
+
+  double actual_coverage = 0;
+
+  // initialize sensors randomly on perimeter for each particle with random velocities
+  if(poly_received_)
+  {
+    for(size_t i = 0; i < particle_swarm_.size(); i++)
+    {
+      // set map and area of interest for each particle
+      particle_swarm_[i].setMap(map_);
+      particle_swarm_[i].setAreaOfInterest(area_of_interest_);
+      // initiliaze sensor poses randomly on perimeter
+      particle_swarm_[i].placeSensorsRandomlyOnPerimeter();
+      // initialze sensor velocities randomly
+      particle_swarm_[i].initializeRandomSensorVelocities();
+      // calculate the initial coverage matrix
+      particle_swarm_[i].calcCoverageMatrix();
+      // calculate the initial coverage
+      particle_swarm_[i].calcCoverage();
+      // get calculated coverage
+      actual_coverage = particle_swarm_[i].getActualCoverage();
+      // check if the actual coverage is a new global best
+      if(actual_coverage > best_cov_)
+      {
+        best_cov_ = actual_coverage;
+        global_best_ = particle_swarm_[i].getPersonalBestPositions();
+      }
+    }
+  }
 }
 
 // function for the actual particle-swarm-optimization
@@ -195,9 +307,341 @@ void sensor_placement_node::getGlobalBest()
   }
 }
 
+// functions to calculate between map (grid) and world coordinates
+double sensor_placement_node::mapToWorldX(int map_x)
+{
+  if(map_received_)
+    return map_.info.origin.position.x + (map_x * map_.info.resolution);
+  else
+    return 0;
+}
+
+double sensor_placement_node::mapToWorldY(int map_y)
+{
+  if(map_received_)
+    return map_.info.origin.position.y + (map_y * map_.info.resolution);
+  else
+    return 0;
+}
+
+int sensor_placement_node::worldToMapX(double world_x)
+{
+  if(map_received_)
+    return (world_x - map_.info.origin.position.x) / map_.info.resolution;
+  else 
+    return 0;
+}
+
+int sensor_placement_node::worldToMapY(double world_y)
+{
+  if(map_received_)
+    return (world_y - map_.info.origin.position.y) / map_.info.resolution;
+  else 
+    return 0;
+}
+
+// function to gerenate random numbers in given interval
 double sensor_placement_node::randomNumber(double low, double high)
 {
   return ((double) rand()/ RAND_MAX) * (high - low) + low;
+}
+
+// function to check if a given point is inside (return 1), outside (return -1) 
+// or on an edge (return 0) of a given polygon
+int sensor_placement_node::pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon polygon)
+{
+  // initialize workspace variables
+  int result = -1;
+  bool ignore = false;
+  size_t start_index = 0;
+  bool start_index_set = false;
+  int intersect_count = 0;
+  geometry_msgs::Point32 poly_point_1;
+  geometry_msgs::Point32 poly_point_2;
+
+  // check in the first loopf, if the point lies on any of the polygons edges
+  // and also find the start_index for later algorithm steps
+  for(size_t i = 0; i < polygon.points.size(); i++)
+  {
+    if(i + 1 < polygon.points.size())
+    {
+      poly_point_1 = polygon.points[i];
+      poly_point_2 = polygon.points[i+1];
+    }
+    else
+    {
+      poly_point_1 = polygon.points[i];
+      poly_point_2 = polygon.points[0];
+    }
+
+    if(pointOn1DSegementPose(point, poly_point_1, poly_point_2, 0))
+    {
+      // point lies on the edge of the polygon
+      return 0;
+    }
+    else
+    {
+      if(start_index_set == false)
+      {
+        if(poly_point_1.x != point.x)
+        {
+          start_index = i;
+          start_index_set = true; 
+        }
+      }
+    }
+  }
+
+  // initialize points defining the beam
+  geometry_msgs::Point32 g_1;
+  g_1.x = 0;
+  g_1.y = point.y;
+  g_1.z = 0;
+
+  geometry_msgs::Point32 g_2;
+  g_2.x = 1;
+  g_2.y = point.y;
+  g_2.z = 0;
+
+  // initialize starting point of polygon
+  poly_point_1 = polygon.points[start_index];
+  // initialize counters
+  size_t loop_counter = start_index + 1;
+  size_t loop_counter_mod = loop_counter % polygon.points.size();
+
+  bool while_loop_valid = true;
+  int start_index_counter = 0;
+
+  while(while_loop_valid)
+  {
+    if(loop_counter_mod == (start_index) && start_index_counter == 1)
+    {
+      while_loop_valid = false;
+    }
+
+    if(loop_counter_mod == (start_index + 1) && start_index_counter == 0)
+    {
+      start_index_counter++;
+    }
+
+    poly_point_2 = polygon.points[loop_counter_mod];
+
+    if(ignore)
+    {
+      // check if poly_point_2 is on the complete beam line
+      if(pointOn1DSegementPoint(poly_point_2, g_1, g_2, 2))
+      {
+        ignore = true;
+      }
+      else
+      {
+        if(edgeIntersectsBeamOrLine(point, poly_point_1, poly_point_2, 1))
+        {
+          // the line from starting point intersects the given polygon edge
+          intersect_count ++;
+        }
+        ignore = false;
+        poly_point_1 = poly_point_2;
+        
+      }
+    }
+    else
+    {
+      // check if poly_point_2 is on the beam
+      if(pointOn1DSegementPoint(poly_point_2, g_1, g_2, 1))
+      {
+        ignore = true;
+      }
+      else
+      {
+        if(edgeIntersectsBeamOrLine(point, poly_point_1, poly_point_2, 0))
+        {
+          // the beam to the right from starting point intersects the given polygon edge
+          intersect_count ++;
+        }
+        ignore = false;
+        poly_point_1 = poly_point_2;
+      }
+    }
+    // increment loop counters
+    loop_counter++;
+    loop_counter_mod = loop_counter % polygon.points.size();    
+  }
+
+  if(intersect_count % 2 == 0)
+    result = -1;
+  else
+    result = 1;
+
+  return result;
+}
+
+// helper function to check if a point lies on a 1D-Segment
+// segID = 0 (edge), segID = 1 (beam), segID = 2 (line)
+bool sensor_placement_node::pointOn1DSegementPose(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID)
+{
+  bool result = false;
+
+  if( (start.x == border_1.x && start.y == border_1.y) || (start.x == border_2.x && start.y == border_2.y))
+  {
+    // start equals one of the borders
+    result = true;
+  }
+  else
+  {
+    double t = 0;
+    if( (border_2.x - border_1.x) != 0)
+    {
+      t = (start.x - border_1.x) / (border_2.x - border_1.x);
+    }
+    else
+    {
+      if( (border_2.y - border_1.y) != 0)
+      {
+        t = (start.y - border_1.y) / (border_2.y - border_1.y);
+      }
+    }
+    bool checker = false;
+    switch(segID)
+    {
+      case 0: // edge
+        if(t > 0 && t < 1)
+          checker = true;
+        break;
+      case 1: // beam
+        if(t > 0)
+          checker = true;
+        break;
+      case 2: // line
+        checker = true;
+        break;
+      default: // wrong input
+        checker = false; 
+    }
+    if(checker)
+    {
+      if( (border_1.x*(1-t) + t*border_2.x == start.x) && ((border_1.y*(1-t) + t*border_2.y == start.y)) )
+      {
+        // start lies on the segment
+        result = true;
+      }
+    }
+  }
+
+  return result;
+}
+
+bool sensor_placement_node::pointOn1DSegementPoint(geometry_msgs::Point32 start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID)
+{
+  geometry_msgs::Pose2D help_pose;
+  help_pose.x = start.x;
+  help_pose.y = start.y;
+  help_pose.theta = 0;
+
+  return pointOn1DSegementPose(help_pose, border_1, border_2, segID);
+}
+
+// helper function to check if the beam of line from start intersects the given plygon edge
+// segID = 0 (beam), segID = 1 (line)
+bool sensor_placement_node::edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID)
+{
+  // initialize workspace
+  bool result = false;
+  if(border_1.y == border_2.y)
+  {
+    // edge is parallel or coincides with line or beam
+    result = false;
+  }
+  else
+  {
+    double t = -(start.x - border_1.x) + ( (border_2.x - border_1.x) * (start.y - border_1.y) ) / (border_2.y - border_1.y);
+    double s = (start.y - border_1.y) / (border_2.y - border_1.y);
+
+    switch(segID)
+    {
+      case 0: // beam
+        if(t > 0 && s > 0 && s < 1)
+          result = true;
+        break;
+      case 1: // line
+        if(s > 0 && s < 1)
+          result = true;
+        break;
+      default: // wrong input
+        result = false; 
+    }
+  }
+
+  return result;
+
+}
+
+// callback function for the start PSO service
+bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+
+  // ******************* test stuff *******************
+  geometry_msgs::Pose2D test_pose;
+
+  test_pose.x = -40;
+  test_pose.y = 1;
+  test_pose.theta = 0;
+
+  //cout << "Test point in Polygon: " << pointInPolygon(test_pose, poly_.polygon) << endl;
+
+  // ******************* test stuff end *******************
+
+  // call static_map-service from map_server to get the actual map  
+  sc_get_map_.waitForExistence();
+
+  nav_msgs::GetMap srv_map;
+
+  if(sc_get_map_.call(srv_map))
+  {
+    ROS_INFO("Map service called successfully");
+    const nav_msgs::OccupancyGrid& new_map (srv_map.response.map);
+    map_ = new_map;
+    map_received_ = true;
+  }
+  else
+  {
+    ROS_INFO("Failed to call map service");
+  }
+
+  if(map_received_)
+  ROS_INFO("Received a map");
+
+  ROS_INFO("getting targets from specified map and area of interest!");
+
+  targets_saved_ = getTargets();
+  if(targets_saved_)
+    ROS_INFO("Saved the targets in std-vector");
+
+  ROS_INFO("Initializing particle swarm");
+  initializePSO();
+
+  ROS_INFO("Particle swarm Optimization step");
+  //PSOptimize();
+
+  ROS_INFO("PSO terminated successfully");
+
+  return true;
+
+}
+
+// callback function for the map topic
+/*void sensor_placement_node::mapCB(const nav_msgs::OccupancyGrid::ConstPtr &map)
+{
+  map_ = *map;
+
+  map_received_ = true;
+}*/
+
+void sensor_placement_node::publishPolygon()
+{  
+
+  poly_pub_.publish(poly_);
+
 }
 
 int main(int argc, char **argv)
@@ -208,6 +652,14 @@ int main(int argc, char **argv)
   // create Node Class
   sensor_placement_node my_placement_node;
 
-  ros::spin();
+  ros::Rate loop_rate(10);
+
+  while(my_placement_node.nh_.ok())
+  {
+    my_placement_node.publishPolygon();
+    ros::spinOnce();
+
+    loop_rate.sleep();
+  }
 
 }

@@ -62,8 +62,15 @@
 #include <tf/tf.h>
 #include <ros/console.h>
 #include <geometry_msgs/Polygon.h>
+#include <geometry_msgs/PolygonStamped.h>
+#include <geometry_msgs/Point32.h>
+#include <geometry_msgs/Pose2D.h>
+#include <visualization_msgs/MarkerArray.h>
+#include <visualization_msgs/Marker.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_msgs/String.h>
+#include <std_srvs/Empty.h>
+#include <nav_msgs/GetMap.h>
 
 // external includes
 #include <sensor_model.h>
@@ -78,8 +85,18 @@ private:
   // actual 2D-grid-map
   nav_msgs::OccupancyGrid map_;
 
+  // bool variable to check if a map was already received
+  bool map_received_;
+
+  // bool variable to check if a polygon was already received
+  bool poly_received_;
+
+  // bool variable to check if the targets were already taken from the map
+  bool targets_saved_;
+
   // actual area of interest to be covered by the sensor nodes
-  geometry_msgs::Polygon area_of_interest_;
+  geometry_msgs::PolygonStamped area_of_interest_;
+  geometry_msgs::PolygonStamped poly_;
 
   // number of sensors
   int sensor_num_;
@@ -111,8 +128,13 @@ private:
   // number of targets for PSO
   int target_num_;
 
-  // target array
-  int* targets_;
+  // target vectors
+  vector<int> targets_x_;
+  vector<int> targets_y_;
+
+  // perimeter vectors
+  vector<int> perimeter_x_;
+  vector<int> perimeter_y_;
 
   // PSO parameter constants
   double PSO_param_1_;
@@ -131,18 +153,21 @@ public:
   ros::NodeHandle nh_, pnh_;
 
   // declaration of ros subscribers
-  ros::Subscriber map_sub_;
   ros::Subscriber poly_sub_;
 
   // declaration of ros publishers
+  ros::Publisher poly_pub_;
+
+  // declaration of ros service servers
+  ros::ServiceServer ss_start_PSO_;
+
+  // declaration of ros service clients
+  ros::ServiceClient sc_get_map_;
 
   // *************************** functions ***************************
 
-  // function for the particle swarm optimization
-  void particleSwarmOptimization();
-
   // function to get an array of targets from the map and the area of interest specified as polygon
-  void getTargets();
+  bool getTargets();
 
   // function to initialize PSO-Algorithm
   void initializePSO();
@@ -156,11 +181,32 @@ public:
   // function to gerenate random numbers in given interval
   double randomNumber(double low, double high);
 
-  // callback function for the map topic
-  void mapCB(const nav_msgs::OccupancyGrid::ConstPtr &map);
+  // functions to calculate between map (grid) and world coordinates
+  double mapToWorldX(int map_x);
+  double mapToWorldY(int map_y);
+  int worldToMapX(double world_x);
+  int worldToMapY(double world_y);
+
+  // function to check if a given point is inside (return 1), outside (return -1) 
+  // or on an edge (return 0) of a given polygon
+  int pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon polygon);
+
+  // helper functions to check if a point lies on a 1D-Segment
+  // segID = 0 (edge), segID = 1 (beam), segID = 2 (line)
+  bool pointOn1DSegementPose(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
+  bool pointOn1DSegementPoint(geometry_msgs::Point32 start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
+
+  // helper function to check if the beam of line from start intersects the given plygon edge
+  // segID = 0 (beam), segID = 1 (line)
+  bool edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
+
+  // callback function for the start PSO service
+  bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback function for the polygon topic
   void polygonCB(const geometry_msgs::Polygon::ConstPtr &poly);
+
+  void publishPolygon();
 
 };
 

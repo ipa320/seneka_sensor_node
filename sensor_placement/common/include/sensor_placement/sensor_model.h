@@ -93,7 +93,7 @@ protected:
   double range_;
 
   // sensor opening angles
-  double open_angles_[2];
+  std::vector<double> open_angles_;
 
 public:
 
@@ -127,8 +127,18 @@ public:
   // functgion to get actual velocity
   virtual geometry_msgs::Twist getVelocity() = 0;
 
+  // functgion to get the maximal velocity
+  virtual geometry_msgs::Twist getMaxVelocity() = 0;
+
   // function to get actual sensor pose
   virtual geometry_msgs::Pose getSensorPose() = 0;
+
+  // functions to get sensor opening angles
+  virtual std::vector<double> getOpenAngles() = 0;
+
+  // function to set sensor range
+  virtual double getRange() = 0;
+
 
   // ************************* help functions *************************
 
@@ -178,8 +188,17 @@ public:
   // function to get actual velocity
   virtual geometry_msgs::Twist getVelocity();
 
+  // functgion to get the maximal velocity
+  virtual geometry_msgs::Twist getMaxVelocity();
+
   // function to get actual sensor pose
   virtual geometry_msgs::Pose getSensorPose();
+
+  // function to get sensor opening angles
+  virtual std::vector<double> getOpenAngles();
+
+  // function to set sensor range
+  virtual double getRange();
 
   // ************************* help functions *************************
 

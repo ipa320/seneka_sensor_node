@@ -152,8 +152,8 @@ void FOV_2D_model::setSensorPose(geometry_msgs::Pose new_pos)
 // function to set sensor opening angles
 void FOV_2D_model::setOpenAngles(double open_ang1, double open_ang2)
 {
-  open_angles_[0] = open_ang1;
-  open_angles_[1] = open_ang2;
+  open_angles_.push_back(open_ang1);
+  open_angles_.push_back(open_ang2);
 }
 
 // function to set sensor range
@@ -168,9 +168,27 @@ geometry_msgs::Twist FOV_2D_model::getVelocity()
   return vel_;
 }
 
+// functgion to get the maximal velocity
+geometry_msgs::Twist FOV_2D_model::getMaxVelocity()
+{
+  return max_vel_;
+}
+
 geometry_msgs::Pose FOV_2D_model::getSensorPose()
 {
   return sensor_pose_;
+}
+
+// functions to get sensor opening angles
+std::vector<double> FOV_2D_model::getOpenAngles()
+{
+  return open_angles_;
+}
+
+// function to set sensor range
+double FOV_2D_model::getRange()
+{
+  return range_;
 }
 
 // function to generate random number in given interval
