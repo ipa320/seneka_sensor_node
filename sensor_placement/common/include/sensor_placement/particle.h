@@ -215,8 +215,8 @@ public:
   // function to generate random number in given interval
   double randomNumber(double low, double high);
 
-  // visualize the sensors of the particle
-  visualization_msgs::MarkerArray visualize();
+  // returns all visualization markers of the particle
+  visualization_msgs::MarkerArray getVisualizationMarkers();
 
 };
 }

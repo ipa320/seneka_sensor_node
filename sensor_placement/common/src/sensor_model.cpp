@@ -217,8 +217,8 @@ double FOV_2D_model::randomNumber(double low, double high)
   return ((double) rand() / RAND_MAX)*(high - low) + low;
 }
 
-// draws a visualization of the respective sensor model
-visualization_msgs::MarkerArray FOV_2D_model::visualize(unsigned int id)
+// returns the visualization markers of the respective sensor model
+visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned int id)
 {
   visualization_msgs::MarkerArray array;
   visualization_msgs::Marker border, area;
@@ -233,7 +233,7 @@ visualization_msgs::MarkerArray FOV_2D_model::visualize(unsigned int id)
   // setup for border of fov
   border.id = 0;
   border.type = visualization_msgs::Marker::LINE_STRIP;
-  border.scale.x = 1;
+  border.scale.x = 0.1;
   border.color.a = 1.0;
   border.color.r = 1.0;
   border.color.g = 0.0;
@@ -242,7 +242,9 @@ visualization_msgs::MarkerArray FOV_2D_model::visualize(unsigned int id)
   // setup for filling fov using triangle markers
   area.id = 1;
   area.type = visualization_msgs::Marker::TRIANGLE_LIST;
-  area.scale.x = 1;
+  area.scale.x = 1.0;
+  area.scale.y = 1.0;
+  area.scale.z = 1.0;
   area.color.a = 0.5;
   area.color.r = 0.8;
   area.color.g = 0.0;
@@ -252,7 +254,8 @@ visualization_msgs::MarkerArray FOV_2D_model::visualize(unsigned int id)
   border.points.push_back(sensor_pose_.position);
 
   // produce arc for visualization by discretizing it
-  unsigned int num_steps = 1;
+  // TODO: expose as parameter or specify max angle or something
+  unsigned int num_steps = 90;
   double step_size = open_angles_.front() / num_steps;
   geometry_msgs::Point p, last_p;
   for (unsigned int i = 0; i <= num_steps; i++)

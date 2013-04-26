@@ -61,6 +61,7 @@ sensor_placement_node::sensor_placement_node()
 
   // ros publishers
   poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_poly",1);
+  marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1);
 
   // ros service servers
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
@@ -253,13 +254,13 @@ void sensor_placement_node::initializePSO()
   // initialize pointer to dummy sensor_model
   seneka_sensor_model::FOV_2D_model dummy_2D_model;
 
-  // initliaze dummy particle
+  // initialize dummy particle
   seneka_particle::particle dummy_particle = seneka_particle::particle(sensor_num_, target_num_, dummy_2D_model);
   // initialize particle swarm with given number of particles containing given number of sensors
   particle_swarm_.assign(particle_num_,dummy_particle);
 
   // initialze the global best solution
-  global_best_.reserve(sensor_num_);
+  global_best_ = dummy_particle;
 
   double actual_coverage = 0;
 
@@ -290,7 +291,7 @@ void sensor_placement_node::initializePSO()
       {
         best_cov_ = actual_coverage;
         ROS_INFO_STREAM("new best coverage: "<< best_cov_<<" gained from particle " << i);
-        global_best_ = particle_swarm_[i].getPersonalBestPositions();
+        global_best_ = particle_swarm_[i];
       }
     }
   }
@@ -310,7 +311,7 @@ void sensor_placement_node::PSOptimize()
     // update each particle in vector
     for(size_t i=0; i < particle_swarm_.size(); i++)
     {
-      particle_swarm_[i].updateParticle(global_best_, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+      particle_swarm_[i].updateParticle(global_best_.getSolutionPositions(), PSO_param_1_, PSO_param_2_, PSO_param_3_);
       
     }
 
@@ -330,7 +331,7 @@ void sensor_placement_node::getGlobalBest()
     if(particle_swarm_[i].getActualCoverage() > best_cov_)
     {
       best_cov_ = particle_swarm_[i].getActualCoverage();
-      global_best_ = particle_swarm_[i].getSolutionPositions();
+      global_best_ = particle_swarm_[i];
     }
   }
 }
@@ -651,6 +652,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   ROS_INFO("Particle swarm Optimization step");
   //PSOptimize();
 
+  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
   ROS_INFO("PSO terminated successfully");
 
   return true;

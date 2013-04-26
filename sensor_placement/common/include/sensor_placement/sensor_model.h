@@ -151,7 +151,7 @@ public:
   virtual double randomNumber(double low, double high) = 0;
 
   // draws a visualization of the respective sensor model
-  virtual visualization_msgs::MarkerArray visualize(unsigned int id) = 0;
+  virtual visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id) = 0;
 };
 
 class FOV_2D_model : public sensor_model
@@ -215,8 +215,8 @@ public:
   // function to generate random number in given interval
   virtual double randomNumber(double low, double high);
 
-  // draws a visualization of the respective sensor model
-  virtual visualization_msgs::MarkerArray visualize(unsigned int id);
+  // returns the visualization markers of the respective sensor model
+  virtual visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id);
 };
 
 class FOV_3D_model : public sensor_model

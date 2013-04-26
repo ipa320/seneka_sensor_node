@@ -66,7 +66,6 @@
 #include <geometry_msgs/Point32.h>
 #include <geometry_msgs/Pose2D.h>
 #include <visualization_msgs/MarkerArray.h>
-#include <visualization_msgs/Marker.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
@@ -120,7 +119,7 @@ private:
   vector<seneka_particle::particle> particle_swarm_;
 
   // vector storing the positions global best solution of the particle swarm
-  vector<geometry_msgs::Pose> global_best_;
+  seneka_particle::particle global_best_;
 
   // PSO actual best coverage
   double best_cov_;
@@ -157,6 +156,7 @@ public:
 
   // declaration of ros publishers
   ros::Publisher poly_pub_;
+  ros::Publisher marker_array_pub_; 
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
