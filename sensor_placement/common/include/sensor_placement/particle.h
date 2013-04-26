@@ -70,6 +70,7 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_msgs/String.h> 
 #include <std_msgs/String.h> 
+#include <visualization_msgs/MarkerArray.h>
 
 // external includes
 #include <sensor_model.h>
@@ -207,6 +208,9 @@ public:
 
   // function to generate random number in given interval
   double randomNumber(double low, double high);
+
+  // visualize the sensors of the particle
+  visualization_msgs::MarkerArray visualize();
 
 };
 }

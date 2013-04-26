@@ -196,3 +196,69 @@ double FOV_2D_model::randomNumber(double low, double high)
 {
   return ((double) rand() / RAND_MAX)*(high - low) + low;
 }
+
+// draws a visualization of the respective sensor model
+visualization_msgs::MarkerArray FOV_2D_model::visualize(unsigned int id)
+{
+  visualization_msgs::MarkerArray array;
+  visualization_msgs::Marker border, area;
+
+  // setup standard stuff
+  border.header.frame_id = area.header.frame_id = "/map";
+  border.header.stamp = area.header.stamp = ros::Time();
+  border.ns = area.ns = name_ + boost::lexical_cast<std::string>(id);
+  border.action = area.action = visualization_msgs::Marker::ADD;
+  border.pose = area.pose = sensor_pose_;
+
+  // setup for border of fov
+  border.id = 0;
+  border.type = visualization_msgs::Marker::LINE_STRIP;
+  border.scale.x = 1;
+  border.color.a = 1.0;
+  border.color.r = 1.0;
+  border.color.g = 0.0;
+  border.color.b = 0.0;
+
+  // setup for filling fov using triangle markers
+  area.id = 1;
+  area.type = visualization_msgs::Marker::TRIANGLE_LIST;
+  area.scale.x = 1;
+  area.color.a = 0.5;
+  area.color.r = 0.8;
+  area.color.g = 0.0;
+  area.color.b = 0.0;
+
+  // first point of border
+  border.points.push_back(sensor_pose_.position);
+
+  // produce arc for visualization by discretizing it
+  unsigned int num_steps = 1;
+  double step_size = open_angles_.front() / num_steps;
+  geometry_msgs::Point p, last_p;
+  for (unsigned int i = 0; i <= num_steps; i++)
+  {
+    p.x = sensor_pose_.position.x 
+          + range_ * cos(open_angles_.front() / 2 + i * step_size);
+    p.y = sensor_pose_.position.y 
+          + range_ * sin(open_angles_.front() / 2 + i * step_size);
+    // intermediate point of border
+    border.points.push_back(p);
+
+    // add another triangle
+    if (i>0)
+    {
+      area.points.push_back(sensor_pose_.position);
+      area.points.push_back(last_p);
+      area.points.push_back(p);
+    }
+    last_p = p;
+  }
+
+  // last point of border
+  border.points.push_back(sensor_pose_.position);
+
+  array.markers.push_back(border);
+  array.markers.push_back(area);
+
+  return array;
+}

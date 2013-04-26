@@ -436,3 +436,23 @@ double particle::randomNumber(double low, double high)
 {
   return ((double) rand() / RAND_MAX) * (high - low) + low;
 }
+
+// visualize the sensors of the particle
+visualization_msgs::MarkerArray particle::visualize()
+{
+  visualization_msgs::MarkerArray array, tmp;
+  std::vector<seneka_sensor_model::FOV_2D_model>::iterator it;
+  unsigned int id = 0;
+  // loop over all sensors
+  for ( it = sensors_.begin(); it != sensors_.end(); ++it )
+  {
+    tmp = it->visualize(id);
+    // copy over all markers
+    for (unsigned int i = 0; i < tmp.markers.size(); i++)
+      array.markers.push_back(tmp.markers.at(i));
+    
+    id++;
+  }
+
+  return array;
+}
