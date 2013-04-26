@@ -55,6 +55,7 @@ using namespace seneka_sensor_model;
 // standard constructor for derived class
 FOV_2D_model::FOV_2D_model()
 {
+  setName("camera");
   setOpenAngles(0,0);
   setRange(0);
   setVelocity(0,0,0,0,0,0);
@@ -63,8 +64,9 @@ FOV_2D_model::FOV_2D_model()
 }
 
 // constructor with arguments
-FOV_2D_model::FOV_2D_model(geometry_msgs::Twist new_vel, geometry_msgs::Twist new_max_vel, geometry_msgs::Pose new_pos, double new_range, double new_angle1, double new_angle2)
+FOV_2D_model::FOV_2D_model(geometry_msgs::Twist new_vel, geometry_msgs::Twist new_max_vel, geometry_msgs::Pose new_pos, double new_range, double new_angle1, double new_angle2, std::string new_name)
 {
+  setName(new_name);
   setOpenAngles(new_angle1,new_angle2);
   setRange(new_range);
   setVelocity(new_vel);
@@ -74,6 +76,12 @@ FOV_2D_model::FOV_2D_model(geometry_msgs::Twist new_vel, geometry_msgs::Twist ne
 
 // destructor
 FOV_2D_model::~FOV_2D_model(){}
+
+// function to set the name
+void FOV_2D_model::setName(std::string new_name)
+{
+  name_ = new_name;
+}
 
 // function to set actual velocity
 void FOV_2D_model::setVelocity(double lin_x, double lin_y, double lin_z, double ang_x, double ang_y, double ang_z)
@@ -152,8 +160,20 @@ void FOV_2D_model::setSensorPose(geometry_msgs::Pose new_pos)
 // function to set sensor opening angles
 void FOV_2D_model::setOpenAngles(double open_ang1, double open_ang2)
 {
-  open_angles_.push_back(open_ang1);
-  open_angles_.push_back(open_ang2);
+  if(open_angles_.empty())
+  {
+    open_angles_.push_back(open_ang1);
+    open_angles_.push_back(open_ang2);
+  }
+  else
+  {
+    while(!open_angles_.empty())
+    {
+      open_angles_.pop_back();
+    }
+    open_angles_.push_back(open_ang1);
+    open_angles_.push_back(open_ang2);
+  }
 }
 
 // function to set sensor range

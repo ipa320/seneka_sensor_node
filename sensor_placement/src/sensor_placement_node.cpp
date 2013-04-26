@@ -77,9 +77,27 @@ sensor_placement_node::sensor_placement_node()
 
   if(!pnh_.hasParam("max_sensor_range"))
   {
-    ROS_WARN("No parameter max_sensor_range on parameter server. Using default [3 in m]");
+    ROS_WARN("No parameter max_sensor_range on parameter server. Using default [5.0 in m]");
   }
-  pnh_.param("max_sensor_range_",sensor_range_,3.0);
+  pnh_.param("max_sensor_range_",sensor_range_,5.0);
+
+  double open_angle_1, open_angle_2;
+
+  if(!pnh_.hasParam("open_angle_1"))
+  {
+    ROS_WARN("No parameter open_angle_1 on parameter server. Using default [1.5708 in rad]");
+  }
+  pnh_.param("open_angle_1",open_angle_1,1.5708);
+
+  open_angles_.push_back(open_angle_1);
+
+  if(!pnh_.hasParam("open_angle_2"))
+  {
+    ROS_WARN("No parameter open_angle_2 on parameter server. Using default [0.0 in rad]");
+  }
+  pnh_.param("open_angle_2",open_angle_2,0.0);
+
+  open_angles_.push_back(open_angle_2);
 
   if(!pnh_.hasParam("number_of_particles"))
   {
@@ -120,6 +138,9 @@ sensor_placement_node::sensor_placement_node()
 
   // initialize best coverage
   best_cov_ = 0;
+
+  // initialize number of targets
+  target_num_ = 0;
 
   // initialize other variables
   map_received_ = false;
@@ -182,6 +203,7 @@ bool sensor_placement_node::getTargets()
           {
             targets_x_.push_back(i);
             targets_y_.push_back(j);
+            target_num_++;
           }
         }
       }
@@ -207,6 +229,7 @@ bool sensor_placement_node::getTargets()
             {
               targets_x_.push_back(i);
               targets_y_.push_back(j);
+              target_num_++;
 
               if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0 )
               {
@@ -245,9 +268,12 @@ void sensor_placement_node::initializePSO()
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      // set map and area of interest for each particle
+      // set map, area of interest, targets and open angles for each particle
       particle_swarm_[i].setMap(map_);
       particle_swarm_[i].setAreaOfInterest(area_of_interest_);
+      particle_swarm_[i].setOpenAngles(open_angles_);
+      particle_swarm_[i].setRange(sensor_range_);
+      particle_swarm_[i].setTargets(targets_x_, targets_y_);
       // initiliaze sensor poses randomly on perimeter
       particle_swarm_[i].placeSensorsRandomlyOnPerimeter();
       // initialze sensor velocities randomly
@@ -258,10 +284,12 @@ void sensor_placement_node::initializePSO()
       particle_swarm_[i].calcCoverage();
       // get calculated coverage
       actual_coverage = particle_swarm_[i].getActualCoverage();
+      ROS_INFO_STREAM("actual coverage: " << actual_coverage << " from particle: " << i);
       // check if the actual coverage is a new global best
       if(actual_coverage > best_cov_)
       {
         best_cov_ = actual_coverage;
+        ROS_INFO_STREAM("new best coverage: "<< best_cov_<<" gained from particle " << i);
         global_best_ = particle_swarm_[i].getPersonalBestPositions();
       }
     }
@@ -615,7 +643,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 
   targets_saved_ = getTargets();
   if(targets_saved_)
-    ROS_INFO("Saved the targets in std-vector");
+    ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
 
   ROS_INFO("Initializing particle swarm");
   initializePSO();
