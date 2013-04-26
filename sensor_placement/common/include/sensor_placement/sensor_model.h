@@ -102,6 +102,9 @@ public:
 
   // ************************ setter functions ************************
 
+  // function to set the name
+  virtual void setName(std::string new_name) = 0;
+
   // function to set actual velocity
   virtual void setVelocity(double lin_x, double lin_y, double lin_z, double ang_x, double ang_y, double ang_z) = 0;
   virtual void setVelocity(geometry_msgs::Twist new_vel) = 0;
@@ -156,12 +159,15 @@ public:
   FOV_2D_model();
 
   // constructor with arguments
-  FOV_2D_model(geometry_msgs::Twist new_vel, geometry_msgs::Twist new_max_vel, geometry_msgs::Pose new_pos, double new_range, double new_angle1, double new_angle2);
+  FOV_2D_model(geometry_msgs::Twist new_vel, geometry_msgs::Twist new_max_vel, geometry_msgs::Pose new_pos, double new_range, double new_angle1, double new_angle2, std::string new_name);
 
   // destructor
   virtual ~FOV_2D_model();
 
   // ************************ setter functions ************************
+
+  // function to set the name
+  virtual void setName(std::string new_name);
 
   // functions to set actual velocity
   virtual void setVelocity(double lin_x, double lin_y, double lin_z, double ang_x, double ang_y, double ang_z);
