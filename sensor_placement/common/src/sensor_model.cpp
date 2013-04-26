@@ -152,8 +152,20 @@ void FOV_2D_model::setSensorPose(geometry_msgs::Pose new_pos)
 // function to set sensor opening angles
 void FOV_2D_model::setOpenAngles(double open_ang1, double open_ang2)
 {
-  open_angles_.push_back(open_ang1);
-  open_angles_.push_back(open_ang2);
+  if(open_angles_.empty())
+  {
+    open_angles_.push_back(open_ang1);
+    open_angles_.push_back(open_ang2);
+  }
+  else
+  {
+    while(!open_angles_.empty())
+    {
+      open_angles_.pop_back();
+    }
+    open_angles_.push_back(open_ang1);
+    open_angles_.push_back(open_ang2);
+  }
 }
 
 // function to set sensor range

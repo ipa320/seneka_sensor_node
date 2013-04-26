@@ -168,6 +168,7 @@ void particle::setTargets(std::vector<int> in_x, std::vector<int> in_y)
 {
   targets_x_ = in_x;
   targets_y_ = in_y;
+  target_num_ = targets_x_.size();
 }
 
 // function that sets the member variables perimeter_x_ and perimeter_y_
@@ -187,6 +188,35 @@ void particle::setMap(nav_msgs::OccupancyGrid new_map)
 void particle::setAreaOfInterest(geometry_msgs::PolygonStamped new_poly)
 {
   area_of_interest_ = new_poly;
+}
+
+// function that sets the opening angles for each sensor in the particle
+bool particle::setOpenAngles(std::vector<double> new_angles)
+{
+  bool result = false;
+  if(new_angles.empty() || (new_angles.size() != 2) )
+  {
+    ROS_WARN("wrong input in particle::setOpenAngles!");
+    return result;
+  }
+  else
+  {
+    for(size_t i = 0; i < sensors_.size(); i++)
+    {
+      sensors_[i].setOpenAngles(new_angles[0], new_angles[1]);
+    }
+    result = true;
+    return result;
+  }
+}
+
+// function that sets the range for each sensor in the particle
+void particle::setRange(double new_range)
+{
+  for(size_t i = 0; i < sensors_.size(); i++)
+  {
+    sensors_[i].setRange(new_range);
+  }
 }
 
 // functions to calculate between map (grid) and world coordinates
@@ -225,7 +255,7 @@ void particle::placeSensorsRandomlyOnPerimeter()
     successor = 0;
     geometry_msgs::Pose randomPose;
 
-    if(edge_ind < area_of_interest_.polygon.points.size())
+    if(edge_ind < (area_of_interest_.polygon.points.size() - 1))
       successor = edge_ind++;
     
     t = randomNumber(0,1);
@@ -315,52 +345,54 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
 void particle::calcCoverage()
 {
   // initialize workspace
-  int num_covered_objects = 0;
+  int num_covered_targets = 0;
   std::vector<bool> target_already_counted;
-  target_already_counted.assign(targets_x_.size(), false);
+  target_already_counted.assign(target_num_, false);
 
-  if(!coverage_matrix_.empty())
+  if(coverage_matrix_.empty())
   {
-    // go through the sensor vector
-    for(size_t i = 0; i < sensors_.size(); i++)
+    coverage_matrix_.assign(sensor_num_*target_num_, 0);
+  }
+  // go through the sensor vector
+  for(size_t i = 0; i < sensors_.size(); i++)
+  {
+    // go through the target vectors
+    for(size_t j = 0; j < targets_x_.size(); j++)
     {
-      // go through the target vectors
-      for(size_t j = 0; j < targets_x_.size(); j++)
+      if( (coverage_matrix_[j * sensors_.size() + i] == 1) && (target_already_counted[j] == false) )
       {
-        if( (coverage_matrix_[j * sensors_.size() + i] == 1) && (target_already_counted[j] == false) )
-        {
-          num_covered_objects++;
-          target_already_counted[j] = true;
-        }
+        num_covered_targets++;
+        target_already_counted[j] = true;
       }
     }
-    // calculate coverage percentage
-    coverage_ = num_covered_objects / targets_x_.size();
-    // check if the actual coverage is a new personal best
-    if(coverage_ > pers_best_coverage_)
-    {
-      pers_best_coverage_ = coverage_;
-      pers_best_ = sensors_;
-    }
+  }
+  // calculate coverage percentage
+  coverage_ = (double) num_covered_targets / target_num_;
+  // check if the actual coverage is a new personal best
+  if(coverage_ > pers_best_coverage_)
+  {
+    pers_best_coverage_ = coverage_;
+    pers_best_ = sensors_;    
   }
 }
 
 // function to calculate coverage matrix
 void particle::calcCoverageMatrix()
 {
-  if(!coverage_matrix_.empty())
+  if(coverage_matrix_.empty())
   {
-    // go through the sensor vector
-    for(size_t i = 0; i < sensors_.size(); i++)
+    coverage_matrix_.assign(sensor_num_*target_num_, 0);
+  }
+  // go through the sensor vector
+  for(size_t i = 0; i < sensors_.size(); i++)
+  {
+    // go through the target vectors
+    for(size_t j = 0; j < targets_x_.size(); j++)  
     {
-      // go through the target vectors
-      for(size_t j = 0; j < targets_x_.size(); j++)  
-      {
-        if(checkCoverage(sensors_[i], targets_x_[j], targets_y_[j]))
-          coverage_matrix_[ j * sensors_.size() + i] = 1;
-        else
-          coverage_matrix_[ j * sensors_.size() + i] = 0;
-      }
+      if(checkCoverage(sensors_[i], targets_x_[j], targets_y_[j]))
+        coverage_matrix_[ j * sensors_.size() + i] = 1;
+      else
+        coverage_matrix_[ j * sensors_.size() + i] = 0;
     }
   }
 }
@@ -405,10 +437,10 @@ bool particle::checkCoverage(seneka_sensor_model::FOV_2D_model sensor, int targe
   vec_sensor_dir.z = 0;
 
   // calculate angle between camera facing direction and target
-  beta = acos( (vecDotProd(vec_sensor_target, vec_sensor_dir) ) / (vecNorm(vec_sensor_target) * vecNorm(vec_sensor_dir) ));
-
+  beta = acos( fabs(vecDotProd(vec_sensor_target, vec_sensor_dir) ) / (vecNorm(vec_sensor_target) * vecNorm(vec_sensor_dir) ));
+  
   // check if given target is visible by given sensor
-  if( (beta <= sensor_angles[0]/2) && vecNorm(vec_sensor_target) <= sensor_range)
+  if( (beta <= ((double) sensor_angles[0]/2)) && vecNorm(vec_sensor_target) <= sensor_range)
     result = true;
 
   return result;

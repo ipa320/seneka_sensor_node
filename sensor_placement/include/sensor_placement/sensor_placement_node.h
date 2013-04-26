@@ -104,8 +104,8 @@ private:
   // maximal range of sensors
   double sensor_range_;
 
-  // opening angle for 2D sensors
-  double open_angle_2D_;
+  // opening angles for sensors
+  std::vector<double> open_angles_;
 
   // number of particles for PSO
   int particle_num_;

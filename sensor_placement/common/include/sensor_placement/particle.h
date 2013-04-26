@@ -165,6 +165,12 @@ public:
   // function that sets the area of interest
   void setAreaOfInterest(geometry_msgs::PolygonStamped new_poly);
 
+  // function that sets the opening angles for each sensor in the particle
+  bool setOpenAngles(std::vector<double> new_angles);
+
+  // function that sets the range for each sensor in the particle
+  void setRange(double new_range);
+
   // ********************** coordinate functions **********************
 
   // functions to calculate between map (grid) and world coordinates
