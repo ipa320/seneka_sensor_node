@@ -55,6 +55,7 @@
 #include <iostream>
 #include <vector>
 #include <math.h>
+#include <time.h>
 #include <stdlib.h>
 
 // ros includes

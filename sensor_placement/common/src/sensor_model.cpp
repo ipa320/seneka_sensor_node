@@ -251,7 +251,7 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
   area.color.b = 0.0;
 
   // first point of border
-  border.points.push_back(sensor_pose_.position);
+  border.points.push_back(geometry_msgs::Point());
 
   // produce arc for visualization by discretizing it
   // TODO: expose as parameter or specify max angle or something
@@ -260,17 +260,15 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
   geometry_msgs::Point p, last_p;
   for (unsigned int i = 0; i <= num_steps; i++)
   {
-    p.x = sensor_pose_.position.x 
-          + range_ * cos(open_angles_.front() / 2 + i * step_size);
-    p.y = sensor_pose_.position.y 
-          + range_ * sin(open_angles_.front() / 2 + i * step_size);
+    p.x = range_ * cos(open_angles_.front() / 2 + i * step_size);
+    p.y = range_ * sin(open_angles_.front() / 2 + i * step_size);
     // intermediate point of border
     border.points.push_back(p);
 
     // add another triangle
     if (i>0)
     {
-      area.points.push_back(sensor_pose_.position);
+      area.points.push_back(geometry_msgs::Point());
       area.points.push_back(last_p);
       area.points.push_back(p);
     }
@@ -278,7 +276,7 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
   }
 
   // last point of border
-  border.points.push_back(sensor_pose_.position);
+  border.points.push_back(geometry_msgs::Point());
 
   array.markers.push_back(border);
   array.markers.push_back(area);

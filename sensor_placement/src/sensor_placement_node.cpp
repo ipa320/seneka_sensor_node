@@ -652,7 +652,16 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   ROS_INFO("Particle swarm Optimization step");
   //PSOptimize();
 
+  // publish global best visualization
   marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+  ROS_INFO("Clean up everything");
+  particle_swarm_.erase(particle_swarm_.begin(), particle_swarm_.end());
+  targets_x_.erase(targets_x_.begin(),targets_x_.end());
+  targets_y_.erase(targets_y_.begin(),targets_y_.end());
+  target_num_ = 0;
+  best_cov_ = 0;
+
   ROS_INFO("PSO terminated successfully");
 
   return true;
@@ -682,6 +691,10 @@ int main(int argc, char **argv)
   // create Node Class
   sensor_placement_node my_placement_node;
 
+  // initialize random seed for all underlying classes
+  srand(time(NULL));
+
+  // initialize loop rate
   ros::Rate loop_rate(10);
 
   while(my_placement_node.nh_.ok())

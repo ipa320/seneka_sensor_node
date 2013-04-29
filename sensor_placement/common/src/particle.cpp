@@ -248,10 +248,11 @@ void particle::placeSensorsRandomlyOnPerimeter()
   size_t successor = 0;
   double t = 0;
   geometry_msgs::Pose randomPose;
+
   for(size_t i = 0; i < sensors_.size(); i++)
   {
     // get index of a random edge of the area of interest specified by a polygon
-    edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size());
+    edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size() -1);
     successor = 0;
     geometry_msgs::Pose randomPose;
 
