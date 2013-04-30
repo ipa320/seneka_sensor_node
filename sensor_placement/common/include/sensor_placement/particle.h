@@ -205,6 +205,19 @@ public:
 
   // ************************* help functions *************************
 
+  // function to check if a given point is inside (return 1), outside (return -1) 
+  // or on an edge (return 0) of a given polygon
+  int pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon polygon);
+
+  // helper functions to check if a point lies on a 1D-Segment
+  // segID = 0 (edge), segID = 1 (beam), segID = 2 (line)
+  bool pointOn1DSegementPose(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
+  bool pointOn1DSegementPoint(geometry_msgs::Point32 start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
+
+  // helper function to check if the beam of line from start intersects the given plygon edge
+  // segID = 0 (beam), segID = 1 (line)
+  bool edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
+
   // functions to calculate the norm of a 2D/3D vector
   double vecNorm(double x, double y, double z = 0);
   double vecNorm(geometry_msgs::Vector3 v);
@@ -214,6 +227,9 @@ public:
 
   // function to generate random number in given interval
   double randomNumber(double low, double high);
+
+  // signum function
+  int signum(double x);
 
   // returns all visualization markers of the particle
   visualization_msgs::MarkerArray getVisualizationMarkers();

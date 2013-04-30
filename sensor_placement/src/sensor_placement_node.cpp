@@ -220,24 +220,22 @@ bool sensor_placement_node::getTargets()
           // calculate world coordinates from map coordinates of given target
           geometry_msgs::Pose2D world_Coord;
           world_Coord.x = mapToWorldX(i);
-          world_Coord.y = mapToWorldX(j);
+          world_Coord.y = mapToWorldY(j);
           world_Coord.theta = 0;
 
-          if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1 || 
-             pointInPolygon(world_Coord, area_of_interest_.polygon) == 0 )
+          if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
           {
             if(map_.data[ j * map_.info.width + i] == 0)
             {
               targets_x_.push_back(i);
               targets_y_.push_back(j);
               target_num_++;
-
-              if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0 )
-              {
-                perimeter_x_.push_back(i);
-                perimeter_y_.push_back(j);
-              }
             }
+          }
+          if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0)
+          {
+            perimeter_x_.push_back(i);
+            perimeter_y_.push_back(j);
           }
         }
       }
@@ -285,12 +283,10 @@ void sensor_placement_node::initializePSO()
       particle_swarm_[i].calcCoverage();
       // get calculated coverage
       actual_coverage = particle_swarm_[i].getActualCoverage();
-      ROS_INFO_STREAM("actual coverage: " << actual_coverage << " from particle: " << i);
       // check if the actual coverage is a new global best
       if(actual_coverage > best_cov_)
       {
         best_cov_ = actual_coverage;
-        ROS_INFO_STREAM("new best coverage: "<< best_cov_<<" gained from particle " << i);
         global_best_ = particle_swarm_[i];
       }
     }
@@ -302,21 +298,27 @@ void sensor_placement_node::PSOptimize()
 {
   // PSO-iterator
   int iter = 0;
+  std::vector<geometry_msgs::Pose> global_pose;
  
   // iteration step
   // continue calculation as long as there are iteration steps left and actual best coverage is 
   // lower than mininmal coverage to stop
   while(iter < iter_max_ && best_cov_ < min_cov_)
   {
+    global_pose = global_best_.getSolutionPositions();
     // update each particle in vector
     for(size_t i=0; i < particle_swarm_.size(); i++)
     {
-      particle_swarm_[i].updateParticle(global_best_.getSolutionPositions(), PSO_param_1_, PSO_param_2_, PSO_param_3_);
-      
-    }
 
+      particle_swarm_[i].updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+    }
     // after update step look for new global best solution 
     getGlobalBest();
+
+    // publish the actual global best visualization
+    marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+    ROS_INFO_STREAM("iteration: " << iter << " with coverage: " << best_cov_);
 
     // increment PSO-iterator
     iter++;
@@ -388,7 +390,7 @@ int sensor_placement_node::pointInPolygon(geometry_msgs::Pose2D point, geometry_
   geometry_msgs::Point32 poly_point_1;
   geometry_msgs::Point32 poly_point_2;
 
-  // check in the first loopf, if the point lies on any of the polygons edges
+  // check in the first loop, if the point lies on any of the polygons edges
   // and also find the start_index for later algorithm steps
   for(size_t i = 0; i < polygon.points.size(); i++)
   {
@@ -549,7 +551,7 @@ bool sensor_placement_node::pointOn1DSegementPose(geometry_msgs::Pose2D start, g
     }
     if(checker)
     {
-      if( (border_1.x*(1-t) + t*border_2.x == start.x) && ((border_1.y*(1-t) + t*border_2.y == start.y)) )
+      if( ( fabs(border_1.x*(1-t) + t*border_2.x - start.x) <= 0.1) && ( fabs(border_1.y*(1-t) + t*border_2.y - start.y) <= 0.1) )
       {
         // start lies on the segment
         result = true;
@@ -576,6 +578,8 @@ bool sensor_placement_node::edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start
 {
   // initialize workspace
   bool result = false;
+  double t = 0;
+  double s = 0;
   if(border_1.y == border_2.y)
   {
     // edge is parallel or coincides with line or beam
@@ -583,8 +587,8 @@ bool sensor_placement_node::edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start
   }
   else
   {
-    double t = -(start.x - border_1.x) + ( (border_2.x - border_1.x) * (start.y - border_1.y) ) / (border_2.y - border_1.y);
-    double s = (start.y - border_1.y) / (border_2.y - border_1.y);
+    t = -(start.x - border_1.x) + ( (border_2.x - border_1.x) * (start.y - border_1.y) ) / (border_2.y - border_1.y);
+    s = (start.y - border_1.y) / (border_2.y - border_1.y);
 
     switch(segID)
     {
@@ -608,17 +612,6 @@ bool sensor_placement_node::edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start
 // callback function for the start PSO service
 bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-
-  // ******************* test stuff *******************
-  geometry_msgs::Pose2D test_pose;
-
-  test_pose.x = -40;
-  test_pose.y = 1;
-  test_pose.theta = 0;
-
-  //cout << "Test point in Polygon: " << pointInPolygon(test_pose, poly_.polygon) << endl;
-
-  // ******************* test stuff end *******************
 
   // call static_map-service from map_server to get the actual map  
   sc_get_map_.waitForExistence();
@@ -649,8 +642,11 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   ROS_INFO("Initializing particle swarm");
   initializePSO();
 
+  // publish global best visualization
+  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
   ROS_INFO("Particle swarm Optimization step");
-  //PSOptimize();
+  PSOptimize();
 
   // publish global best visualization
   marker_array_pub_.publish(global_best_.getVisualizationMarkers());

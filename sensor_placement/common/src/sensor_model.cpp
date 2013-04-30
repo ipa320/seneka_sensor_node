@@ -87,19 +87,24 @@ void FOV_2D_model::setName(std::string new_name)
 void FOV_2D_model::setVelocity(double lin_x, double lin_y, double lin_z, double ang_x, double ang_y, double ang_z)
 {
 
-  vel_.linear.x = lin_x;
-  vel_.linear.y = lin_y;
-  vel_.linear.z = lin_z;
-  vel_.angular.x = ang_x;
-  vel_.angular.y = ang_y;
-  vel_.angular.z = ang_z;
+  vel_.linear.x = signum(lin_x) * std::min(fabs(lin_x), max_vel_.linear.x);
+  vel_.linear.y = signum(lin_y) * std::min(fabs(lin_y), max_vel_.linear.y);
+  vel_.linear.z = signum(lin_z) * std::min(fabs(lin_z), max_vel_.linear.z);
+  vel_.angular.x = signum(ang_x) * std::min(fabs(ang_x), max_vel_.angular.x);
+  vel_.angular.y = signum(ang_y) * std::min(fabs(ang_y), max_vel_.angular.y);
+  vel_.angular.z = signum(ang_z) * std::min(fabs(ang_z), max_vel_.angular.z);
   
 }
 
 // function to set actual velocity
 void FOV_2D_model::setVelocity(geometry_msgs::Twist new_vel)
 {
-  vel_ = new_vel;
+  vel_.linear.x = signum(new_vel.linear.x) * std::min(fabs(new_vel.linear.x), max_vel_.linear.x);
+  vel_.linear.y = signum(new_vel.linear.y) * std::min(fabs(new_vel.linear.y), max_vel_.linear.y);
+  vel_.linear.z = signum(new_vel.linear.z) * std::min(fabs(new_vel.linear.z), max_vel_.linear.z);
+  vel_.angular.x = signum(new_vel.angular.x) * std::min(fabs(new_vel.angular.x), max_vel_.angular.x);
+  vel_.angular.y = signum(new_vel.angular.y) * std::min(fabs(new_vel.angular.y), max_vel_.angular.y);
+  vel_.angular.z = signum(new_vel.angular.z) * std::min(fabs(new_vel.angular.z), max_vel_.angular.z);
 }
 
 // function to set maximal velocity
@@ -215,6 +220,14 @@ double FOV_2D_model::getRange()
 double FOV_2D_model::randomNumber(double low, double high)
 {
   return ((double) rand() / RAND_MAX)*(high - low) + low;
+}
+
+int FOV_2D_model::signum(double x)
+{
+  if(x >= 0)
+    return 1;
+  if(x < 0)
+    return -1;
 }
 
 // returns the visualization markers of the respective sensor model
