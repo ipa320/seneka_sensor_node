@@ -344,7 +344,6 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     vec_sensor_dir.x = cos(actual_angle);
     vec_sensor_dir.y = sin(actual_angle);
     vec_sensor_dir.z = 0;
-    //ROS_INFO_STREAM("actual direction: " << vec_sensor_dir);
 
     // here is the actual particle swarm optimization step
     // update the velocities for each sensor
