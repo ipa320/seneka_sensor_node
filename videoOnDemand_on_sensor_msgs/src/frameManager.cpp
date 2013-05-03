@@ -61,6 +61,8 @@ FrameManager::FrameManager() {
 	iBuilder.setManualTemperatureRange((float)20, (float)40);
 	showFrame = false;
 	snapshotRunning = false;
+	liveStreamRunning = false;
+	stateMachine = ON_DEMAND;
 
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
@@ -105,9 +107,9 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	storingCacheB = false;
 	cacheA = new std::vector<sensor_msgs::Image>;
 	cacheB = new std::vector<sensor_msgs::Image>;
-
 	snapshotRunning = false;
-	startSnapshots(5000);
+	liveStreamRunning = false;
+	stateMachine = ON_DEMAND;
 
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
@@ -383,20 +385,16 @@ void FrameManager::displayFrame(cv::Mat* mat){
 	cv::waitKey(1);
 }
 
-int FrameManager::startSnapshots(int interval){
+void FrameManager::startSnapshots(int interval){
 
-	if(!snapshotRunning){
+	if(!isSnapShotRunning()){
 		snapshotThread = boost::thread(boost::bind(&FrameManager::createSnapshots, this, interval));
 		snapshotRunning = true;
-		return 1;
 	}
-	else
-		return -1;
 }
 
-int FrameManager::stopSnapshots(int interval){
+void FrameManager::stopSnapshots(){
 	snapshotThread.interrupt();
-	return 1;
 }
 
 void FrameManager::createSnapshots(int interval){
@@ -430,6 +428,14 @@ void FrameManager::createSnapshots(int interval){
 		    }
 		}
 	}
+}
+
+void FrameManager::startLiveStream(){
+
+}
+
+void FrameManager::stopLiveStream(){
+
 }
 
 
