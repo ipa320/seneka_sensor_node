@@ -72,10 +72,10 @@ bool getVideoCallback(videoOnDemand_on_sensor_msgs::getVideo::Request &req, vide
 	std::cout << "Remote getVideo call ..." << std::endl;
 
 	// start video creation
-	if(req.creatVideo == 1)
+	if(req.createVideo == 1)
 		state = fManager->getVideo();
 	else
-		ROS_ERROR("Unknown getVideo-service command %d", (int)req.creatVideo);
+		ROS_ERROR("Unknown getVideo-service command %d", (int)req.createVideo);
 
 	if (state == 1){
 		res.releasedVideo = 1;

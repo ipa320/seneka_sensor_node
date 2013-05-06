@@ -19,14 +19,19 @@ int main(int argc, char **argv)
 	videoOnDemand_on_sensor_msgs::getSnapShots snapShotService;
 	videoOnDemand_on_sensor_msgs::getLiveStream liveStreamService;
 	ros::ServiceClient client;
-	int mode = *argv[1] - '0';
-	int interval;
 
+	int mode = 0;
+
+	if(argv[1] != NULL)
+		mode = *argv[1] - '0';
+
+	// interval in seconds
+	int interval;
 	// initialize  interval
 	if(argv[2] != NULL)
 		interval = *argv[2] - '0';
 	else
-		interval = 10;
+		interval = 5;
 
 	// choose mode
 	switch(mode){
@@ -35,7 +40,7 @@ int main(int argc, char **argv)
 		client = n.serviceClient<videoOnDemand_on_sensor_msgs::getVideo>("seneka/VODNODE/getVideo");
 		ROS_INFO("Connecting to VODNODE ...");
 		// set request to 1 -> will create a video
-		videoService.request.creatVideo = 1;
+		videoService.request.createVideo = 1;
 		// connect to server
 		client.call(videoService);
 
@@ -51,7 +56,7 @@ int main(int argc, char **argv)
 		break;
 	case 2:
 		ROS_INFO("MODE SnapShot");
-		client = n.serviceClient<videoOnDemand_on_sensor_msgs::getVideo>("seneka/VODNODE/getSnapShots");
+		client = n.serviceClient<videoOnDemand_on_sensor_msgs::getSnapShots>("seneka/VODNODE/getSnapShots");
 		ROS_INFO("Connecting to VODNODE ...");
 		// value 1 starts / value -1 stops service
 		snapShotService.request.start = true;
@@ -68,7 +73,7 @@ int main(int argc, char **argv)
 		break;
 	case 3:
 		ROS_INFO("MODE LiveStream");
-		client = n.serviceClient<videoOnDemand_on_sensor_msgs::getVideo>("seneka/VODNODE/getLiveStream");
+		client = n.serviceClient<videoOnDemand_on_sensor_msgs::getLiveStream>("seneka/VODNODE/getLiveStream");
 		ROS_INFO("Connecting to VODNODE ...");
 		liveStreamService.request.start = true;
 		client.call(liveStreamService);

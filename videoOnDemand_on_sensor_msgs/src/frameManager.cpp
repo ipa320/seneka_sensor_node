@@ -394,6 +394,7 @@ void FrameManager::startSnapshots(int interval){
 }
 
 void FrameManager::stopSnapshots(){
+	// call interrupt point of snapshotThread
 	snapshotThread.interrupt();
 }
 
@@ -414,17 +415,19 @@ void FrameManager::createSnapshots(int interval){
 
 			// create JPEG image
 			cv::Mat m = convertTemperatureValuesToRGB(&img, &imageCounter);
-//			displayFrame(&m);
 			cv::imwrite(imgFile.str(), m);
 
+			// try to set thread to sleep or if an interrupt occurred stop thread
 			try{
 				// set thread sleeping for the chosen interval
-				boost::this_thread::sleep(boost::posix_time::milliseconds(interval));
+				boost::this_thread::sleep(boost::posix_time::milliseconds(interval*1000));
 		    }
 		    catch(boost::thread_interrupted const& )
 		    {
+		    	// defined actions if an interrupt occurred
 		    	snapshotRunning = false;
 		    	ROS_INFO("Stopping creating snapshots ...");
+		    	break;
 		    }
 		}
 	}
