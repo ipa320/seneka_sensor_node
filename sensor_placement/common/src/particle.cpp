@@ -181,7 +181,7 @@ void particle::setSensorNum(int num_of_sensors)
 }
 
 // function that sets the member variables targets_x_ and targets_y_
-void particle::setTargets(std::vector<int> in_x, std::vector<int> in_y)
+void particle::setTargets(const std::vector<int> & in_x, const std::vector<int> & in_y)
 {
   targets_x_ = in_x;
   targets_y_ = in_y;
@@ -189,20 +189,20 @@ void particle::setTargets(std::vector<int> in_x, std::vector<int> in_y)
 }
 
 // function that sets the member variables perimeter_x_ and perimeter_y_
-void particle::setPerimeter(std::vector<int> in_x, std::vector<int> in_y)
+void particle::setPerimeter(const std::vector<int> & in_x, const std::vector<int> & in_y)
 {
   perimeter_x_ = in_x;
   perimeter_y_ = in_y;
 }
 
 // function that set the map
-void particle::setMap(nav_msgs::OccupancyGrid new_map)
+void particle::setMap(const nav_msgs::OccupancyGrid & new_map)
 {
   map_ = new_map;
 }
 
 // function that sets the area of interest
-void particle::setAreaOfInterest(geometry_msgs::PolygonStamped new_poly)
+void particle::setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly)
 {
   area_of_interest_ = new_poly;
 }
@@ -415,6 +415,8 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
       new_angle = new_angle + (-1) * signum(new_angle) * PI;
       new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
     }
+
+    new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
 
     // set new sensor pose
     sensors_[i].setSensorPose(new_pose);
@@ -878,12 +880,10 @@ double particle::randomNumber(double low, double high)
 // signum function
 int particle::signum(double x)
 {
-  int result = -1;
-
   if(x >= 0)
-    result = 1;
-  
-  return result;
+    return 1;
+  else //(x < 0)
+    return -1;
 }
 
 // returns all visualization markers of the particle

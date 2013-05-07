@@ -52,6 +52,29 @@
 
 using namespace seneka_sensor_model;
 
+// **************************************************************
+// ********************* class sensor_model *********************
+// **************************************************************
+
+// function to generate random number in given interval
+double sensor_model::randomNumber(double low, double high)
+{
+  return ((double) rand() / RAND_MAX)*(high - low) + low;
+}
+
+int sensor_model::signum(double x)
+{
+  if(x >= 0)
+    return 1;
+  else //(x < 0)
+    return -1;
+}
+
+// **************************************************************
+// ********************* class FOV_2D_model *********************
+// **************************************************************
+
+
 // standard constructor for derived class
 FOV_2D_model::FOV_2D_model()
 {
@@ -224,12 +247,10 @@ double FOV_2D_model::randomNumber(double low, double high)
 
 int FOV_2D_model::signum(double x)
 {
-  int result = -1;
-  
   if(x >= 0)
-    result = 1;
-  
-  return result;
+    return 1;
+  if(x < 0)
+    return -1;
 }
 
 // returns the visualization markers of the respective sensor model
