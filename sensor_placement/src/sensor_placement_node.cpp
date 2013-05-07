@@ -101,6 +101,18 @@ sensor_placement_node::sensor_placement_node()
 
   open_angles_.push_back(open_angle_2);
 
+  if(!pnh_.hasParam("max_linear_sensor_velocity"))
+  {
+    ROS_WARN("No parameter max_linear_sensor_velocity on parameter server. Using default [1.0]");
+  }
+  pnh_.param("max_linear_sensor_velocity",max_lin_vel_,1.0);
+
+  if(!pnh_.hasParam("max_angular_sensor_velocity"))
+  {
+    ROS_WARN("No parameter max_angular_sensor_velocity on parameter server. Using default [0.5236]");
+  }
+  pnh_.param("max_angular_sensor_velocity",max_ang_vel_,0.5236);
+
   if(!pnh_.hasParam("number_of_particles"))
   {
     ROS_WARN("No parameter number_of_particles on parameter server. Using default [20]");
@@ -255,6 +267,7 @@ void sensor_placement_node::initializePSO()
 {
   // initialize pointer to dummy sensor_model
   seneka_sensor_model::FOV_2D_model dummy_2D_model;
+  dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
 
   // initialize dummy particle
   seneka_particle::particle dummy_particle = seneka_particle::particle(sensor_num_, target_num_, dummy_2D_model);

@@ -107,6 +107,12 @@ private:
   // opening angles for sensors
   std::vector<double> open_angles_;
 
+  // maximal allowed linear velocity for each sensor in particles
+  double max_lin_vel_;
+
+  // maximal allowed angular velocity for each sensor in particles
+  double max_ang_vel_;
+
   // number of particles for PSO
   int particle_num_;
 
