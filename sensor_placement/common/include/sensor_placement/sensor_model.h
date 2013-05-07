@@ -148,10 +148,10 @@ public:
   // ************************* help functions *************************
 
   // function to generate random number in given interval
-  virtual double randomNumber(double low, double high) = 0;
+  double randomNumber(double low, double high);
 
   // signum function
-  virtual int signum(double x) = 0;
+  int signum(double x);
 
   // draws a visualization of the respective sensor model
   virtual visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id) = 0;
@@ -214,12 +214,6 @@ public:
   virtual double getRange();
 
   // ************************* help functions *************************
-
-  // function to generate random number in given interval
-  virtual double randomNumber(double low, double high);
-
-  // signum function
-  virtual int signum(double x);
 
   // returns the visualization markers of the respective sensor model
   virtual visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id);

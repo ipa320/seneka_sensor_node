@@ -155,16 +155,16 @@ public:
   void setSensorNum(int num_of_sensors);
 
   // function that sets the member variables targets_x_ and targets_y_
-  void setTargets(std::vector<int> in_x, std::vector<int> in_y);
+  void setTargets(const std::vector<int> & in_x, const std::vector<int> & in_y);
 
   // function that sets the member variables perimeter_x_ and perimeter_y_
-  void setPerimeter(std::vector<int> in_x, std::vector<int> in_y);
+  void setPerimeter(const std::vector<int> & in_x, const std::vector<int> & in_y);
 
   // function that sets the map
-  void setMap(nav_msgs::OccupancyGrid new_map);
+  void setMap(const nav_msgs::OccupancyGrid & new_map);
 
   // function that sets the area of interest
-  void setAreaOfInterest(geometry_msgs::PolygonStamped new_poly);
+  void setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly);
 
   // function that sets the opening angles for each sensor in the particle
   bool setOpenAngles(std::vector<double> new_angles);
