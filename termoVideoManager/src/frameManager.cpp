@@ -64,6 +64,15 @@ FrameManager::FrameManager() {
 	liveStreamRunning = false;
 	stateMachine = ON_DEMAND;
 
+	// live stream specific
+	cacheC = new std::vector<cv::Mat>;
+	cacheD = new std::vector<cv::Mat>;
+	usingCacheC = true;
+	usingCacheD = false;
+	storingCacheC = false;
+	storingCacheD = false;
+	liveStreamFrameCount = 0;
+
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
 	}
@@ -111,6 +120,15 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	liveStreamRunning = false;
 	stateMachine = ON_DEMAND;
 
+	// live stream specific
+	cacheC = new std::vector<cv::Mat>;
+	cacheD = new std::vector<cv::Mat>;
+	usingCacheC = true;
+	usingCacheD = false;
+	storingCacheC = false;
+	storingCacheD = false;
+	liveStreamFrameCount = 0;
+
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
 	}
@@ -129,10 +147,22 @@ void FrameManager::processFrame(const sensor_msgs::Image& img){
 
 void FrameManager::cacheFrame(sensor_msgs::Image frame){
 	//ROS_INFO("cacheFrame ... ");
-	std::vector<sensor_msgs::Image>* currentCache = getCurrentCache();
-	currentCache->push_back(frame);
-}
 
+	if(stateMachine == ON_DEMAND){
+		std::vector<sensor_msgs::Image>* currentCache = getCurrentCache();
+		currentCache->push_back(frame);
+	}
+	else if(stateMachine == LIVE_STREAM){
+		std::vector<cv::Mat>* currentCache = getCurrentLiveStreamCache();
+		// converting methode has to be added
+		currentCache->push_back(convertTemperatureValuesToRGB(&frame, &liveStreamFrameCount));
+	}
+	else{
+		ROS_ERROR("Unknown state for the state machine");
+	}
+
+
+}
 std::vector<sensor_msgs::Image>* FrameManager::getCurrentCache(){
 	//ROS_INFO("getCurrentCache ... ");
 
@@ -152,31 +182,82 @@ std::vector<sensor_msgs::Image>* FrameManager::getCurrentCache(){
 	}
 }
 
+std::vector<cv::Mat>* FrameManager::getCurrentLiveStreamCache(){
+	//ROS_INFO("getCurrentCache ... ");
+
+	// verifying the sizes of memory buffers
+	// and if necessary it will schedule further tasks
+	verifyCacheSize();
+
+	if(usingCacheC == true && usingCacheD == false){
+		return cacheC;
+	}
+	else if (usingCacheD == true && usingCacheC == false){
+		return cacheD;
+	}
+	else{
+		std::cerr << "Could not get current cache ..." << std::endl;
+		return NULL;
+	}
+}
+
 void FrameManager::verifyCacheSize(){
 	//ROS_INFO("verifyCacheSize ... ");
 
-	if(cacheA->size() == fpc && storingCacheA == false){
-		// cacheA is full -> store frames into binary file
+	if(stateMachine == ON_DEMAND){
+		if(cacheA->size() == fpc && storingCacheA == false){
+			// cacheA is full -> store frames into binary file
 
-		storingCacheA = true;
-		usingCacheA = false;
-		usingCacheB = true;
+			storingCacheA = true;
+			usingCacheA = false;
+			usingCacheB = true;
 
-		ROS_INFO("Waiting for storingCacheB");
-		storingThreadB.join();
-		storingThreadA = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheA, &storingCacheA));
+			ROS_INFO("Waiting for storingCacheB");
+			storingThreadB.join();
+			storingThreadA = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheA, &storingCacheA));
+		}
+		else if (cacheB->size() == fpc && storingCacheB == false){
+			// cacheB is full -> store frames into binary file
+
+			storingCacheB = true;
+			usingCacheB = false;
+			usingCacheA = true;
+
+			ROS_INFO("Waiting for storingCacheA");
+			storingThreadA.join();
+			storingThreadB = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheB, &storingCacheB));
+		}
 	}
-	else if (cacheB->size() == fpc && storingCacheB == false){
-		// cacheB is full -> store frames into binary file
+	else if(stateMachine == LIVE_STREAM){
+		if(cacheC->size() == fpc && storingCacheC == false){
+			// cacheA is full -> store frames into binary file
 
-		storingCacheB = true;
-		usingCacheB = false;
-		usingCacheA = true;
+			//			storingCacheC = true;
+			usingCacheC = false;
+			usingCacheD = true;
+			cacheC->clear();
 
-		ROS_INFO("Waiting for storingCacheA");
-		storingThreadA.join();
-		storingThreadB = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheB, &storingCacheB));
+			//			ROS_INFO("Waiting for storingCacheB");
+			//			storingThreadB.join();
+			//			storingThreadA = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheA, &storingCacheA));
+		}
+		else if (cacheB->size() == fpc && storingCacheB == false){
+			// cacheB is full -> store frames into binary file
+
+			//			storingCacheD = true;
+			usingCacheD = false;
+			usingCacheC = true;
+			cacheD->clear();
+
+			//			ROS_INFO("Waiting for storingCacheA");
+			//			storingThreadA.join();
+			//			storingThreadB = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheB, &storingCacheB));
+		}
 	}
+	else{
+		ROS_ERROR("Unknown state for the state machine");
+	}
+
 }
 
 void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* threadActive){
@@ -194,10 +275,10 @@ void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* thre
 	// scope is required to ensure archive and filtering stream buffer go out of scope
 	// before stream
 	{
-//		 	 //compressing frame size
-//		      io::filtering_streambuf<io::output> out;
-//		      out.push(io::zlib_compressor(io::zlib::best_speed));
-//		      out.push(ofs);
+		//		 	 //compressing frame size
+		//		      io::filtering_streambuf<io::output> out;
+		//		      out.push(io::zlib_compressor(io::zlib::best_speed));
+		//		      out.push(ofs);
 
 		boost::archive::binary_oarchive oa(ofs);
 
@@ -226,19 +307,32 @@ void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* thre
 }
 
 int FrameManager::getVideo(){
-	// a full video is available if the minimal count of frames is reached (minimal count = frame per video)
-	if(fullVideoAvailable == true){
-		// it is only possible to create one video at a time
-		if(createVideoActive == false){
-			// starts creating the video in a separate thread
-			creatingVideoThread = boost::thread(boost::bind(&FrameManager::createVideo, this));
-			return 1;
+
+	if(stateMachine == ON_DEMAND){
+		// a full video is available if the minimal count of frames is reached (minimal count = frame per video)
+		if(fullVideoAvailable == true){
+			// it is only possible to create one video at a time
+			if(createVideoActive == false){
+				// starts creating the video in a separate thread
+				creatingVideoThread = boost::thread(boost::bind(&FrameManager::createVideo, this));
+				return 1;
+			}
+			else
+				return -1;
 		}
 		else
-			return -1;
+			return -2;
 	}
-	else
+	else if(stateMachine == LIVE_STREAM){
+		ROS_ERROR("This function is in LIVE_STREAM state not available!");
 		return -2;
+	}
+	else{
+		ROS_ERROR("Unknown state for the state machine");
+		return -2;
+	}
+
+
 }
 
 int FrameManager::createVideo(){
@@ -288,10 +382,10 @@ int FrameManager::createVideo(){
 		// scope is required to ensure archive and filtering stream buffer go out of scope
 		// before stream
 		{
-//			// decompressing frame size
-//			io::filtering_streambuf<io::input> in;
-//			in.push(io::zlib_decompressor());
-//			in.push(ifs);
+			//			// decompressing frame size
+			//			io::filtering_streambuf<io::input> in;
+			//			in.push(io::zlib_decompressor());
+			//			in.push(ifs);
 
 			boost::archive::binary_iarchive ia(ifs);
 
@@ -401,44 +495,100 @@ void FrameManager::stopSnapshots(){
 void FrameManager::createSnapshots(int interval){
 	ROS_INFO("Starting creating snapshots ...");
 	unsigned int imageCounter = 0;
-
 	while(true){
-		std::stringstream imgFile;
-		std::vector<sensor_msgs::Image>* currentCache = getCurrentCache();
+		if(stateMachine == ON_DEMAND){
+			std::stringstream imgFile;
+			std::vector<sensor_msgs::Image>* currentCache = getCurrentCache();
 
-		if(currentCache->size() > 0){
-			sensor_msgs::Image img = currentCache->at(currentCache->size()-1);
+			if(currentCache->size() > 0){
+				sensor_msgs::Image img = currentCache->at(currentCache->size()-1);
 
-			// file name and path to the image files
-			// file name is the current system time stamp
-			imgFile << "/home/cmm-jg/Bilder/snapshots/" << ros::Time::now() << ".jpg";
+				// file name and path to the image files
+				// file name is the current system time stamp
+				imgFile << "/home/cmm-jg/Bilder/snapshots/" << ros::Time::now() << ".jpg";
 
-			// create JPEG image
-			cv::Mat m = convertTemperatureValuesToRGB(&img, &imageCounter);
-			cv::imwrite(imgFile.str(), m);
+				// create JPEG image
+				cv::Mat m = convertTemperatureValuesToRGB(&img, &imageCounter);
+				cv::imwrite(imgFile.str(), m);
 
-			// try to set thread to sleep or if an interrupt occurred stop thread
-			try{
-				// set thread sleeping for the chosen interval
-				boost::this_thread::sleep(boost::posix_time::milliseconds(interval*1000));
-		    }
-		    catch(boost::thread_interrupted const& )
-		    {
-		    	// defined actions if an interrupt occurred
-		    	snapshotRunning = false;
-		    	ROS_INFO("Stopping creating snapshots ...");
-		    	break;
-		    }
+				// try to set thread to sleep or if an interrupt occurred stop thread
+				try{
+					// set thread sleeping for the chosen interval
+					boost::this_thread::sleep(boost::posix_time::milliseconds(interval*1000));
+				}
+				catch(boost::thread_interrupted const& )
+				{
+					// defined actions if an interrupt occurred
+					snapshotRunning = false;
+					ROS_INFO("Stopping creating snapshots ...");
+					break;
+				}
+			}
+		}
+		else if(stateMachine == LIVE_STREAM){
+			std::stringstream imgFile;
+			std::vector<cv::Mat>* currentCache = getCurrentLiveStreamCache();
+
+			if(currentCache->size() > 0){
+				cv::Mat img = currentCache->at(currentCache->size()-1);
+
+				// file name and path to the image files
+				// file name is the current system time stamp
+				imgFile << "/home/cmm-jg/Bilder/snapshots/" << ros::Time::now() << ".jpg";
+
+				// create JPEG image
+				cv::imwrite(imgFile.str(), img);
+
+				// try to set thread to sleep or if an interrupt occurred stop thread
+				try{
+					// set thread sleeping for the chosen interval
+					boost::this_thread::sleep(boost::posix_time::milliseconds(interval*1000));
+				}
+				catch(boost::thread_interrupted const& )
+				{
+					// defined actions if an interrupt occurred
+					snapshotRunning = false;
+					ROS_INFO("Stopping creating snapshots ...");
+					break;
+				}
+			}
+		}
+		else{
+			ROS_ERROR("Unknown state for the state machine");
 		}
 	}
 }
 
 void FrameManager::startLiveStream(){
-	ROS_ERROR("startLiveStream IS NOT IMPLEMENTED AT THE MOMENT");
+	//ROS_ERROR("startLiveStream IS NOT IMPLEMENTED AT THE MOMENT");
+
+	if(createVideoActive){
+		ROS_ERROR("State change not possible ... creating video at the moment !!");
+	}
+	else{
+		// initializie the LIVE_STREAM state
+		stateMachine = LIVE_STREAM;
+		cacheA->clear();
+		cacheB->clear();
+		usingCacheC = true;
+		usingCacheD = false;
+		liveStreamFrameCount = 0;
+		liveStreamRunning = true;
+	}
 }
 
 void FrameManager::stopLiveStream(){
-	ROS_ERROR("stopLiveStream IS NOT IMPLEMENTED AT THE MOMENT");
+	//ROS_ERROR("stopLiveStream IS NOT IMPLEMENTED AT THE MOMENT");
+	stateMachine = ON_DEMAND;
+	cacheC->clear();
+	cacheD->clear();
+	liveStreamRunning = false;
+	// initialize ON_DEMAND state
+	usingCacheA = true;
+	usingCacheB = false;
+	storingCacheA = false;
+	storingCacheB = false;
+	fullVideoAvailable = false;
 }
 
 
