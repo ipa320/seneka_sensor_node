@@ -109,8 +109,15 @@ private:
   // personal best coverage
   double pers_best_coverage_;
 
+  // multiple coverage numbers
+  int multiple_coverage_;
+  int pers_best_multiple_coverage_;
+
   // coverage matrix in row-major order (sensors in rows, target in columns)
   std::vector<int> coverage_matrix_;
+
+  // the i-th entry holds the number of sensors covering the target with index i
+  std::vector<int> num_sensors_cover_target_;
 
   // actual area of interest to be covered by the sensor nodes
   geometry_msgs::PolygonStamped area_of_interest_;
@@ -148,6 +155,9 @@ public:
 
   // function to get actual coverage
   double getActualCoverage();
+
+  // function to get multiple coverage index
+  int getMultipleCoverageIndex();
 
   // ************************ setter functions ************************
 
@@ -197,11 +207,14 @@ public:
   // function to calculate coverage matrix
   void calcCoverageMatrix();
 
-  // function to check if one target is covered by more than one sensor
-  bool checkMultipleCoverage(int target);
+  // function to the multiple coverage number
+  void calcMultipleCoverage();
 
   // function to check coverage of given sensor and target
   bool checkCoverage(seneka_sensor_model::FOV_2D_model sensor, int target_x, int target_y);
+
+  // function to check if the new sensor position is accepted
+  bool newPositionAccepted(geometry_msgs::Pose new_pose_candidate);
 
   // ************************* help functions *************************
 
@@ -217,6 +230,10 @@ public:
   // helper function to check if the beam of line from start intersects the given plygon edge
   // segID = 0 (beam), segID = 1 (line)
   bool edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
+
+  // helper function to find an uncovered target far away from a given sensor position
+  // the return value is the index of that uncovered target
+  int findFarthestUncoveredTarget(size_t sensor_index);
 
   // functions to calculate the norm of a 2D/3D vector
   double vecNorm(double x, double y, double z = 0);

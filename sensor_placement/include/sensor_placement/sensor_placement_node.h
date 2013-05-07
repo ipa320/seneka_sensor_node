@@ -124,6 +124,7 @@ private:
 
   // PSO actual best coverage
   double best_cov_;
+  int global_best_multiple_coverage_;
 
   // number of targets for PSO
   int target_num_;
@@ -161,6 +162,7 @@ public:
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
+  ros::ServiceServer ss_test_;
 
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
@@ -203,6 +205,9 @@ public:
 
   // callback function for the start PSO service
   bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+
+  // callback function for the test service
+  bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback function for the polygon topic
   void polygonCB(const geometry_msgs::Polygon::ConstPtr &poly);

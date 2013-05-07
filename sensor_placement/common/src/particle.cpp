@@ -65,6 +65,13 @@ particle::particle()
   // intialize coverage
   coverage_ = 0;
 
+  // initialize personal best coverage
+  pers_best_coverage_ = 0;
+
+  //initialize multiple coverage indices
+  multiple_coverage_ = 0;
+  pers_best_multiple_coverage_ = 0;
+
   // initialize coverage matrix
 
   // initialize sensor array with as many entries as specified by sensors_num_
@@ -85,6 +92,10 @@ particle::particle(int num_of_sensors, int num_of_targets, seneka_sensor_model::
 
   // initialize personal best coverage
   pers_best_coverage_ = 0;
+
+  //initialize multiple coverage indices
+  multiple_coverage_ = 0;
+  pers_best_multiple_coverage_ = 0;
 
   // initialize coverage matrix
   coverage_matrix_.assign(sensor_num_*target_num_, 0);
@@ -147,6 +158,12 @@ double particle::getBestCoverage()
 double particle::getActualCoverage()
 {
   return coverage_;
+}
+
+// function to get multiple coverage index
+int particle::getMultipleCoverageIndex()
+{
+  return multiple_coverage_;
 }
 
 // function that sets the member varialbe sensor_um_ and reserves capacity for vector sensors_
@@ -304,9 +321,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
   double g_best_angle = 0;
   double new_angle = 0;
 
-  size_t edge_ind = 0;
-  size_t successor = 0;
-  double t = 0;
+  int target_ind = -1;
 
   geometry_msgs::Twist initial_vel;
   geometry_msgs::Pose actual_pose;
@@ -314,7 +329,8 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
   geometry_msgs::Pose global_best_pose;
   geometry_msgs::Twist new_vel;
   geometry_msgs::Pose new_pose;
-  geometry_msgs::Pose2D new_pos2D;
+
+  geometry_msgs::Pose2D target_world_Coord;
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
@@ -368,37 +384,37 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     sensors_[i].setVelocity(new_vel);
 
     // update sensor pose
-    new_pos2D.x = new_pose.position.x = actual_pose.position.x + new_vel.linear.x;
-    new_pos2D.y = new_pose.position.y = actual_pose.position.y + new_vel.linear.y;
+    new_pose.position.x = actual_pose.position.x + new_vel.linear.x;
+    new_pose.position.y = actual_pose.position.y + new_vel.linear.y;
     new_pose.position.z = 0;
 
     new_angle = actual_angle + new_vel.angular.z;
 
+    // readjust the new angle in the correct interval [-PI,PI]
     while(fabs(new_angle) > PI)
       new_angle = new_angle + (-1) * signum(new_angle) * PI;
 
-    new_pos2D.theta = new_angle;
-
-    if(pointInPolygon(new_pos2D, area_of_interest_.polygon) == -1)
-    {
-      // get index of a random edge of the area of interest specified by a polygon
-      edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size() -1);
-      successor = 0;
-
-      if(edge_ind < (area_of_interest_.polygon.points.size() - 1))
-        successor = edge_ind++;
-    
-      t = randomNumber(0,1);
-
-      // get random Pose on perimeter of the area of interest specified by a polygon
-      new_pose.position.x = area_of_interest_.polygon.points[edge_ind].x
-                            + t * (area_of_interest_.polygon.points[successor].x - area_of_interest_.polygon.points[edge_ind].x);
-      new_pose.position.y = area_of_interest_.polygon.points[edge_ind].y 
-                          + t * (area_of_interest_.polygon.points[successor].y - area_of_interest_.polygon.points[edge_ind].y);
-      new_pose.position.z = 0;
-    }
-
     new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
+
+    if(!newPositionAccepted(new_pose))
+    {
+      // find uncovered target far away from initial sensor position
+      target_ind = findFarthestUncoveredTarget(i);
+
+      // calculate world coordinates from map coordinates of given target
+      target_world_Coord.x = mapToWorldX(targets_x_[target_ind]);
+      target_world_Coord.y = mapToWorldY(targets_y_[target_ind]);
+      target_world_Coord.theta = 0;
+
+      // update sensor position
+      new_pose.position.x = target_world_Coord.x;
+      new_pose.position.y = target_world_Coord.y;
+      new_pose.position.z = 0;
+
+      // invert sensor direction
+      new_angle = new_angle + (-1) * signum(new_angle) * PI;
+      new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
+    }
 
     // set new sensor pose
     sensors_[i].setSensorPose(new_pose);
@@ -417,6 +433,7 @@ void particle::calcCoverage()
   int num_covered_targets = 0;
   std::vector<bool> target_already_counted;
   target_already_counted.assign(target_num_, false);
+  num_sensors_cover_target_.assign(target_num_, 0);
 
   if(coverage_matrix_.empty())
   {
@@ -428,20 +445,41 @@ void particle::calcCoverage()
     // go through the target vectors
     for(size_t j = 0; j < targets_x_.size(); j++)
     {
-      if( (coverage_matrix_[j * sensors_.size() + i] == 1) && (target_already_counted[j] == false) )
+      if( coverage_matrix_[j * sensors_.size() + i] == 1)
       {
-        num_covered_targets++;
-        target_already_counted[j] = true;
+        if(target_already_counted[j] == false)
+        {
+          num_covered_targets++;
+          target_already_counted[j] = true;
+          num_sensors_cover_target_[j]++;
+        }
+        else
+        {
+          num_sensors_cover_target_[j]++;
+        }
       }
     }
   }
   // calculate coverage percentage
   coverage_ = (double) num_covered_targets / target_num_;
+
+  calcMultipleCoverage();
+
   // check if the actual coverage is a new personal best
   if(coverage_ > pers_best_coverage_)
   {
     pers_best_coverage_ = coverage_;
+    pers_best_multiple_coverage_ = multiple_coverage_;
     pers_best_ = sensors_;    
+  }
+  else
+  {
+    if( (coverage_ == pers_best_coverage_) && (multiple_coverage_ < pers_best_multiple_coverage_) )
+    {
+      pers_best_coverage_ = coverage_;
+      pers_best_multiple_coverage_ = multiple_coverage_;
+      pers_best_ = sensors_;
+    }
   }
 }
 
@@ -463,6 +501,17 @@ void particle::calcCoverageMatrix()
       else
         coverage_matrix_[ j * sensors_.size() + i] = 0;
     }
+  }
+}
+
+// function to the multiple coverage number
+void particle::calcMultipleCoverage()
+{
+  multiple_coverage_ = 0;
+  for(size_t i = 0; i < num_sensors_cover_target_.size(); i++)
+  {
+    if(num_sensors_cover_target_[i] > 0)
+      multiple_coverage_++;
   }
 }
 
@@ -513,6 +562,25 @@ bool particle::checkCoverage(seneka_sensor_model::FOV_2D_model sensor, int targe
 
   return result;
 }
+
+// function to check if the new sensor position is accepted
+bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
+{
+  bool result = false;
+  geometry_msgs::Pose2D dummy_pose2D;
+
+  dummy_pose2D.x = new_pose_candidate.position.x;
+  dummy_pose2D.y = new_pose_candidate.position.y;
+  dummy_pose2D.theta = tf::getYaw(new_pose_candidate.orientation);
+
+  if(pointInPolygon(dummy_pose2D, area_of_interest_.polygon) == -1)
+    result = false;
+  else
+    result = true;
+
+  return result;
+}
+
 
 // function to check if a given point is inside (return 1), outside (return -1) 
 // or on an edge (return 0) of a given polygon
@@ -744,9 +812,48 @@ bool particle::edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_ms
 
 }
 
+// helper function to find an uncovered target far away from a given sensor position
+// the return value is the index of that uncovered target
+int particle::findFarthestUncoveredTarget(size_t sensor_index)
+{
+  // initialize workspace
+  int result = -1;
+  double max_distance = 0;
+  double actual_distance = 0;
+  geometry_msgs::Pose2D target_world_Coord;
+  geometry_msgs::Pose sensor_pose = sensors_[sensor_index].getSensorPose();
+  geometry_msgs::Vector3 vec_sensor_target, vec_sensor_dir;
+
+  for(size_t i = 0; i < targets_x_.size(); i++)
+  {
+    if(coverage_matrix_[i * sensors_.size() + sensor_index] == 0)
+    {
+      // we found an uncovered target, check if this is further away from the sensor than the current maximum
+
+      // calculate world coordinates from map coordinates of given target
+      target_world_Coord.x = mapToWorldX(targets_x_[i]);
+      target_world_Coord.y = mapToWorldY(targets_y_[i]);
+      target_world_Coord.theta = 0;
+
+      // calculate vector between sensor and target
+      vec_sensor_target.x = target_world_Coord.x - sensor_pose.position.x;
+      vec_sensor_target.y = target_world_Coord.y - sensor_pose.position.y;
+      vec_sensor_target.z = 0;
+
+      actual_distance = vecNorm(vec_sensor_target);
+
+      if(actual_distance > max_distance)
+      {
+        max_distance = actual_distance;
+        result = i;
+      }
+    }
+  }
+  return result;
+}
 
 // function to calculate the norm of a 2D/3D vector
-double vecNorm(double x, double y, double z)
+double particle::vecNorm(double x, double y, double z)
 {
   return sqrt( x * x + y * y + z * z);
 }
@@ -771,10 +878,12 @@ double particle::randomNumber(double low, double high)
 // signum function
 int particle::signum(double x)
 {
+  int result = -1;
+
   if(x >= 0)
-    return 1;
-  if(x < 0)
-    return -1;
+    result = 1;
+  
+  return result;
 }
 
 // returns all visualization markers of the particle

@@ -224,10 +224,12 @@ double FOV_2D_model::randomNumber(double low, double high)
 
 int FOV_2D_model::signum(double x)
 {
+  int result = -1;
+  
   if(x >= 0)
-    return 1;
-  if(x < 0)
-    return -1;
+    result = 1;
+  
+  return result;
 }
 
 // returns the visualization markers of the respective sensor model

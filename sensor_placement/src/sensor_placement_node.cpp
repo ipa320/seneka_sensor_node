@@ -65,6 +65,7 @@ sensor_placement_node::sensor_placement_node()
 
   // ros service servers
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
+  ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
 
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
@@ -80,8 +81,8 @@ sensor_placement_node::sensor_placement_node()
   {
     ROS_WARN("No parameter max_sensor_range on parameter server. Using default [5.0 in m]");
   }
-  pnh_.param("max_sensor_range_",sensor_range_,5.0);
-
+  pnh_.param("max_sensor_range",sensor_range_,5.0);
+  
   double open_angle_1, open_angle_2;
 
   if(!pnh_.hasParam("open_angle_1"))
@@ -140,6 +141,9 @@ sensor_placement_node::sensor_placement_node()
   // initialize best coverage
   best_cov_ = 0;
 
+  // initialize global best multiple coverage
+  global_best_multiple_coverage_ = 0;
+
   // initialize number of targets
   target_num_ = 0;
 
@@ -157,20 +161,20 @@ sensor_placement_node::sensor_placement_node()
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 10;
+    p_test.x = 0;
     p_test.y = 0;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 10;
-    p_test.y = 20;
+    p_test.x = 0;
+    p_test.y = 10;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
     p_test.x = -10;
-    p_test.y = 20;
+    p_test.y = 10;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
@@ -334,6 +338,16 @@ void sensor_placement_node::getGlobalBest()
     {
       best_cov_ = particle_swarm_[i].getActualCoverage();
       global_best_ = particle_swarm_[i];
+      global_best_multiple_coverage_ = particle_swarm_[i].getMultipleCoverageIndex();
+    }
+    else
+    {
+      if( (particle_swarm_[i].getActualCoverage() == best_cov_) && (particle_swarm_[i].getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
+      {
+        best_cov_ = particle_swarm_[i].getActualCoverage();
+        global_best_ = particle_swarm_[i];
+        global_best_multiple_coverage_ = particle_swarm_[i].getMultipleCoverageIndex();
+      }
     }
   }
 }
@@ -662,6 +676,13 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 
   return true;
 
+}
+
+// callback function for the test service
+bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+
+  return true;
 }
 
 // callback function for the map topic

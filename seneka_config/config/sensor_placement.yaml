@@ -2,14 +2,14 @@
 number_of_sensors: 10
 
 # maximal sensor range
-max_sensor_range: 10.0 # in [m]
+max_sensor_range: 3.0 # in [m]
 
 # opening angles for the sensors
 open_angle_1: 1.5708 # (=90*PI/180 deg) in [rad]
 open_angle_2: 0.0 # in [rad]
 
 # number of particles for PSO
-number_of_particles: 20
+number_of_particles: 10
 
 # maximal number of iterations for PSO
 max_num_iterations: 400
