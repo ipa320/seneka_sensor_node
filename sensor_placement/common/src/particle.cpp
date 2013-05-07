@@ -773,7 +773,7 @@ int particle::signum(double x)
 {
   if(x >= 0)
     return 1;
-  if(x < 0)
+  else //(x < 0)
     return -1;
 }
 

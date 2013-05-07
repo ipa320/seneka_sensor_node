@@ -169,54 +169,54 @@ public:
   FOV_2D_model(geometry_msgs::Twist new_vel, geometry_msgs::Twist new_max_vel, geometry_msgs::Pose new_pos, double new_range, double new_angle1, double new_angle2, std::string new_name);
 
   // destructor
-  virtual ~FOV_2D_model();
+  ~FOV_2D_model();
 
   // ************************ setter functions ************************
 
   // function to set the name
-  virtual void setName(std::string new_name);
+  void setName(std::string new_name);
 
   // functions to set actual velocity
-  virtual void setVelocity(double lin_x, double lin_y, double lin_z, double ang_x, double ang_y, double ang_z);
-  virtual void setVelocity(geometry_msgs::Twist new_vel);
+  void setVelocity(double lin_x, double lin_y, double lin_z, double ang_x, double ang_y, double ang_z);
+  void setVelocity(geometry_msgs::Twist new_vel);
 
   // functions to set maximal velocity
-  virtual void setMaxVelocity(double lin_x, double lin_y, double lin_z, double ang_x, double ang_y, double ang_z);
-  virtual void setMaxVelocity(geometry_msgs::Twist new_max_vel);
+  void setMaxVelocity(double lin_x, double lin_y, double lin_z, double ang_x, double ang_y, double ang_z);
+  void setMaxVelocity(geometry_msgs::Twist new_max_vel);
 
   // functions to set general sensor pose
-  virtual void setSensorPose(double x, double y, double z, double quat_x, double quat_y, double quat_z, double quat_w);
-  virtual void setSensorPose(double x, double y, double z, geometry_msgs::Quaternion orientation);
-  virtual void setSensorPose(geometry_msgs::Point position, geometry_msgs::Quaternion orientation);
-  virtual void setSensorPose(geometry_msgs::Pose new_pos);
+  void setSensorPose(double x, double y, double z, double quat_x, double quat_y, double quat_z, double quat_w);
+  void setSensorPose(double x, double y, double z, geometry_msgs::Quaternion orientation);
+  void setSensorPose(geometry_msgs::Point position, geometry_msgs::Quaternion orientation);
+  void setSensorPose(geometry_msgs::Pose new_pos);
 
   // function to set sensor opening angles
-  virtual void setOpenAngles(double open_ang1, double open_ang2);
+  void setOpenAngles(double open_ang1, double open_ang2);
 
   // function to set sensor range
-  virtual void setRange(double new_range);
+  void setRange(double new_range);
 
   // ************************ getter functions ************************
 
   // function to get actual velocity
-  virtual geometry_msgs::Twist getVelocity();
+  geometry_msgs::Twist getVelocity();
 
   // functgion to get the maximal velocity
-  virtual geometry_msgs::Twist getMaxVelocity();
+  geometry_msgs::Twist getMaxVelocity();
 
   // function to get actual sensor pose
-  virtual geometry_msgs::Pose getSensorPose();
+  geometry_msgs::Pose getSensorPose();
 
   // function to get sensor opening angles
-  virtual std::vector<double> getOpenAngles();
+  std::vector<double> getOpenAngles();
 
   // function to set sensor range
-  virtual double getRange();
+  double getRange();
 
   // ************************* help functions *************************
 
   // returns the visualization markers of the respective sensor model
-  virtual visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id);
+  visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id);
 };
 
 class FOV_3D_model : public sensor_model
