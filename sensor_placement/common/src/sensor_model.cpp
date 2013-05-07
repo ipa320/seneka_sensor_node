@@ -239,20 +239,6 @@ double FOV_2D_model::getRange()
   return range_;
 }
 
-// function to generate random number in given interval
-double FOV_2D_model::randomNumber(double low, double high)
-{
-  return ((double) rand() / RAND_MAX)*(high - low) + low;
-}
-
-int FOV_2D_model::signum(double x)
-{
-  if(x >= 0)
-    return 1;
-  if(x < 0)
-    return -1;
-}
-
 // returns the visualization markers of the respective sensor model
 visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned int id)
 {
