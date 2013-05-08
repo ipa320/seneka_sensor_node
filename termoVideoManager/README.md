@@ -17,7 +17,11 @@ At the moment the termoVideoManager offers three ROS services which could be cal
  - manuel selection 
 
 ## Getting started
-roslaunch termoVideoManager termoVideoManager.launch
+- roslaunch optris_drivers optris_drivers.launch 
+ - publishes input stream (raw data)
+- roslaunch termoVideoManager termoVideoManager.launch
+- rosrun termoVideoManager vTester
+ - ROS test node for termoVideoManager
 
 ## Launch file configuration
 
