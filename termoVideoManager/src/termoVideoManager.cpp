@@ -99,13 +99,16 @@ int main(int argc, char **argv)
 	ros::NodeHandle nHandler("TERMO_VIDEO_MANAGER");
 	fManager = new FrameManager(nHandler);
 
+	std::string inputTopic;
+	nHandler.getParam("inputTopic", inputTopic);
+
 	ROS_INFO("advertising getVideo service ...");
 	ros::ServiceServer videoService = nHandler.advertiseService("getVideo", getVideoCallback);
 	ros::ServiceServer snapShotService = nHandler.advertiseService("getSnapShots", getSnapShotCallback);
 	ros::ServiceServer liveStreamService = nHandler.advertiseService("getLiveStream", getLiveStreamCallback);
 	ROS_INFO("subscribing for thermal_image ...");
 	// subscribed on topic THERMAL_IMAGE
-	ros::Subscriber sub = nHandler.subscribe("/optris/thermal_image", 2, processFrameCallback);
+	ros::Subscriber sub = nHandler.subscribe(inputTopic, 2, processFrameCallback);
 
 	ros::spin();
 	return 0;
