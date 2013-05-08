@@ -1,11 +1,18 @@
-Seneka - videoOnDemand_on_sensor_msgs
+Seneka - termoVideoManager
 ======
-videoOnDemand_on_sensor_msgs is a ROS node which provides a video of the last x seconds. The creation on a video could be started by calling a service, which is provided by this ROS node.
 
-At the moment the output of this ROS node is a video, which is stored in an "avi" container. The input frame are applied by an Optris termo camera, which publishes its frames on "/optris/thermal_image" topic.
+The termoVideoManager works with Optris termo cameras as input device. 
+The termoVideoManager subscribes on the /optris/thermal_image topic which is provided by the optirs ROS driver. 
+This topics publishes a ROS sensor_msgs::image which contains the termo information. The mapping from termo information to RGB8 is done inside this ROS node.
 
-So, this ROS node works with the raw termo images and works on the sensor_msg::image frame format. This node only converts those stored frame to RGB images which are reqiued for a requested video. 
+At the moment the termoVideoManager offers three ROS services which could be call from remote. But the output of this ROS node is just locally because the communication interfaces aren't defined yet. 
 
-Commands to start and restart the Optris termo camera:
+ROS Services: 
+(1) create VideoOnDemand (termoVideoManager::getVideo)
+(2) start/stop SnapShot and optional an interval in seconds (e.g 5) (termoVideoManager::getSnapShots)
+(3) start/stop LiveStream (termoVideoManager::getLiveStream)
+
+
+Commands to start and restart the Optris kernel module:
 - sudo rmmod uvcvideo
 - sudo modprobe uvcvideo nodrop=1

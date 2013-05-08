@@ -153,8 +153,9 @@ void FrameManager::cacheFrame(sensor_msgs::Image frame){
 		currentCache->push_back(frame);
 	}
 	else if(stateMachine == LIVE_STREAM){
+		// acccess the current live stream cache
 		std::vector<cv::Mat>* currentCache = getCurrentLiveStreamCache();
-		// converting methode has to be added
+		// converting and caching of current frame
 		currentCache->push_back(convertTemperatureValuesToRGB(&frame, &liveStreamFrameCount));
 	}
 	else{
@@ -230,28 +231,19 @@ void FrameManager::verifyCacheSize(){
 	}
 	else if(stateMachine == LIVE_STREAM){
 		if(cacheC->size() == fpc && storingCacheC == false){
-			// cacheA is full -> store frames into binary file
-
-			//			storingCacheC = true;
+			// if this cache is full, change the current to use cache and clear is cache
+			// at the moment der isn't a method required to store a cache to the hard disk drive
 			usingCacheC = false;
 			usingCacheD = true;
 			cacheC->clear();
-
-			//			ROS_INFO("Waiting for storingCacheB");
-			//			storingThreadB.join();
-			//			storingThreadA = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheA, &storingCacheA));
 		}
 		else if (cacheB->size() == fpc && storingCacheB == false){
-			// cacheB is full -> store frames into binary file
+			// if this cache is full, change the current to use cache and clear is cache
+			// at the moment der isn't a method required to store a cache to the hard disk drive
 
-			//			storingCacheD = true;
 			usingCacheD = false;
 			usingCacheC = true;
 			cacheD->clear();
-
-			//			ROS_INFO("Waiting for storingCacheA");
-			//			storingThreadA.join();
-			//			storingThreadB = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheB, &storingCacheB));
 		}
 	}
 	else{
@@ -520,7 +512,7 @@ void FrameManager::createSnapshots(int interval){
 				{
 					// defined actions if an interrupt occurred
 					snapshotRunning = false;
-					ROS_INFO("Stopping creating snapshots ...");
+					ROS_INFO("Stopped creating snapshots ...");
 					break;
 				}
 			}
@@ -548,7 +540,7 @@ void FrameManager::createSnapshots(int interval){
 				{
 					// defined actions if an interrupt occurred
 					snapshotRunning = false;
-					ROS_INFO("Stopping creating snapshots ...");
+					ROS_INFO("Stopped creating snapshots ...");
 					break;
 				}
 			}
@@ -560,7 +552,7 @@ void FrameManager::createSnapshots(int interval){
 }
 
 void FrameManager::startLiveStream(){
-	//ROS_ERROR("startLiveStream IS NOT IMPLEMENTED AT THE MOMENT");
+	ROS_INFO("Starting live stream mode ...");
 
 	if(createVideoActive){
 		ROS_ERROR("State change not possible ... creating video at the moment !!");
@@ -574,11 +566,14 @@ void FrameManager::startLiveStream(){
 		usingCacheD = false;
 		liveStreamFrameCount = 0;
 		liveStreamRunning = true;
+
+		// at the moment the function for the live stream creation is missing
 	}
 }
 
 void FrameManager::stopLiveStream(){
-	//ROS_ERROR("stopLiveStream IS NOT IMPLEMENTED AT THE MOMENT");
+	ROS_INFO("Stopped live stream mode ...");
+
 	stateMachine = ON_DEMAND;
 	cacheC->clear();
 	cacheD->clear();
