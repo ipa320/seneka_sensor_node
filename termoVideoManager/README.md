@@ -9,9 +9,12 @@ This topics publishes a ROS sensor_msgs::image which contains the termo informat
 At the moment the termoVideoManager offers three ROS services which could be call from remote. But the output of this ROS node is just locally because the communication interfaces aren't defined yet. 
 
 ## ROS Services 
-(1) create VideoOnDemand (termoVideoManager::getVideo) - init mode 
-(2) start/stop SnapShot and optional an interval in seconds (e.g 5) (termoVideoManager::getSnapShots)
-(3) start/stop LiveStream (termoVideoManager::getLiveStream)
+- (1) create VideoOnDemand (termoVideoManager::getVideo) 
+ - init mode 
+- (2) start/stop SnapShot and optional an interval in seconds (e.g 5) (termoVideoManager::getSnapShots)
+ - manuel selection 
+- (3) start/stop LiveStream (termoVideoManager::getLiveStream)
+ - manuel selection 
 
 ## Getting started
 roslaunch termoVideoManager termoVideoManager.launch
