@@ -90,8 +90,7 @@ private:
   std::vector<seneka_sensor_model::FOV_2D_model> pers_best_;
 
   // target vectors
-  std::vector<int> targets_x_;
-  std::vector<int> targets_y_;
+  std::vector<geometry_msgs::Point32> targets_;
 
   // perimeter vectors
   std::vector<int> perimeter_x_;
@@ -164,8 +163,8 @@ public:
   // function that sets the member variable sensor_num_ and reserves capacity for vector sensors_
   void setSensorNum(int num_of_sensors);
 
-  // function that sets the member variables targets_x_ and targets_y_
-  void setTargets(const std::vector<int> & in_x, const std::vector<int> & in_y);
+  // function that sets the member variable targets_
+  void setTargets(const std::vector<geometry_msgs::Point32> & targets);
 
   // function that sets the member variables perimeter_x_ and perimeter_y_
   void setPerimeter(const std::vector<int> & in_x, const std::vector<int> & in_y);
@@ -211,7 +210,7 @@ public:
   void calcMultipleCoverage();
 
   // function to check coverage of given sensor and target
-  bool checkCoverage(seneka_sensor_model::FOV_2D_model sensor, int target_x, int target_y);
+  bool checkCoverage(seneka_sensor_model::FOV_2D_model sensor, geometry_msgs::Point32 target);
 
   // function to check if the new sensor position is accepted
   bool newPositionAccepted(geometry_msgs::Pose new_pose_candidate);

@@ -218,8 +218,7 @@ bool sensor_placement_node::getTargets()
         {
           if(map_.data[ j * map_.info.width + i] == 0)
           {
-            targets_x_.push_back(i);
-            targets_y_.push_back(j);
+            targets_.push_back(mapToWorld2D(i,j));
             target_num_++;
           }
         }
@@ -243,8 +242,7 @@ bool sensor_placement_node::getTargets()
           {
             if(map_.data[ j * map_.info.width + i] == 0)
             {
-              targets_x_.push_back(i);
-              targets_y_.push_back(j);
+              targets_.push_back(mapToWorld2D(i,j));
               target_num_++;
             }
           }
@@ -289,7 +287,7 @@ void sensor_placement_node::initializePSO()
       particle_swarm_[i].setAreaOfInterest(area_of_interest_);
       particle_swarm_[i].setOpenAngles(open_angles_);
       particle_swarm_[i].setRange(sensor_range_);
-      particle_swarm_[i].setTargets(targets_x_, targets_y_);
+      particle_swarm_[i].setTargets(targets_);
       // initiliaze sensor poses randomly on perimeter
       particle_swarm_[i].placeSensorsRandomlyOnPerimeter();
       // initialze sensor velocities randomly
@@ -396,6 +394,18 @@ int sensor_placement_node::worldToMapY(double world_y)
     return (world_y - map_.info.origin.position.y) / map_.info.resolution;
   else 
     return 0;
+}
+
+geometry_msgs::Point32 sensor_placement_node::mapToWorld2D(int map_x, int map_y)
+{
+  geometry_msgs::Point32 p;
+  if(map_received_)
+  {
+    p.x = map_.info.origin.position.x + (map_x * map_.info.resolution);
+    p.y = map_.info.origin.position.y + (map_y * map_.info.resolution);
+    p.z = 0.0;
+  }
+  return p;
 }
 
 // function to gerenate random numbers in given interval
@@ -679,9 +689,8 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   marker_array_pub_.publish(global_best_.getVisualizationMarkers());
 
   ROS_INFO("Clean up everything");
-  particle_swarm_.erase(particle_swarm_.begin(), particle_swarm_.end());
-  targets_x_.erase(targets_x_.begin(),targets_x_.end());
-  targets_y_.erase(targets_y_.begin(),targets_y_.end());
+  particle_swarm_.clear();
+  targets_.clear();
   target_num_ = 0;
   best_cov_ = 0;
 
