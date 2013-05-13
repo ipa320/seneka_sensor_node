@@ -136,8 +136,7 @@ private:
   int target_num_;
 
   // target vectors
-  vector<int> targets_x_;
-  vector<int> targets_y_;
+  vector<geometry_msgs::Point32> targets_;
 
   // perimeter vectors
   vector<int> perimeter_x_;
@@ -195,6 +194,7 @@ public:
   double mapToWorldY(int map_y);
   int worldToMapX(double world_x);
   int worldToMapY(double world_y);
+  geometry_msgs::Point32 mapToWorld2D(int map_x, int map_y);
 
   // function to check if a given point is inside (return 1), outside (return -1) 
   // or on an edge (return 0) of a given polygon

@@ -180,12 +180,11 @@ void particle::setSensorNum(int num_of_sensors)
 
 }
 
-// function that sets the member variables targets_x_ and targets_y_
-void particle::setTargets(const std::vector<int> & in_x, const std::vector<int> & in_y)
+// function that sets the member variable targets_
+void particle::setTargets(const std::vector<geometry_msgs::Point32> & targets)
 {
-  targets_x_ = in_x;
-  targets_y_ = in_y;
-  target_num_ = targets_x_.size();
+  targets_ = targets;
+  target_num_ = targets_.size();
 }
 
 // function that sets the member variables perimeter_x_ and perimeter_y_
@@ -330,8 +329,6 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
   geometry_msgs::Twist new_vel;
   geometry_msgs::Pose new_pose;
 
-  geometry_msgs::Pose2D target_world_Coord;
-
   for(size_t i = 0; i < sensors_.size(); i++)
   {
     // get initial velocity for actual sensor
@@ -401,14 +398,9 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
       // find uncovered target far away from initial sensor position
       target_ind = findFarthestUncoveredTarget(i);
 
-      // calculate world coordinates from map coordinates of given target
-      target_world_Coord.x = mapToWorldX(targets_x_[target_ind]);
-      target_world_Coord.y = mapToWorldY(targets_y_[target_ind]);
-      target_world_Coord.theta = 0;
-
       // update sensor position
-      new_pose.position.x = target_world_Coord.x;
-      new_pose.position.y = target_world_Coord.y;
+      new_pose.position.x = targets_[target_ind].x;
+      new_pose.position.y = targets_[target_ind].y;
       new_pose.position.z = 0;
 
       // invert sensor direction
@@ -452,7 +444,7 @@ void particle::calcCoverage()
   for(size_t i = 0; i < sensors_.size(); i++)
   {
     // go through the target vectors
-    for(size_t j = 0; j < targets_x_.size(); j++)
+    for(size_t j = 0; j < targets_.size(); j++)
     {
       if( coverage_matrix_[j * sensors_.size() + i] == 1)
       {
@@ -503,9 +495,9 @@ void particle::calcCoverageMatrix()
   for(size_t i = 0; i < sensors_.size(); i++)
   {
     // go through the target vectors
-    for(size_t j = 0; j < targets_x_.size(); j++)  
+    for(size_t j = 0; j < targets_.size(); j++)  
     {
-      if(checkCoverage(sensors_[i], targets_x_[j], targets_y_[j]))
+      if(checkCoverage(sensors_[i], targets_[j]))
         coverage_matrix_[ j * sensors_.size() + i] = 1;
       else
         coverage_matrix_[ j * sensors_.size() + i] = 0;
@@ -524,7 +516,7 @@ void particle::calcMultipleCoverage()
   }
 }
 
-bool particle::checkCoverage(seneka_sensor_model::FOV_2D_model sensor, int target_x, int target_y)
+bool particle::checkCoverage(seneka_sensor_model::FOV_2D_model sensor, geometry_msgs::Point32 target)
 {
   // initialize workspace
   bool result = false;
@@ -533,7 +525,6 @@ bool particle::checkCoverage(seneka_sensor_model::FOV_2D_model sensor, int targe
   double alpha;
   double beta;
   geometry_msgs::Pose sensor_pose;
-  geometry_msgs::Pose2D target_world_Coord;
   geometry_msgs::Vector3 vec_sensor_target, vec_sensor_dir;
 
   // get pose of given sensor
@@ -545,14 +536,9 @@ bool particle::checkCoverage(seneka_sensor_model::FOV_2D_model sensor, int targe
   // get angles of given sensor
   sensor_angles = sensor.getOpenAngles();
 
-  // calculate world coordinates from map coordinates of given target
-  target_world_Coord.x = mapToWorldX(target_x);
-  target_world_Coord.y = mapToWorldY(target_y);
-  target_world_Coord.theta = 0;
-
   // calculate vector between sensor and target
-  vec_sensor_target.x = target_world_Coord.x - sensor_pose.position.x;
-  vec_sensor_target.y = target_world_Coord.y - sensor_pose.position.y;
+  vec_sensor_target.x = target.x - sensor_pose.position.x;
+  vec_sensor_target.y = target.y - sensor_pose.position.y;
   vec_sensor_target.z = 0;
 
   // get angle of sensor facing direction
@@ -840,24 +826,18 @@ int particle::findFarthestUncoveredTarget(size_t sensor_index)
   int result = -1;
   double max_distance = 0;
   double actual_distance = 0;
-  geometry_msgs::Pose2D target_world_Coord;
   geometry_msgs::Pose sensor_pose = sensors_[sensor_index].getSensorPose();
   geometry_msgs::Vector3 vec_sensor_target, vec_sensor_dir;
 
-  for(size_t i = 0; i < targets_x_.size(); i++)
+  for(size_t i = 0; i < targets_.size(); i++)
   {
     if(coverage_matrix_[i * sensors_.size() + sensor_index] == 0)
     {
       // we found an uncovered target, check if this is further away from the sensor than the current maximum
 
-      // calculate world coordinates from map coordinates of given target
-      target_world_Coord.x = mapToWorldX(targets_x_[i]);
-      target_world_Coord.y = mapToWorldY(targets_y_[i]);
-      target_world_Coord.theta = 0;
-
       // calculate vector between sensor and target
-      vec_sensor_target.x = target_world_Coord.x - sensor_pose.position.x;
-      vec_sensor_target.y = target_world_Coord.y - sensor_pose.position.y;
+      vec_sensor_target.x = targets_[i].x - sensor_pose.position.x;
+      vec_sensor_target.y = targets_[i].y - sensor_pose.position.y;
       vec_sensor_target.z = 0;
 
       actual_distance = vecNorm(vec_sensor_target);
