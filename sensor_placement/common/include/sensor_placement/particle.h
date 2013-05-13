@@ -216,6 +216,9 @@ public:
   // function to check if the new sensor position is accepted
   bool newPositionAccepted(geometry_msgs::Pose new_pose_candidate);
 
+  // function to check if the new sensor orientation is accepted
+  bool newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose new_pose_candidate);
+
   // ************************* help functions *************************
 
   // function to check if a given point is inside (return 1), outside (return -1) 
@@ -234,6 +237,12 @@ public:
   // helper function to find an uncovered target far away from a given sensor position
   // the return value is the index of that uncovered target
   int findFarthestUncoveredTarget(size_t sensor_index);
+
+  // helper function to check, if the sensor is facing outside the area of interest
+  bool sensorBeamIntersectsPerimeter(size_t sensor_index, geometry_msgs::Pose new_pose_candidate);
+
+  // helper function for the actual calculation step in sensorBeamIntersectsPerimeter function
+  double intersectionCalculation(double v1, double v2, double x1, double x2, double y1, double y2);
 
   // functions to calculate the norm of a 2D/3D vector
   double vecNorm(double x, double y, double z = 0);

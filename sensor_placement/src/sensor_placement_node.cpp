@@ -578,7 +578,7 @@ bool sensor_placement_node::pointOn1DSegementPose(geometry_msgs::Pose2D start, g
     }
     if(checker)
     {
-      if( ( fabs(border_1.x*(1-t) + t*border_2.x - start.x) <= 0.1) && ( fabs(border_1.y*(1-t) + t*border_2.y - start.y) <= 0.1) )
+      if( ( fabs(border_1.x*(1-t) + t*border_2.x - start.x) <= 0.01) && ( fabs(border_1.y*(1-t) + t*border_2.y - start.y) <= 0.01) )
       {
         // start lies on the segment
         result = true;

@@ -416,7 +416,14 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
       new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
     }
 
-    new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
+    while(!newOrientationAccepted(i, new_pose))
+    {
+      // try next angle in 10/180*PI steps
+      new_angle = new_angle + 0.1745;
+      if(new_angle > PI)
+        new_angle = new_angle - 2 * PI;
+      new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
+    }
 
     // set new sensor pose
     sensors_[i].setSensorPose(new_pose);
@@ -583,6 +590,17 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
   return result;
 }
 
+// function to check if the new sensor orientation is accepted
+bool particle::newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose new_pose_candidate)
+{
+  // initialize workspace
+  bool result = false;
+
+  if(!sensorBeamIntersectsPerimeter(sensor_index, new_pose_candidate))
+    result = true;
+
+  return result;
+}
 
 // function to check if a given point is inside (return 1), outside (return -1) 
 // or on an edge (return 0) of a given polygon
@@ -597,7 +615,7 @@ int particle::pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon
   geometry_msgs::Point32 poly_point_1;
   geometry_msgs::Point32 poly_point_2;
 
-  // check in the first loopf, if the point lies on any of the polygons edges
+  // check in the first loop, if the point lies on any of the polygons edges
   // and also find the start_index for later algorithm steps
   for(size_t i = 0; i < polygon.points.size(); i++)
   {
@@ -758,7 +776,7 @@ bool particle::pointOn1DSegementPose(geometry_msgs::Pose2D start, geometry_msgs:
     }
     if(checker)
     {
-      if( ( fabs(border_1.x*(1-t) + t*border_2.x - start.x) <= 0.1) && ( fabs(border_1.y*(1-t) + t*border_2.y - start.y) <= 0.1) )
+      if( ( fabs(border_1.x*(1-t) + t*border_2.x - start.x) <= 0.01) && ( fabs(border_1.y*(1-t) + t*border_2.y - start.y) <= 0.01) )
       {
         // start lies on the segment
         result = true;
@@ -853,6 +871,70 @@ int particle::findFarthestUncoveredTarget(size_t sensor_index)
   }
   return result;
 }
+
+// helper function to check, if the sensor is facing outside the area of interest
+bool particle::sensorBeamIntersectsPerimeter(size_t sensor_index, geometry_msgs::Pose new_pose_candidate)
+{
+  // intialize workspace
+  bool result = false;
+  size_t poly_size = area_of_interest_.polygon.points.size();
+  size_t loop_index = 0;
+
+  geometry_msgs::Point32 poly_point_1 = geometry_msgs::Point32();
+  geometry_msgs::Point32 poly_point_2 = geometry_msgs::Point32();
+
+  double alpha = tf::getYaw(new_pose_candidate.orientation);
+  double sensor_range = sensors_[sensor_index].getRange();
+
+  double v1, v2, t;
+
+  // calculate vector (with length sensor_range) of camera facing direction
+  v1 = sensor_range * cos(alpha);
+  v2 = sensor_range * sin(alpha);
+
+  // go through the points of the polygon
+  // if the first intersection was found, exit the loop
+  while(loop_index < poly_size && result == false)
+  {
+    // check each edge of the perimeter
+    if(loop_index + 1 < poly_size)
+    {
+      poly_point_1 = area_of_interest_.polygon.points[loop_index];
+      poly_point_2 = area_of_interest_.polygon.points[loop_index+1];
+    }
+    else
+    {
+      poly_point_1 = area_of_interest_.polygon.points[loop_index];
+      poly_point_2 = area_of_interest_.polygon.points[0];
+    }
+    if(v1 == 0)
+      t = intersectionCalculation(v2,v1,poly_point_2.y - poly_point_1.y, poly_point_2.x - poly_point_1.x, poly_point_1.y - new_pose_candidate.position.y, poly_point_1.x - new_pose_candidate.position.x);
+    else
+      t = intersectionCalculation(v1,v2,poly_point_2.x - poly_point_1.x, poly_point_2.y - poly_point_1.y, poly_point_1.x - new_pose_candidate.position.x, poly_point_1.y - new_pose_candidate.position.y);
+
+    if(t > 0 && t < 1)
+      result = true;
+
+    loop_index++;
+  }
+
+  return result;
+}
+
+// helper function for the actual calculation step in sensorBeamIntersectsPerimeter function
+double particle::intersectionCalculation(double v1, double v2, double x1, double x2, double y1, double y2)
+{
+  // initialize workspace
+  double result = 0;
+  // without loss of generality we assume v1 to be nonzero 
+  if(floor(x2*v1 - x1*v2) > 0.01)
+  {
+    result = (y1 / v1) - (x1 / v1)*( (y2 - y1 * (v2 / v1) ) / (x2 - x1 * (v2 / v1)) );
+  }
+
+  return result;
+}
+
 
 // function to calculate the norm of a 2D/3D vector
 double particle::vecNorm(double x, double y, double z)
