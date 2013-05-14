@@ -14,17 +14,17 @@
  * \note
  *   ROS stack name: SENEKA
  * \note
- *   ROS package name: TODO FILL IN PACKAGE NAME HERE
+ *   ROS package name: VideoManager
  *
  * \author
  *   Author: Johannes Goth (cmm-jg)
  * \author
- *   Supervised by: Christophe Maufroy
+ *   Supervised by: Christophe Maufroy (cmm)
  *
  * \date Date of creation: 21.02.2013
  *
  * \brief
- *   TODO FILL IN BRIEF DESCRIPTION HERE
+ *   videoRecorder.cpp
  *
  *****************************************************************
  *

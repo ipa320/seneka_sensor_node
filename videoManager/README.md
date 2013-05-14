@@ -1,12 +1,11 @@
-Seneka - videoManager
+Seneka - videoManager (generic)
 ======
 
 ## Description
-The termoVideoManager works with Optris termo cameras as input device. 
-The termoVideoManager subscribes on the /optris/thermal_image topic which is provided by the optirs ROS driver. 
-This topics publishes a ROS sensor_msgs::image which contains the termo information. The mapping from termo information to RGB8 is done inside this ROS node.
+The videoManager works with any camera as input device, which provides a BGR8 coded sensor_msgs::image as output. 
+The videoManager subscribes on configurable ROS topic, which provides the video input. 
 
-At the moment the termoVideoManager offers three ROS services which could be call from remote. But the output of this ROS node is just locally because the communication interfaces aren't defined yet. 
+At the moment the videoManager offers three ROS services which could be call from remote. But the output of this ROS node is just locally because the communication interfaces aren't defined yet. 
 
 ## ROS Services 
 - (1) create VideoOnDemand (termoVideoManager::getVideo) 
@@ -17,11 +16,11 @@ At the moment the termoVideoManager offers three ROS services which could be cal
  - manuel selection 
 
 ## Getting started
-- roslaunch optris_drivers optris_drivers.launch 
- - publishes input stream (raw data)
-- roslaunch termoVideoManager termoVideoManager.launch
-- rosrun termoVideoManager vTester
- - ROS test node for termoVideoManager
+- roslaunch/rosrun XX, which provides input topic
+ - publishes input stream (BGR8 coded sensor_msgs::image)
+- roslaunch videoManager videoManager.launch
+- rosrun videoManager vTester
+ - ROS test node for videoManager
 
 ## Launch file configuration
 
@@ -37,12 +36,3 @@ At the moment the termoVideoManager offers three ROS services which could be cal
 - binaryFilePath
 - videoFilePath
 
-#### Converting Optris image to RGB8
-- minTemperature
-- maxTemperature
-- PaletteScalingMethod
-- Palette
-
-## Commands to start and restart the Optris kernel module:
-- sudo rmmod uvcvideo
-- sudo modprobe uvcvideo nodrop=1

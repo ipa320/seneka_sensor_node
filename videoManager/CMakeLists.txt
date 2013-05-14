@@ -30,13 +30,7 @@ rosbuild_gensrv()
 
 rosbuild_add_boost_directories()
 
-# inlcude termo cam converter 
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
-LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
-LINK_LIBRARIES(PIImager ImageProcessing udev)
-
 # create executables
-
 rosbuild_add_executable(videoManager src/videoManager.cpp)
 rosbuild_add_executable(vTester src/vTester.cpp)
 # boost linking

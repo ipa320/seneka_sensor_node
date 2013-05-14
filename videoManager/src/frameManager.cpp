@@ -1,14 +1,65 @@
-/*
- * frameManager.cpp
+/*!
+ *****************************************************************
+ * \file
  *
- *  Created on: 21.02.2013
- *      Author: Johannes Goth (cmm-jg)
- */
+ * \note
+ *   Copyright (c) 2012 \n
+ *   Fraunhofer Institute for Manufacturing Engineering
+ *   and Automation (IPA) \n\n
+ *
+ *****************************************************************
+ *
+ * \note
+ *   Project name: SENEKA
+ * \note
+ *   ROS stack name: SENEKA
+ * \note
+ *   ROS package name: VideoManager
+ *
+ * \author
+ *   Author: Johannes Goth (cmm-jg)
+ * \author
+ *   Supervised by: Christophe Maufroy (cmm)
+ *
+ * \date Date of creation: 21.02.2013
+ *
+ * \brief
+ *   frameManager.cpp
+ *
+ *****************************************************************
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *     - Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer. \n
+ *     - Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution. \n
+ *     - Neither the name of the Fraunhofer Institute for Manufacturing
+ *       Engineering and Automation (IPA) nor the names of its
+ *       contributors may be used to endorse or promote products derived from
+ *       this software without specific prior written permission. \n
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License LGPL as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ * GNU Lesser General Public License LGPL for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License LGPL along with this program.
+ * If not, see <http://www.gnu.org/licenses/>.
+ *
+ ****************************************************************/
 
 // std and own includes
 #include "frameManager.h"
-//#include "boost_serialization_cvMat.h"
-#include "boost_serialization_sensor_msgs_image.h"
+#include "boost_serialization_cvMat.h"
 #include <vector>
 #include <fstream>
 
@@ -21,7 +72,6 @@
 #include <boost/archive/binary_iarchive.hpp>
 #include <boost/iostreams/filtering_streambuf.hpp>
 #include <boost/iostreams/filter/zlib.hpp>
-//#include <boost/Image.h>
 
 // ROS includes
 #include "ros/ros.h"
@@ -54,24 +104,12 @@ FrameManager::FrameManager() {
 	usingCacheB = false;
 	storingCacheA = false;
 	storingCacheB = false;
-	cacheA = new std::vector<sensor_msgs::Image>;
-	cacheB = new std::vector<sensor_msgs::Image>;
-	iBuilder.setPaletteScalingMethod(optris::eMinMax);
-	iBuilder.setPalette(optris::eIron);
-	iBuilder.setManualTemperatureRange((float)20, (float)40);
+	cacheA = new std::vector<cv::Mat>;
+	cacheB = new std::vector<cv::Mat>;
 	showFrame = false;
 	snapshotRunning = false;
 	liveStreamRunning = false;
 	stateMachine = ON_DEMAND;
-
-	// live stream specific
-	cacheC = new std::vector<cv::Mat>;
-	cacheD = new std::vector<cv::Mat>;
-	usingCacheC = true;
-	usingCacheD = false;
-	storingCacheC = false;
-	storingCacheD = false;
-	liveStreamFrameCount = 0;
 
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
@@ -81,7 +119,7 @@ FrameManager::FrameManager() {
 FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 
 	// initialize configurable parameters
-	int tmp_fpv, tmp_fpc, tmp_fpb, tmp_vfr, tmp_PaletteScalingMethod, tmp_Palette, minTemperature, maxTemperature;
+	int tmp_fpv, tmp_fpc, tmp_fpb, tmp_vfr;
 
 	nHandler.getParam("framesPerVideo", tmp_fpv);
 	nHandler.getParam("framesPerCache", tmp_fpc);
@@ -90,20 +128,13 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	nHandler.getParam("binaryFilePath", binaryFilePath);
 	nHandler.getParam("videoFilePath", videoFilePath);
 	nHandler.getParam("showFrame", showFrame);
-	nHandler.getParam("minTemperature", minTemperature);
-	nHandler.getParam("maxTemperature", maxTemperature);
-	nHandler.getParam("PaletteScalingMethod", tmp_PaletteScalingMethod);
-	nHandler.getParam("Palette", tmp_Palette);
+
 
 
 	if(tmp_fpv>0) fpv=(u_int)tmp_fpv;
 	if(tmp_fpc>0) fpc=(u_int)tmp_fpc;
 	if(tmp_fpb>0) fpb=(u_int)tmp_fpb;
 	if(tmp_vfr>0) vfr=(u_int)tmp_vfr;
-
-	iBuilder.setPaletteScalingMethod((optris::EnumOptrisPaletteScalingMethod)tmp_PaletteScalingMethod);
-	iBuilder.setPalette((optris::EnumOptrisColoringPalette)tmp_Palette);
-	iBuilder.setManualTemperatureRange((float)minTemperature, (float)maxTemperature);
 
 	// initialize fixed parameters
 	videoCodec = CV_FOURCC('D','I','V','X');
@@ -114,20 +145,11 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	usingCacheB = false;
 	storingCacheA = false;
 	storingCacheB = false;
-	cacheA = new std::vector<sensor_msgs::Image>;
-	cacheB = new std::vector<sensor_msgs::Image>;
+	cacheA = new std::vector<cv::Mat>;
+	cacheB = new std::vector<cv::Mat>;
 	snapshotRunning = false;
 	liveStreamRunning = false;
 	stateMachine = ON_DEMAND;
-
-	// live stream specific
-	cacheC = new std::vector<cv::Mat>;
-	cacheD = new std::vector<cv::Mat>;
-	usingCacheC = true;
-	usingCacheD = false;
-	storingCacheC = false;
-	storingCacheD = false;
-	liveStreamFrameCount = 0;
 
 	for(int i=0; i < (int)(fpv/fpb)+1; i++){
 		binaryFileMutexes.push_back(new boost::mutex());
@@ -141,30 +163,37 @@ FrameManager::~FrameManager() {
 
 void FrameManager::processFrame(const sensor_msgs::Image& img){
 	//ROS_INFO("processFrame ... ");
-	// caching current frame in memory
-	cacheFrame(img);
+
+	cv_bridge::CvImageConstPtr cvptrS;
+	try
+	{
+		// convert sensor_msgs::Image to cv_bridge::CvImageConstPtr
+		cvptrS = cv_bridge::toCvShare(img, cvptrS, sensor_msgs::image_encodings::BGR8);
+		// caching current frame into memory
+		cacheFrame(cvptrS->image);
+
+		if(stateMachine == LIVE_STREAM){
+			// display current frame
+			if(showFrame)
+				displayFrame((cv::Mat*)&(cvptrS->image));
+		}
+
+	}
+	catch (cv_bridge::Exception& e)
+	{
+		ROS_ERROR("cv_bridge exception: %s", e.what());
+		return;
+	}
 }
 
-void FrameManager::cacheFrame(sensor_msgs::Image frame){
+void FrameManager::cacheFrame(cv::Mat frame){
 	//ROS_INFO("cacheFrame ... ");
 
-	if(stateMachine == ON_DEMAND){
-		std::vector<sensor_msgs::Image>* currentCache = getCurrentCache();
-		currentCache->push_back(frame);
-	}
-	else if(stateMachine == LIVE_STREAM){
-		// acccess the current live stream cache
-		std::vector<cv::Mat>* currentCache = getCurrentLiveStreamCache();
-		// converting and caching of current frame
-		currentCache->push_back(convertTemperatureValuesToRGB(&frame, &liveStreamFrameCount));
-	}
-	else{
-		ROS_ERROR("Unknown state for the state machine");
-	}
-
-
+	std::vector<cv::Mat>* currentCache = getCurrentCache();
+	currentCache->push_back(frame);
 }
-std::vector<sensor_msgs::Image>* FrameManager::getCurrentCache(){
+
+std::vector<cv::Mat>* FrameManager::getCurrentCache(){
 	//ROS_INFO("getCurrentCache ... ");
 
 	// verifying the sizes of memory buffers
@@ -183,76 +212,35 @@ std::vector<sensor_msgs::Image>* FrameManager::getCurrentCache(){
 	}
 }
 
-std::vector<cv::Mat>* FrameManager::getCurrentLiveStreamCache(){
-	//ROS_INFO("getCurrentCache ... ");
-
-	// verifying the sizes of memory buffers
-	// and if necessary it will schedule further tasks
-	verifyCacheSize();
-
-	if(usingCacheC == true && usingCacheD == false){
-		return cacheC;
-	}
-	else if (usingCacheD == true && usingCacheC == false){
-		return cacheD;
-	}
-	else{
-		std::cerr << "Could not get current cache ..." << std::endl;
-		return NULL;
-	}
-}
-
 void FrameManager::verifyCacheSize(){
 	//ROS_INFO("verifyCacheSize ... ");
 
-	if(stateMachine == ON_DEMAND){
-		if(cacheA->size() == fpc && storingCacheA == false){
-			// cacheA is full -> store frames into binary file
+	if(cacheA->size() == fpc && storingCacheA == false){
+		// cacheA is full -> store frames into binary file
 
-			storingCacheA = true;
-			usingCacheA = false;
-			usingCacheB = true;
+		storingCacheA = true;
+		usingCacheA = false;
+		usingCacheB = true;
 
-			ROS_INFO("Waiting for storingCacheB");
-			storingThreadB.join();
-			storingThreadA = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheA, &storingCacheA));
-		}
-		else if (cacheB->size() == fpc && storingCacheB == false){
-			// cacheB is full -> store frames into binary file
-
-			storingCacheB = true;
-			usingCacheB = false;
-			usingCacheA = true;
-
-			ROS_INFO("Waiting for storingCacheA");
-			storingThreadA.join();
-			storingThreadB = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheB, &storingCacheB));
-		}
+		ROS_INFO("Waiting for storingCacheB");
+		storingThreadB.join();
+		storingThreadA = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheA, &storingCacheA));
 	}
-	else if(stateMachine == LIVE_STREAM){
-		if(cacheC->size() == fpc && storingCacheC == false){
-			// if this cache is full, change the current to use cache and clear is cache
-			// at the moment der isn't a method required to store a cache to the hard disk drive
-			usingCacheC = false;
-			usingCacheD = true;
-			cacheC->clear();
-		}
-		else if (cacheB->size() == fpc && storingCacheB == false){
-			// if this cache is full, change the current to use cache and clear is cache
-			// at the moment der isn't a method required to store a cache to the hard disk drive
+	else if (cacheB->size() == fpc && storingCacheB == false){
+		// cacheB is full -> store frames into binary file
 
-			usingCacheD = false;
-			usingCacheC = true;
-			cacheD->clear();
-		}
-	}
-	else{
-		ROS_ERROR("Unknown state for the state machine");
+		storingCacheB = true;
+		usingCacheB = false;
+		usingCacheA = true;
+
+		ROS_INFO("Waiting for storingCacheA");
+		storingThreadA.join();
+		storingThreadB = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheB, &storingCacheB));
 	}
 
 }
 
-void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* threadActive){
+void FrameManager::storeCache(std::vector<cv::Mat>* cache, bool* threadActive){
 
 	ROS_INFO("storeCache into binary file...");
 	// define fileStorage-filename
@@ -275,8 +263,8 @@ void FrameManager::storeCache(std::vector<sensor_msgs::Image>* cache, bool* thre
 		boost::archive::binary_oarchive oa(ofs);
 
 		// writes each frame which is stored in cache into binary file
-		for (std::vector<sensor_msgs::Image>::iterator it = cache->begin() ; it != cache->end(); it++){
-			// writes frame per frame into binary file, using sensor_msgs::Image serialization
+		for (std::vector<cv::Mat>::iterator it = cache->begin() ; it != cache->end(); it++){
+			// writes frame per frame into binary file, using cv::Mat serialization
 			oa << *it;
 		}
 	}
@@ -310,18 +298,19 @@ int FrameManager::getVideo(){
 				return 1;
 			}
 			else
-				return -1;
+				return -1;	// return -1 if video creation is still active
 		}
 		else
-			return -2;
+			return -2;	// return -2 if no full video is available
 	}
 	else if(stateMachine == LIVE_STREAM){
+		// videoOnDemand isn't available in LIVE_STREAM state
 		ROS_ERROR("This function is in LIVE_STREAM state not available!");
-		return -2;
+		return -3;
 	}
 	else{
 		ROS_ERROR("Unknown state for the state machine");
-		return -2;
+		return 0;
 	}
 
 
@@ -336,7 +325,6 @@ int FrameManager::createVideo(){
 	// create a videoRecorder instance
 	VideoRecorder* vRecoder = new VideoRecorder(vfr, videoCodec);
 	bool firstFrame = true;
-	unsigned int frameCount = 0;
 
 	/* start binary for video creation
 	 * selecting binaryFileIndex + 1 to get the oldest binary file,
@@ -384,27 +372,32 @@ int FrameManager::createVideo(){
 			bool hasContent = true;
 			while (hasContent)
 			{
-				sensor_msgs::Image loadedFrame;
+				cv::Mat loadedFrame;
 				if(firstFrame){
-					// try to read a temperature image from binary file
+					// try to read image from binary file
 					hasContent = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
 					if (hasContent == true){
-						// convert temperature image (sensor_msgs::Image) to RGB image (cv::Mat)
-						cv::Mat mat = convertTemperatureValuesToRGB(&loadedFrame, &frameCount);
-						// define video parameters
-						vRecoder->createVideo(videoFilePath, mat.cols, mat.rows);
+						vRecoder->createVideo(videoFilePath, loadedFrame.cols, loadedFrame.rows);
 						// add frame to video
-						vRecoder->addFrame(mat);
+						vRecoder->addFrame(loadedFrame);
 						firstFrame = false;
-					}
 
+						// display current frame
+						if(showFrame)
+							displayFrame(&loadedFrame);
+					}
 				}
 				else{
-					// try to read a temperature image from binary file
+					// try to read image from binary file
 					hasContent = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
-					// convert and add frame to video
-					if (hasContent == true)
-						vRecoder->addFrame(convertTemperatureValuesToRGB(&loadedFrame, &frameCount));
+					// add frame to video
+					if (hasContent == true){
+						vRecoder->addFrame(loadedFrame);
+
+						// display current frame
+						if(showFrame)
+							displayFrame(&loadedFrame);
+					}
 				}
 			}
 			ifs.close();
@@ -418,51 +411,6 @@ int FrameManager::createVideo(){
 	ROS_INFO("finished createVideo ...");
 
 	return -1;
-}
-
-cv::Mat FrameManager::convertTemperatureValuesToRGB(sensor_msgs::Image* frame, unsigned int* frameCount){
-
-	unsigned char* buffer = NULL;
-	buffer = new unsigned char[frame->width * frame->height * 3];
-
-	iBuilder.setSize(frame->width, frame->height, false);
-	const unsigned char* data = &(*frame).data[0];
-	iBuilder.convertTemperatureToPaletteImage((unsigned short*)data, buffer);
-
-	// create RGB sensor_msgs::image
-	sensor_msgs::Image rgb_img;
-	rgb_img.header.frame_id = "thermal_image_view";
-	rgb_img.height 	        = frame->height;
-	rgb_img.width 	        = frame->width;
-	rgb_img.encoding        = "rgb8";
-	rgb_img.step		    = frame->width*3;
-	rgb_img.data.resize(rgb_img.height*rgb_img.step);
-
-	*frameCount = *frameCount + 1;
-	rgb_img.header.seq      = *frameCount;
-	rgb_img.header.stamp    = ros::Time::now();
-
-	for(unsigned int i=0; i< frame->width* frame->height*3; i++)
-	{
-		rgb_img.data[i] = buffer[i];
-	}
-
-	cv_bridge::CvImageConstPtr cvptrS;
-	try
-	{
-		// convert the sensor_msgs::Image to cv_bridge::CvImageConstPtr (cv::Mat)
-		cvptrS = cv_bridge::toCvShare(rgb_img, cvptrS, sensor_msgs::image_encodings::BGR8);
-		cv::Mat mat = cvptrS->image;
-
-		// show frame, if configured in the launch file
-		if(showFrame)
-			displayFrame(&mat);
-	}
-	catch (cv_bridge::Exception& e)
-	{
-		ROS_ERROR("cv_bridge exception: %s", e.what());
-	}
-	return cvptrS->image;
 }
 
 void FrameManager::displayFrame(cv::Mat* mat){
@@ -486,67 +434,37 @@ void FrameManager::stopSnapshots(){
 
 void FrameManager::createSnapshots(int interval){
 	ROS_INFO("Starting creating snapshots ...");
-	unsigned int imageCounter = 0;
 	while(true){
-		if(stateMachine == ON_DEMAND){
-			std::stringstream imgFile;
-			std::vector<sensor_msgs::Image>* currentCache = getCurrentCache();
 
-			if(currentCache->size() > 0){
-				sensor_msgs::Image img = currentCache->at(currentCache->size()-1);
+		std::stringstream imgFile;
+		std::vector<cv::Mat>* currentCache = getCurrentCache();
 
-				// file name and path to the image files
-				// file name is the current system time stamp
-				imgFile << "/home/cmm-jg/Bilder/snapshots/" << ros::Time::now() << ".jpg";
+		if(currentCache->size() > 0){
+			cv::Mat img = currentCache->at(currentCache->size()-1);
 
-				// create JPEG image
-				cv::Mat m = convertTemperatureValuesToRGB(&img, &imageCounter);
-				cv::imwrite(imgFile.str(), m);
+			// file name and path to the image files
+			// file name is the current system time stamp
+			imgFile << "/home/cmm-jg/Bilder/snapshots/" << ros::Time::now() << ".jpg";
 
-				// try to set thread to sleep or if an interrupt occurred stop thread
-				try{
-					// set thread sleeping for the chosen interval
-					boost::this_thread::sleep(boost::posix_time::milliseconds(interval*1000));
-				}
-				catch(boost::thread_interrupted const& )
-				{
-					// defined actions if an interrupt occurred
-					snapshotRunning = false;
-					ROS_INFO("Stopped creating snapshots ...");
-					break;
-				}
+			// create JPEG image
+			cv::imwrite(imgFile.str(), img);
+
+			// display current frame
+			if(showFrame && stateMachine != LIVE_STREAM)
+				displayFrame(&img);
+
+			// try to set thread to sleep or if an interrupt occurred stop thread
+			try{
+				// set thread sleeping for the chosen interval
+				boost::this_thread::sleep(boost::posix_time::milliseconds(interval*1000));
 			}
-		}
-		else if(stateMachine == LIVE_STREAM){
-			std::stringstream imgFile;
-			std::vector<cv::Mat>* currentCache = getCurrentLiveStreamCache();
-
-			if(currentCache->size() > 0){
-				cv::Mat img = currentCache->at(currentCache->size()-1);
-
-				// file name and path to the image files
-				// file name is the current system time stamp
-				imgFile << "/home/cmm-jg/Bilder/snapshots/" << ros::Time::now() << ".jpg";
-
-				// create JPEG image
-				cv::imwrite(imgFile.str(), img);
-
-				// try to set thread to sleep or if an interrupt occurred stop thread
-				try{
-					// set thread sleeping for the chosen interval
-					boost::this_thread::sleep(boost::posix_time::milliseconds(interval*1000));
-				}
-				catch(boost::thread_interrupted const& )
-				{
-					// defined actions if an interrupt occurred
-					snapshotRunning = false;
-					ROS_INFO("Stopped creating snapshots ...");
-					break;
-				}
+			catch(boost::thread_interrupted const& )
+			{
+				// defined actions if an interrupt occurred
+				snapshotRunning = false;
+				ROS_INFO("Stopped creating snapshots ...");
+				break;
 			}
-		}
-		else{
-			ROS_ERROR("Unknown state for the state machine");
 		}
 	}
 }
@@ -558,16 +476,11 @@ void FrameManager::startLiveStream(){
 		ROS_ERROR("State change not possible ... creating video at the moment !!");
 	}
 	else{
-		// initializie the LIVE_STREAM state
+		// initialize the LIVE_STREAM state
 		stateMachine = LIVE_STREAM;
-		cacheA->clear();
-		cacheB->clear();
-		usingCacheC = true;
-		usingCacheD = false;
-		liveStreamFrameCount = 0;
 		liveStreamRunning = true;
 
-		// at the moment the function for the live stream creation is missing
+		// TODO: Impl. video coding for live stream
 	}
 }
 
@@ -575,15 +488,7 @@ void FrameManager::stopLiveStream(){
 	ROS_INFO("Stopped live stream mode ...");
 
 	stateMachine = ON_DEMAND;
-	cacheC->clear();
-	cacheD->clear();
 	liveStreamRunning = false;
-	// initialize ON_DEMAND state
-	usingCacheA = true;
-	usingCacheB = false;
-	storingCacheA = false;
-	storingCacheB = false;
-	fullVideoAvailable = false;
 }
 
 
