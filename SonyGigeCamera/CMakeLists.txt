@@ -28,8 +28,6 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)
 #target_link_libraries(example ${PROJECT_NAME})
-
-
 add_definitions(-D_UNIX_)
 
 
@@ -42,7 +40,7 @@ LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib/genicam/bin/Linux64_x64)
 
 
 
-rosbuild_add_executable(image_publisher src/image_publisher.cpp)
+rosbuild_add_executable(SonyGigeCamera src/sony_camera_node.cpp)
 
 
 set(EBUS_LIB
@@ -74,6 +72,4 @@ set(GENICAM_LIB
 
 
 
-target_link_libraries(image_publisher  ${EBUS_LIB} ${GENICAM_LIB})
-
-
+target_link_libraries(SonyGigeCamera  ${EBUS_LIB} ${GENICAM_LIB})

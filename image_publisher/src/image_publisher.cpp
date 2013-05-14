@@ -4,7 +4,7 @@
 #include <image_transport/image_transport.h>
 #include <opencv/cvwimage.h>
 #include <opencv/highgui.h>
-#include <cv_bridge/CvBridge.h>
+//#include <cv_bridge/CvBridge.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/fill_image.h>
 #include "opencv/cv.h"
@@ -30,8 +30,7 @@ PV_INIT_SIGNAL_HANDLER();
 
 
 using namespace std;
-
-
+#define clip(x) (unsigned char)( (x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ) )
 
 int main(int argc, char** argv)
 {
@@ -112,19 +111,15 @@ int main(int argc, char** argv)
 
     char lDoodle[] = "|\\-|-/";
     int lDoodleIndex = 0;
-    int count = 0;
+
 
 
 
     PvInt64 width_, height_ = 0;
     lDeviceParams->GetIntegerValue( "Width", width_ );
     lDeviceParams->GetIntegerValue( "Height", height_ );
-    cv::Mat raw_image_(cv::Size(width_,height_), CV_8UC3);
-    cv::namedWindow("Sony",cv::WINDOW_AUTOSIZE);
 
-
-
-    ros::Rate loop_rate(5);
+    ros::Rate loop_rate(30);
     while (nh.ok()) {
 
         PvBuffer *lBuffer = NULL;
@@ -145,35 +140,49 @@ int main(int argc, char** argv)
                     Image = lBuffer->GetImage();
 
                     // Read width, height
-                    width_ = lBuffer->GetImage()->GetWidth();
-                    height_ = lBuffer->GetImage()->GetHeight();
+                    width_ = (int) Image->GetWidth();
+                    height_ = (int) Image->GetHeight();
                 }
 
-                //saving images (Test purpose)
-                string mSavePath;
-                mSavePath ="/home/mig-rb/Images/";
-                count=count+1;
-                mSavePath.append(static_cast<ostringstream*>( &(ostringstream() << count) )->str());
-                PvBufferWriter lBufferWriter;
-                lBufferWriter.Store( lBuffer, mSavePath.data(), PvBufferFormatRaw );
+                //Converting YUV image formate to RGB
+                int i = 0,j = 0, r1 = 0, g1 = 0, b1 = 0, r2 = 0, g2 = 0, b2 = 0;
+                IplImage* m_RGB = cvCreateImage(cvSize(width_, height_), IPL_DEPTH_8U, 3);
+                unsigned char* pData = (unsigned char *) Image->GetDataPointer();
 
+                for(i = 0, j=0; i < width_ * height_*3 ; i+=6, j+=4)
+                {
+                   unsigned char u = pData[j];
+                   unsigned char y1 = pData[j+1];
+                   unsigned char v = pData[j+2];
+                   unsigned char y2 = pData[j+3];
 
+                   b1 = clip(1.0*y1 + 8 + 1.402*(v-128));
+                   g1 = clip(1.0*y1 - 0.34413*(u-128) - 0.71414*(v-128));
+                   r1 = clip(1.0*y1 + 1.772*(u-128));
+                   b2 = clip(1.0*y2 + 8 + 1.402*(v-128));
+                   g2 = clip(1.0*y2 - 0.34413*(u-128) - 0.71414*(v-128));
+                   r2 = clip(1.0*y2 + 1.772*(u-128));
 
-                //lBuffer->Attach(raw_image_.data,width_,height_,PvPixelBGR12Packed);
-                Image->Attach(raw_image_.data,width_,height_,PvPixelRGB8Planar);
+                   m_RGB->imageData[i] = r1;
+                   m_RGB->imageData[i+1] = g1;
+                   m_RGB->imageData[i+2] =b1;
+                   m_RGB->imageData[i+3] = r2;
+                   m_RGB->imageData[i+4] = g2;
+                   m_RGB->imageData[i+5] =b2;
+                }
 
-
-                //cv::cvtColor(raw_image_,raw_image_,CV_BGR2RGB);
-                //cv::cvtColor(raw_image_,raw_image_,CV_GRAY2RGB);
+                //IplImage image to cv::Mat
+                cv::Mat image(m_RGB);
+                cv::namedWindow("Sony",cv::WINDOW_AUTOSIZE);
 
                 cv_bridge::CvImage out_msg;
                 out_msg.header.stamp   = ros::Time::now();
-                out_msg.encoding = sensor_msgs::image_encodings::TYPE_8UC3;
-                out_msg.image    = raw_image_;
+                out_msg.encoding = sensor_msgs::image_encodings::BGR8;
+                out_msg.image    = image;
 
                 rgb_image.publish(out_msg.toImageMsg());
 
-                cv::imshow("Current Image", raw_image_);
+                cv::imshow("Current Image",image);
 
                 if(cv::waitKey(30) >= 0) break;
 
@@ -183,16 +192,19 @@ int main(int argc, char** argv)
             lStream.QueueBuffer( lBuffer );
 
 
+
         }
         else
         {
             // Timeout
-            printf( "%c Timeout\r", lDoodle[ lDoodleIndex ] );
+           // printf( "%c Timeout\r", lDoodle[ lDoodleIndex ] );
         }
 
-        ++lDoodleIndex %= 6;
+       // ++lDoodleIndex %= 6;
         ros::spinOnce();
         loop_rate.sleep();
+
+        //
     }
 
 
