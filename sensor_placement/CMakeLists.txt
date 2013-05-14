@@ -19,7 +19,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined messages
 #rosbuild_genmsg()
 #uncomment if you have defined services
-rosbuild_gensrv()
+#rosbuild_gensrv()
 
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/common/include/sensor_placement)
 INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/common/src)
@@ -27,6 +27,7 @@ INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include/sensor_placement)
 
 rosbuild_add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
 						common/src/particle.cpp
+						common/src/seneka_utilities.cpp
 						common/src/sensor_model.cpp)
 #rosbuild_add_executable(sensor_model common/src/sensor_model.cpp)
 #rosbuild_add_executable(particle common/src/particle.cpp)

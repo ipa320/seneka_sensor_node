@@ -10,9 +10,9 @@
  * Project name: SeNeKa
  * ROS stack name: seneka
  * ROS package name: sensor_placement
- *  							
+ *                
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *  		
+ *      
  * Author: Florian Mirus, email:Florian.Mirus@ipa.fhg.de
  *
  * Date of creation: April 2013
@@ -23,14 +23,14 @@
  * modification, are permitted provided that the following conditions are met:
  *
  *   * Redistributions of source code must retain the above copyright
- *  	 notice, this list of conditions and the following disclaimer.
+ *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above copyright
- *  	 notice, this list of conditions and the following disclaimer in the
- *  	 documentation and/or other materials provided with the distribution.
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
  *   * Neither the name of the Fraunhofer Institute for Manufacturing 
- *  	 Engineering and Automation (IPA) nor the names of its
- *  	 contributors may be used to endorse or promote products derived from
- *  	 this software without specific prior written permission.
+ *     Engineering and Automation (IPA) nor the names of its
+ *     contributors may be used to endorse or promote products derived from
+ *     this software without specific prior written permission.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License LGPL as 
@@ -218,7 +218,7 @@ bool sensor_placement_node::getTargets()
         {
           if(map_.data[ j * map_.info.width + i] == 0)
           {
-            targets_.push_back(mapToWorld2D(i,j));
+            targets_.push_back(mapToWorld2D(i,j, map_));
             target_num_++;
           }
         }
@@ -234,15 +234,15 @@ bool sensor_placement_node::getTargets()
         {
           // calculate world coordinates from map coordinates of given target
           geometry_msgs::Pose2D world_Coord;
-          world_Coord.x = mapToWorldX(i);
-          world_Coord.y = mapToWorldY(j);
+          world_Coord.x = mapToWorldX(i, map_);
+          world_Coord.y = mapToWorldY(j, map_);
           world_Coord.theta = 0;
 
           if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
           {
             if(map_.data[ j * map_.info.width + i] == 0)
             {
-              targets_.push_back(mapToWorld2D(i,j));
+              targets_.push_back(mapToWorld2D(i,j, map_));
               target_num_++;
             }
           }
@@ -264,11 +264,11 @@ bool sensor_placement_node::getTargets()
 void sensor_placement_node::initializePSO()
 {
   // initialize pointer to dummy sensor_model
-  seneka_sensor_model::FOV_2D_model dummy_2D_model;
+  FOV_2D_model dummy_2D_model;
   dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
 
   // initialize dummy particle
-  seneka_particle::particle dummy_particle = seneka_particle::particle(sensor_num_, target_num_, dummy_2D_model);
+  particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
   // initialize particle swarm with given number of particles containing given number of sensors
   particle_swarm_.assign(particle_num_,dummy_particle);
 
@@ -361,289 +361,6 @@ void sensor_placement_node::getGlobalBest()
       }
     }
   }
-}
-
-// functions to calculate between map (grid) and world coordinates
-double sensor_placement_node::mapToWorldX(int map_x)
-{
-  if(map_received_)
-    return map_.info.origin.position.x + (map_x * map_.info.resolution);
-  else
-    return 0;
-}
-
-double sensor_placement_node::mapToWorldY(int map_y)
-{
-  if(map_received_)
-    return map_.info.origin.position.y + (map_y * map_.info.resolution);
-  else
-    return 0;
-}
-
-int sensor_placement_node::worldToMapX(double world_x)
-{
-  if(map_received_)
-    return (world_x - map_.info.origin.position.x) / map_.info.resolution;
-  else 
-    return 0;
-}
-
-int sensor_placement_node::worldToMapY(double world_y)
-{
-  if(map_received_)
-    return (world_y - map_.info.origin.position.y) / map_.info.resolution;
-  else 
-    return 0;
-}
-
-geometry_msgs::Point32 sensor_placement_node::mapToWorld2D(int map_x, int map_y)
-{
-  geometry_msgs::Point32 p;
-  if(map_received_)
-  {
-    p.x = map_.info.origin.position.x + (map_x * map_.info.resolution);
-    p.y = map_.info.origin.position.y + (map_y * map_.info.resolution);
-    p.z = 0.0;
-  }
-  return p;
-}
-
-// function to gerenate random numbers in given interval
-double sensor_placement_node::randomNumber(double low, double high)
-{
-  return ((double) rand()/ RAND_MAX) * (high - low) + low;
-}
-
-// function to check if a given point is inside (return 1), outside (return -1) 
-// or on an edge (return 0) of a given polygon
-int sensor_placement_node::pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon polygon)
-{
-  // initialize workspace variables
-  int result = -1;
-  bool ignore = false;
-  size_t start_index = 0;
-  bool start_index_set = false;
-  int intersect_count = 0;
-  geometry_msgs::Point32 poly_point_1;
-  geometry_msgs::Point32 poly_point_2;
-
-  // check in the first loop, if the point lies on any of the polygons edges
-  // and also find the start_index for later algorithm steps
-  for(size_t i = 0; i < polygon.points.size(); i++)
-  {
-    if(i + 1 < polygon.points.size())
-    {
-      poly_point_1 = polygon.points[i];
-      poly_point_2 = polygon.points[i+1];
-    }
-    else
-    {
-      poly_point_1 = polygon.points[i];
-      poly_point_2 = polygon.points[0];
-    }
-
-    if(pointOn1DSegementPose(point, poly_point_1, poly_point_2, 0))
-    {
-      // point lies on the edge of the polygon
-      return 0;
-    }
-    else
-    {
-      if(start_index_set == false)
-      {
-        if(poly_point_1.x != point.x)
-        {
-          start_index = i;
-          start_index_set = true; 
-        }
-      }
-    }
-  }
-
-  // initialize points defining the beam
-  geometry_msgs::Point32 g_1;
-  g_1.x = 0;
-  g_1.y = point.y;
-  g_1.z = 0;
-
-  geometry_msgs::Point32 g_2;
-  g_2.x = 1;
-  g_2.y = point.y;
-  g_2.z = 0;
-
-  // initialize starting point of polygon
-  poly_point_1 = polygon.points[start_index];
-  // initialize counters
-  size_t loop_counter = start_index + 1;
-  size_t loop_counter_mod = loop_counter % polygon.points.size();
-
-  bool while_loop_valid = true;
-  int start_index_counter = 0;
-
-  while(while_loop_valid)
-  {
-    if(loop_counter_mod == (start_index) && start_index_counter == 1)
-    {
-      while_loop_valid = false;
-    }
-
-    if(loop_counter_mod == (start_index + 1) && start_index_counter == 0)
-    {
-      start_index_counter++;
-    }
-
-    poly_point_2 = polygon.points[loop_counter_mod];
-
-    if(ignore)
-    {
-      // check if poly_point_2 is on the complete beam line
-      if(pointOn1DSegementPoint(poly_point_2, g_1, g_2, 2))
-      {
-        ignore = true;
-      }
-      else
-      {
-        if(edgeIntersectsBeamOrLine(point, poly_point_1, poly_point_2, 1))
-        {
-          // the line from starting point intersects the given polygon edge
-          intersect_count ++;
-        }
-        ignore = false;
-        poly_point_1 = poly_point_2;
-        
-      }
-    }
-    else
-    {
-      // check if poly_point_2 is on the beam
-      if(pointOn1DSegementPoint(poly_point_2, g_1, g_2, 1))
-      {
-        ignore = true;
-      }
-      else
-      {
-        if(edgeIntersectsBeamOrLine(point, poly_point_1, poly_point_2, 0))
-        {
-          // the beam to the right from starting point intersects the given polygon edge
-          intersect_count ++;
-        }
-        ignore = false;
-        poly_point_1 = poly_point_2;
-      }
-    }
-    // increment loop counters
-    loop_counter++;
-    loop_counter_mod = loop_counter % polygon.points.size();    
-  }
-
-  if(intersect_count % 2 == 0)
-    result = -1;
-  else
-    result = 1;
-
-  return result;
-}
-
-// helper function to check if a point lies on a 1D-Segment
-// segID = 0 (edge), segID = 1 (beam), segID = 2 (line)
-bool sensor_placement_node::pointOn1DSegementPose(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID)
-{
-  bool result = false;
-
-  if( (start.x == border_1.x && start.y == border_1.y) || (start.x == border_2.x && start.y == border_2.y))
-  {
-    // start equals one of the borders
-    result = true;
-  }
-  else
-  {
-    double t = 0;
-    if( (border_2.x - border_1.x) != 0)
-    {
-      t = (start.x - border_1.x) / (border_2.x - border_1.x);
-    }
-    else
-    {
-      if( (border_2.y - border_1.y) != 0)
-      {
-        t = (start.y - border_1.y) / (border_2.y - border_1.y);
-      }
-    }
-    bool checker = false;
-    switch(segID)
-    {
-      case 0: // edge
-        if(t > 0 && t < 1)
-          checker = true;
-        break;
-      case 1: // beam
-        if(t > 0)
-          checker = true;
-        break;
-      case 2: // line
-        checker = true;
-        break;
-      default: // wrong input
-        checker = false; 
-    }
-    if(checker)
-    {
-      if( ( fabs(border_1.x*(1-t) + t*border_2.x - start.x) <= 0.01) && ( fabs(border_1.y*(1-t) + t*border_2.y - start.y) <= 0.01) )
-      {
-        // start lies on the segment
-        result = true;
-      }
-    }
-  }
-
-  return result;
-}
-
-bool sensor_placement_node::pointOn1DSegementPoint(geometry_msgs::Point32 start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID)
-{
-  geometry_msgs::Pose2D help_pose;
-  help_pose.x = start.x;
-  help_pose.y = start.y;
-  help_pose.theta = 0;
-
-  return pointOn1DSegementPose(help_pose, border_1, border_2, segID);
-}
-
-// helper function to check if the beam of line from start intersects the given plygon edge
-// segID = 0 (beam), segID = 1 (line)
-bool sensor_placement_node::edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID)
-{
-  // initialize workspace
-  bool result = false;
-  double t = 0;
-  double s = 0;
-  if(border_1.y == border_2.y)
-  {
-    // edge is parallel or coincides with line or beam
-    result = false;
-  }
-  else
-  {
-    t = -(start.x - border_1.x) + ( (border_2.x - border_1.x) * (start.y - border_1.y) ) / (border_2.y - border_1.y);
-    s = (start.y - border_1.y) / (border_2.y - border_1.y);
-
-    switch(segID)
-    {
-      case 0: // beam
-        if(t > 0 && s > 0 && s < 1)
-          result = true;
-        break;
-      case 1: // line
-        if(s > 0 && s < 1)
-          result = true;
-        break;
-      default: // wrong input
-        result = false; 
-    }
-  }
-
-  return result;
-
 }
 
 // callback function for the start PSO service

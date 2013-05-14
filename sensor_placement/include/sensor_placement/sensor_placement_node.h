@@ -10,9 +10,9 @@
  * Project name: SeNeKa
  * ROS stack name: seneka
  * ROS package name: sensor_placement
- *  							
+ *                
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *  		
+ *      
  * Author: Florian Mirus, email:Florian.Mirus@ipa.fhg.de
  *
  * Date of creation: April 2013
@@ -23,14 +23,14 @@
  * modification, are permitted provided that the following conditions are met:
  *
  *   * Redistributions of source code must retain the above copyright
- *  	 notice, this list of conditions and the following disclaimer.
+ *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above copyright
- *  	 notice, this list of conditions and the following disclaimer in the
- *  	 documentation and/or other materials provided with the distribution.
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
  *   * Neither the name of the Fraunhofer Institute for Manufacturing 
- *  	 Engineering and Automation (IPA) nor the names of its
- *  	 contributors may be used to endorse or promote products derived from
- *  	 this software without specific prior written permission.
+ *     Engineering and Automation (IPA) nor the names of its
+ *     contributors may be used to endorse or promote products derived from
+ *     this software without specific prior written permission.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License LGPL as 
@@ -75,8 +75,10 @@
 // external includes
 #include <sensor_model.h>
 #include <particle.h>
+#include <seneka_utilities.h>
 
 using namespace std;
+using namespace seneka_utilities;
 
 class sensor_placement_node
 {
@@ -123,10 +125,10 @@ private:
   double min_cov_;
 
   // particle swarm
-  vector<seneka_particle::particle> particle_swarm_;
+  vector<particle> particle_swarm_;
 
   // vector storing the positions global best solution of the particle swarm
-  seneka_particle::particle global_best_;
+  particle global_best_;
 
   // PSO actual best coverage
   double best_cov_;
@@ -185,29 +187,6 @@ public:
 
   // function to get the current global best solution
   void getGlobalBest();
-
-  // function to gerenate random numbers in given interval
-  double randomNumber(double low, double high);
-
-  // functions to calculate between map (grid) and world coordinates
-  double mapToWorldX(int map_x);
-  double mapToWorldY(int map_y);
-  int worldToMapX(double world_x);
-  int worldToMapY(double world_y);
-  geometry_msgs::Point32 mapToWorld2D(int map_x, int map_y);
-
-  // function to check if a given point is inside (return 1), outside (return -1) 
-  // or on an edge (return 0) of a given polygon
-  int pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon polygon);
-
-  // helper functions to check if a point lies on a 1D-Segment
-  // segID = 0 (edge), segID = 1 (beam), segID = 2 (line)
-  bool pointOn1DSegementPose(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
-  bool pointOn1DSegementPoint(geometry_msgs::Point32 start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
-
-  // helper function to check if the beam of line from start intersects the given plygon edge
-  // segID = 0 (beam), segID = 1 (line)
-  bool edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
 
   // callback function for the start PSO service
   bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);

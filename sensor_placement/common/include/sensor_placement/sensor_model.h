@@ -10,9 +10,9 @@
  * Project name: SeNeKa
  * ROS stack name: seneka
  * ROS package name: sensor_placement
- *  							
+ *                
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *  		
+ *      
  * Author: Florian Mirus, email:Florian.Mirus@ipa.fhg.de
  *
  * Date of creation: April 2013
@@ -23,14 +23,14 @@
  * modification, are permitted provided that the following conditions are met:
  *
  *   * Redistributions of source code must retain the above copyright
- *  	 notice, this list of conditions and the following disclaimer.
+ *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above copyright
- *  	 notice, this list of conditions and the following disclaimer in the
- *  	 documentation and/or other materials provided with the distribution.
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
  *   * Neither the name of the Fraunhofer Institute for Manufacturing 
- *  	 Engineering and Automation (IPA) nor the names of its
- *  	 contributors may be used to endorse or promote products derived from
- *  	 this software without specific prior written permission.
+ *     Engineering and Automation (IPA) nor the names of its
+ *     contributors may be used to endorse or promote products derived from
+ *     this software without specific prior written permission.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License LGPL as 
@@ -70,9 +70,10 @@
 #include <visualization_msgs/MarkerArray.h>
 #include <std_msgs/String.h>
 
-#define PI 3.14159265
+// includes
+#include <seneka_utilities.h>
 
-namespace seneka_sensor_model{
+using namespace seneka_utilities;
 
 class sensor_model // interface class for each sensor model
 {
@@ -146,12 +147,6 @@ public:
 
 
   // ************************* help functions *************************
-
-  // function to generate random number in given interval
-  double randomNumber(double low, double high);
-
-  // signum function
-  int signum(double x);
 
   // draws a visualization of the respective sensor model
   virtual visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id) = 0;
@@ -227,5 +222,4 @@ public:
 
 };
 
-}
 #endif

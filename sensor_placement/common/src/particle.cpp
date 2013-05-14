@@ -10,9 +10,9 @@
  * Project name: SeNeKa
  * ROS stack name: seneka
  * ROS package name: sensor_placement
- *  							
+ *                
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *  		
+ *      
  * Author: Florian Mirus, email:Florian.Mirus@ipa.fhg.de
  *
  * Date of creation: April 2013
@@ -23,14 +23,14 @@
  * modification, are permitted provided that the following conditions are met:
  *
  *   * Redistributions of source code must retain the above copyright
- *  	 notice, this list of conditions and the following disclaimer.
+ *     notice, this list of conditions and the following disclaimer.
  *   * Redistributions in binary form must reproduce the above copyright
- *  	 notice, this list of conditions and the following disclaimer in the
- *  	 documentation and/or other materials provided with the distribution.
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
  *   * Neither the name of the Fraunhofer Institute for Manufacturing 
- *  	 Engineering and Automation (IPA) nor the names of its
- *  	 contributors may be used to endorse or promote products derived from
- *  	 this software without specific prior written permission.
+ *     Engineering and Automation (IPA) nor the names of its
+ *     contributors may be used to endorse or promote products derived from
+ *     this software without specific prior written permission.
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Lesser General Public License LGPL as 
@@ -49,8 +49,6 @@
  ****************************************************************/
 
 #include <particle.h>
-
-using namespace seneka_particle;
 
 // standard constructor
 particle::particle()
@@ -79,7 +77,7 @@ particle::particle()
 }
 
 // constructor with arguments
-particle::particle(int num_of_sensors, int num_of_targets, seneka_sensor_model::FOV_2D_model sensor_model)
+particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_model)
 {
   // initialize number of sensors
   sensor_num_ = num_of_sensors;
@@ -108,13 +106,13 @@ particle::particle(int num_of_sensors, int num_of_targets, seneka_sensor_model::
 particle::~particle(){}
 
 // function to get personal best solution
-std::vector<seneka_sensor_model::FOV_2D_model> particle::getPersonalBest()
+std::vector<FOV_2D_model> particle::getPersonalBest()
 {
   return pers_best_;
 }
 
 // function to get actual solution
-std::vector<seneka_sensor_model::FOV_2D_model> particle::getActualSolution()
+std::vector<FOV_2D_model> particle::getActualSolution()
 {
   return sensors_;
 }
@@ -233,27 +231,6 @@ void particle::setRange(double new_range)
   {
     sensors_[i].setRange(new_range);
   }
-}
-
-// functions to calculate between map (grid) and world coordinates
-double particle::mapToWorldX(int map_x)
-{
-  return map_.info.origin.position.x + (map_x * map_.info.resolution);
-}
-
-double particle::mapToWorldY(int map_y)
-{
-  return map_.info.origin.position.y + (map_y * map_.info.resolution);
-}
-
-int particle::worldToMapX(double world_x)
-{
-  return (world_x - map_.info.origin.position.x) / map_.info.resolution;
-}
-
-int particle::worldToMapY(double world_y)
-{
-  return (world_y - map_.info.origin.position.y) / map_.info.resolution;
 }
 
 // function to place the sensors randomly on the perimeter
@@ -516,7 +493,7 @@ void particle::calcMultipleCoverage()
   }
 }
 
-bool particle::checkCoverage(seneka_sensor_model::FOV_2D_model sensor, geometry_msgs::Point32 target)
+bool particle::checkCoverage(FOV_2D_model sensor, geometry_msgs::Point32 target)
 {
   // initialize workspace
   bool result = false;
@@ -586,236 +563,6 @@ bool particle::newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose n
     result = true;
 
   return result;
-}
-
-// function to check if a given point is inside (return 1), outside (return -1) 
-// or on an edge (return 0) of a given polygon
-int particle::pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon polygon)
-{
-  // initialize workspace variables
-  int result = -1;
-  bool ignore = false;
-  size_t start_index = 0;
-  bool start_index_set = false;
-  int intersect_count = 0;
-  geometry_msgs::Point32 poly_point_1;
-  geometry_msgs::Point32 poly_point_2;
-
-  // check in the first loop, if the point lies on any of the polygons edges
-  // and also find the start_index for later algorithm steps
-  for(size_t i = 0; i < polygon.points.size(); i++)
-  {
-    if(i + 1 < polygon.points.size())
-    {
-      poly_point_1 = polygon.points[i];
-      poly_point_2 = polygon.points[i+1];
-    }
-    else
-    {
-      poly_point_1 = polygon.points[i];
-      poly_point_2 = polygon.points[0];
-    }
-
-    if(pointOn1DSegementPose(point, poly_point_1, poly_point_2, 0))
-    {
-      // point lies on the edge of the polygon
-      return 0;
-    }
-    else
-    {
-      if(start_index_set == false)
-      {
-        if(poly_point_1.x != point.x)
-        {
-          start_index = i;
-          start_index_set = true; 
-        }
-      }
-    }
-  }
-
-  // initialize points defining the beam
-  geometry_msgs::Point32 g_1;
-  g_1.x = 0;
-  g_1.y = point.y;
-  g_1.z = 0;
-
-  geometry_msgs::Point32 g_2;
-  g_2.x = 1;
-  g_2.y = point.y;
-  g_2.z = 0;
-
-  // initialize starting point of polygon
-  poly_point_1 = polygon.points[start_index];
-  // initialize counters
-  size_t loop_counter = start_index + 1;
-  size_t loop_counter_mod = loop_counter % polygon.points.size();
-
-  bool while_loop_valid = true;
-  int start_index_counter = 0;
-
-  while(while_loop_valid)
-  {
-    if(loop_counter_mod == (start_index) && start_index_counter == 1)
-    {
-      while_loop_valid = false;
-    }
-
-    if(loop_counter_mod == (start_index + 1) && start_index_counter == 0)
-    {
-      start_index_counter++;
-    }
-
-    poly_point_2 = polygon.points[loop_counter_mod];
-
-    if(ignore)
-    {
-      // check if poly_point_2 is on the complete beam line
-      if(pointOn1DSegementPoint(poly_point_2, g_1, g_2, 2))
-      {
-        ignore = true;
-      }
-      else
-      {
-        if(edgeIntersectsBeamOrLine(point, poly_point_1, poly_point_2, 1))
-        {
-          // the line from starting point intersects the given polygon edge
-          intersect_count ++;
-        }
-        ignore = false;
-        poly_point_1 = poly_point_2;
-        
-      }
-    }
-    else
-    {
-      // check if poly_point_2 is on the beam
-      if(pointOn1DSegementPoint(poly_point_2, g_1, g_2, 1))
-      {
-        ignore = true;
-      }
-      else
-      {
-        if(edgeIntersectsBeamOrLine(point, poly_point_1, poly_point_2, 0))
-        {
-          // the beam to the right from starting point intersects the given polygon edge
-          intersect_count ++;
-        }
-        ignore = false;
-        poly_point_1 = poly_point_2;
-      }
-    }
-    // increment loop counters
-    loop_counter++;
-    loop_counter_mod = loop_counter % polygon.points.size();    
-  }
-
-  if(intersect_count % 2 == 0)
-    result = -1;
-  else
-    result = 1;
-
-  return result;
-}
-
-// helper function to check if a point lies on a 1D-Segment
-// segID = 0 (edge), segID = 1 (beam), segID = 2 (line)
-bool particle::pointOn1DSegementPose(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID)
-{
-  bool result = false;
-
-  if( (start.x == border_1.x && start.y == border_1.y) || (start.x == border_2.x && start.y == border_2.y))
-  {
-    // start equals one of the borders
-    result = true;
-  }
-  else
-  {
-    double t = 0;
-    if( (border_2.x - border_1.x) != 0)
-    {
-      t = (start.x - border_1.x) / (border_2.x - border_1.x);
-    }
-    else
-    {
-      if( (border_2.y - border_1.y) != 0)
-      {
-        t = (start.y - border_1.y) / (border_2.y - border_1.y);
-      }
-    }
-    bool checker = false;
-    switch(segID)
-    {
-      case 0: // edge
-        if(t > 0 && t < 1)
-          checker = true;
-        break;
-      case 1: // beam
-        if(t > 0)
-          checker = true;
-        break;
-      case 2: // line
-        checker = true;
-        break;
-      default: // wrong input
-        checker = false; 
-    }
-    if(checker)
-    {
-      if( ( fabs(border_1.x*(1-t) + t*border_2.x - start.x) <= 0.01) && ( fabs(border_1.y*(1-t) + t*border_2.y - start.y) <= 0.01) )
-      {
-        // start lies on the segment
-        result = true;
-      }
-    }
-  }
-
-  return result;
-}
-
-bool particle::pointOn1DSegementPoint(geometry_msgs::Point32 start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID)
-{
-  geometry_msgs::Pose2D help_pose;
-  help_pose.x = start.x;
-  help_pose.y = start.y;
-  help_pose.theta = 0;
-
-  return pointOn1DSegementPose(help_pose, border_1, border_2, segID);
-}
-
-// helper function to check if the beam of line from start intersects the given plygon edge
-// segID = 0 (beam), segID = 1 (line)
-bool particle::edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID)
-{
-  // initialize workspace
-  bool result = false;
-  if(border_1.y == border_2.y)
-  {
-    // edge is parallel or coincides with line or beam
-    result = false;
-  }
-  else
-  {
-    double t = -(start.x - border_1.x) + ( (border_2.x - border_1.x) * (start.y - border_1.y) ) / (border_2.y - border_1.y);
-    double s = (start.y - border_1.y) / (border_2.y - border_1.y);
-
-    switch(segID)
-    {
-      case 0: // beam
-        if(t > 0 && s > 0 && s < 1)
-          result = true;
-        break;
-      case 1: // line
-        if(s > 0 && s < 1)
-          result = true;
-        break;
-      default: // wrong input
-        result = false; 
-    }
-  }
-
-  return result;
-
 }
 
 // helper function to find an uncovered target far away from a given sensor position
@@ -915,44 +662,11 @@ double particle::intersectionCalculation(double v1, double v2, double x1, double
   return result;
 }
 
-
-// function to calculate the norm of a 2D/3D vector
-double particle::vecNorm(double x, double y, double z)
-{
-  return sqrt( x * x + y * y + z * z);
-}
-
-double particle::vecNorm(geometry_msgs::Vector3 v)
-{
-  return sqrt(vecDotProd(v,v));
-}
-
-// function to calculate the dot product of two vectors
-double particle::vecDotProd(geometry_msgs::Vector3 v, geometry_msgs::Vector3 w)
-{
-  return (v.x * w.x + v.y * w.y + v.z * w.z);
-}
-
-// function to generate random number in given interval
-double particle::randomNumber(double low, double high)
-{
-  return ((double) rand() / RAND_MAX) * (high - low) + low;
-}
-
-// signum function
-int particle::signum(double x)
-{
-  if(x >= 0)
-    return 1;
-  else //(x < 0)
-    return -1;
-}
-
 // returns all visualization markers of the particle
 visualization_msgs::MarkerArray particle::getVisualizationMarkers()
 {
   visualization_msgs::MarkerArray array, tmp;
-  std::vector<seneka_sensor_model::FOV_2D_model>::iterator it;
+  std::vector<FOV_2D_model>::iterator it;
   unsigned int id = 0;
   // loop over all sensors
   for ( it = sensors_.begin(); it != sensors_.end(); ++it )
