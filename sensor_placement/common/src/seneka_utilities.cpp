@@ -53,7 +53,46 @@
 
 namespace seneka_utilities
 {
+  /* ----------------------------------- */
+  /* -------------- MATH --------------- */
+  /* ----------------------------------- */
+  // function to gerenate random numbers in given interval
+  double randomNumber(double low, double high)
+  {
+    return ((double) rand()/ RAND_MAX) * (high - low) + low;
+  }
 
+  // function to calculate the norm of a 2D/3D vector
+  double vecNorm(double x, double y, double z)
+  {
+    return sqrt( x * x + y * y + z * z);
+  }
+
+  double vecNorm(geometry_msgs::Vector3 v)
+  {
+    return sqrt(vecDotProd(v,v));
+  }
+
+  // function to calculate the dot product of two vectors
+  double vecDotProd(geometry_msgs::Vector3 v, geometry_msgs::Vector3 w)
+  {
+    return (v.x * w.x + v.y * w.y + v.z * w.z);
+  }
+
+  // signum function
+  int signum(double x)
+  {
+    if (x > 0)
+      return 1;
+    else if (x < 0)
+      return -1;
+    else
+      return 0;
+  }
+
+  /* ----------------------------------- */
+  /* --------- map conversion ---------- */
+  /* ----------------------------------- */
   // functions to calculate between map (grid) and world coordinates
   double mapToWorldX(int map_x, const nav_msgs::OccupancyGrid & map)
   {
@@ -84,12 +123,9 @@ namespace seneka_utilities
     return p;
   }
 
-  // function to gerenate random numbers in given interval
-  double randomNumber(double low, double high)
-  {
-    return ((double) rand()/ RAND_MAX) * (high - low) + low;
-  }
-
+  /* ----------------------------------- */
+  /* --------- geometric stuff --------- */
+  /* ----------------------------------- */
   // function to check if a given point is inside (return 1), outside (return -1) 
   // or on an edge (return 0) of a given polygon
   int pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon polygon)
@@ -320,34 +356,6 @@ namespace seneka_utilities
 
     return result;
 
-  }
-
-  // function to calculate the norm of a 2D/3D vector
-  double vecNorm(double x, double y, double z)
-  {
-    return sqrt( x * x + y * y + z * z);
-  }
-
-  double vecNorm(geometry_msgs::Vector3 v)
-  {
-    return sqrt(vecDotProd(v,v));
-  }
-
-  // function to calculate the dot product of two vectors
-  double vecDotProd(geometry_msgs::Vector3 v, geometry_msgs::Vector3 w)
-  {
-    return (v.x * w.x + v.y * w.y + v.z * w.z);
-  }
-
-  // signum function
-  int signum(double x)
-  {
-    if (x > 0)
-      return 1;
-    else if (x < 0)
-      return -1;
-    else
-      return 0;
   }
 
 } // end namespace

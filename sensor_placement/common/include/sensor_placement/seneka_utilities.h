@@ -66,12 +66,28 @@
 namespace seneka_utilities
 {
 
+  /* ----------------------------------- */
+  /* -------------- MATH --------------- */
+  /* ----------------------------------- */
 #define PI 3.14159265
 
   // function to gerenate random numbers in given interval
   // make sure to have set the seed in the main functions
   double randomNumber(double low, double high);
 
+  // functions to calculate the norm of a 2D/3D vector
+  double vecNorm(double x, double y, double z = 0);
+  double vecNorm(geometry_msgs::Vector3 v);
+
+  // function to calculate the dot product of two vectors
+  double vecDotProd(geometry_msgs::Vector3 v, geometry_msgs::Vector3 w);
+
+  // signum function
+  int signum(double x);
+
+  /* ----------------------------------- */
+  /* --------- map conversion ---------- */
+  /* ----------------------------------- */
   // functions to calculate between map (grid) and world coordinates
   double mapToWorldX(int map_x, const nav_msgs::OccupancyGrid & map);
   double mapToWorldY(int map_y, const nav_msgs::OccupancyGrid & map);
@@ -79,6 +95,10 @@ namespace seneka_utilities
   int worldToMapY(double world_y, const nav_msgs::OccupancyGrid & map);
   geometry_msgs::Point32 mapToWorld2D(int map_x, int map_y, const nav_msgs::OccupancyGrid & map);
 
+  
+  /* ----------------------------------- */
+  /* --------- geometric stuff --------- */
+  /* ----------------------------------- */
   // function to check if a given point is inside (return 1), outside (return -1) 
   // or on an edge (return 0) of a given polygon
   int pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon polygon);
@@ -91,16 +111,6 @@ namespace seneka_utilities
   // helper function to check if the beam of line from start intersects the given plygon edge
   // segID = 0 (beam), segID = 1 (line)
   bool edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
-
-  // functions to calculate the norm of a 2D/3D vector
-  double vecNorm(double x, double y, double z = 0);
-  double vecNorm(geometry_msgs::Vector3 v);
-
-  // function to calculate the dot product of two vectors
-  double vecDotProd(geometry_msgs::Vector3 v, geometry_msgs::Vector3 w);
-
-  // signum function
-  int signum(double x);
 
 }; // end namespace
 
