@@ -112,6 +112,10 @@ namespace seneka_utilities
   // segID = 0 (beam), segID = 1 (line)
   bool edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
 
+  // get bounding box of polygon
+  // always return 8 points, first four are lower plane
+  geometry_msgs::Polygon getBoundingBox(const geometry_msgs::Polygon & polygon);
+
 }; // end namespace
 
 #endif

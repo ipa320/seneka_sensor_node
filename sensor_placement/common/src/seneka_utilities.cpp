@@ -358,4 +358,48 @@ namespace seneka_utilities
 
   }
 
+  geometry_msgs::Polygon getBoundingBox(const geometry_msgs::Polygon & polygon)
+  {
+    geometry_msgs::Polygon out_poly;
+    double x_min = 0.0, x_max = 0.0;
+    double y_min = 0.0, y_max = 0.0;
+    double z_min = 0.0, z_max = 0.0;
+    for (unsigned int i = 0; i < polygon.points.size(); i++)
+    {
+      if ( polygon.points[i].x > x_max )
+        x_max = polygon.points[i].x;
+      if ( polygon.points[i].y > y_max )
+        y_max = polygon.points[i].y;
+      if ( polygon.points[i].z > z_max )
+        z_max = polygon.points[i].z;
+      if ( polygon.points[i].x < x_min )
+        x_min = polygon.points[i].x;
+      if ( polygon.points[i].y < y_min )
+        y_min = polygon.points[i].y;
+      if ( polygon.points[i].z < z_min )
+        z_min = polygon.points[i].z;
+    }
+    geometry_msgs::Point32 p;
+    p.x = x_min; p.y = y_min; p.z = z_min;
+    out_poly.points.push_back(p);
+    p.x = x_max; p.y = y_min; p.z = z_min;
+    out_poly.points.push_back(p);
+    p.x = x_max; p.y = y_max; p.z = z_min;
+    out_poly.points.push_back(p);
+    p.x = x_min; p.y = y_max; p.z = z_min;
+    out_poly.points.push_back(p);
+    p.x = x_min; p.y = y_max; p.z = z_max;
+    out_poly.points.push_back(p);
+    p.x = x_min; p.y = y_min; p.z = z_max;
+    out_poly.points.push_back(p);
+    p.x = x_max; p.y = y_min; p.z = z_max;
+    out_poly.points.push_back(p);
+    p.x = x_max; p.y = y_max; p.z = z_max;
+    out_poly.points.push_back(p);
+    
+    return out_poly;
+  }
+
+
+
 } // end namespace
