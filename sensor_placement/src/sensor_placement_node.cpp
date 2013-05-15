@@ -62,6 +62,7 @@ sensor_placement_node::sensor_placement_node()
   // ros publishers
   poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_poly",1);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1);
+  map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1);
 
   // ros service servers
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
@@ -376,6 +377,10 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   {
     ROS_INFO("Map service called successfully");
     const nav_msgs::OccupancyGrid& new_map (srv_map.response.map);
+
+    geometry_msgs::Polygon bounding_box = getBoundingBox2D(poly_.polygon);
+    cropMap(bounding_box, new_map, map_);
+    map_pub_.publish(map_);
     map_ = new_map;
     map_received_ = true;
   }

@@ -91,11 +91,20 @@ namespace seneka_utilities
   // functions to calculate between map (grid) and world coordinates
   double mapToWorldX(int map_x, const nav_msgs::OccupancyGrid & map);
   double mapToWorldY(int map_y, const nav_msgs::OccupancyGrid & map);
-  int worldToMapX(double world_x, const nav_msgs::OccupancyGrid & map);
-  int worldToMapY(double world_y, const nav_msgs::OccupancyGrid & map);
-  geometry_msgs::Point32 mapToWorld2D(int map_x, int map_y, const nav_msgs::OccupancyGrid & map);
-
+  unsigned int worldToMapX(double world_x, const nav_msgs::OccupancyGrid & map);
+  unsigned int worldToMapY(double world_y, const nav_msgs::OccupancyGrid & map);
+  geometry_msgs::Point32 mapToWorld2D(unsigned int map_x, unsigned int map_y, 
+                                      const nav_msgs::OccupancyGrid & map);
+  void worldToMap2D(const geometry_msgs::Point32 &p, 
+                    const nav_msgs::OccupancyGrid &map,
+                    unsigned int &map_x, unsigned int &map_y);
   
+  // crops a map to the given bounding_box 
+  // taken from https://kforge.ros.org/navigation/trac/attachment/ticket/5/map-server-crop-map.patch
+  void cropMap(const geometry_msgs::Polygon &bounding_box,
+               const nav_msgs::OccupancyGrid &map,
+               nav_msgs::OccupancyGrid &croppedMap); 
+
   /* ----------------------------------- */
   /* --------- geometric stuff --------- */
   /* ----------------------------------- */
@@ -112,9 +121,14 @@ namespace seneka_utilities
   // segID = 0 (beam), segID = 1 (line)
   bool edgeIntersectsBeamOrLine(geometry_msgs::Pose2D start, geometry_msgs::Point32 border_1, geometry_msgs::Point32 border_2, int segID);
 
-  // get bounding box of polygon
-  // always return 8 points, first four are lower plane
-  geometry_msgs::Polygon getBoundingBox(const geometry_msgs::Polygon & polygon);
+  // get 2D bounding box of polygon 
+  // (assuming z=0 for all points, otherwise, a down-projection occurs)
+  // returns bounding polygon consisting of 4 points
+  geometry_msgs::Polygon getBoundingBox2D(const geometry_msgs::Polygon &polygon);
+
+  // get 3D bounding box of polygon 
+  // returns 8 points, first four are lower plane
+  geometry_msgs::Polygon getBoundingBox3D(const geometry_msgs::Polygon &polygon);
 
 }; // end namespace
 
