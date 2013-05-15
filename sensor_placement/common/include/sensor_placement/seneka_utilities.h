@@ -56,7 +56,6 @@
 // ----
 
 // ros message includes
-#include <ros/ros.h> 
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/Point32.h>
@@ -71,6 +70,7 @@ namespace seneka_utilities
   /* -------------- MATH --------------- */
   /* ----------------------------------- */
 #define PI 3.14159265
+#define EPSILON 0.0001
 
   // function to gerenate random numbers in given interval
   // make sure to have set the seed in the main functions

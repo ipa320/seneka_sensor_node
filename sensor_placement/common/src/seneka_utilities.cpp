@@ -106,12 +106,12 @@ namespace seneka_utilities
 
   unsigned int worldToMapX(double world_x, const nav_msgs::OccupancyGrid & map)
   {
-    return (world_x - map.info.origin.position.x) / map.info.resolution;
+    return floor((world_x - map.info.origin.position.x + EPSILON) / map.info.resolution);
   }
 
   unsigned int worldToMapY(double world_y, const nav_msgs::OccupancyGrid & map)
   {
-    return (world_y - map.info.origin.position.y) / map.info.resolution;
+    return floor((world_y - map.info.origin.position.y + EPSILON) / map.info.resolution);
   }
 
   geometry_msgs::Point32 mapToWorld2D(unsigned int map_x, unsigned int map_y, 

@@ -169,7 +169,7 @@ sensor_placement_node::sensor_placement_node()
   if(poly_.polygon.points.empty())
   {
     geometry_msgs::Point32 p_test;
-    p_test.x = -10;
+    p_test.x = -20;
     p_test.y = 0;
     p_test.z = 0;
 
