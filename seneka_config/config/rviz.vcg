@@ -3,9 +3,13 @@ Background\ ColorG=0
 Background\ ColorR=0
 Camera\ Config=4.64404 -4.37114e-07 10 -0.215
 Camera\ Type=rviz::FixedOrientationOrthoViewController
+CroppedMap.Alpha=0.7
+CroppedMap.Draw\ Behind=0
+CroppedMap.Enabled=1
+CroppedMap.Topic=/out_cropped_map
 Fixed\ Frame=/map
-Map.Alpha=0.7
-Map.Draw\ Behind=0
+Map.Alpha=0.2
+Map.Draw\ Behind=1
 Map.Enabled=1
 Map.Topic=/map
 MarkerArray.Enabled=1
@@ -27,13 +31,16 @@ Tool\ 2D\ Pose\ EstimateTopic=initialpose
 ClassName=rviz::MapDisplay
 Name=Map
 [Display1]
+ClassName=rviz::MapDisplay
+Name=CroppedMap
+[Display2]
 ClassName=rviz::PolygonDisplay
 Name=Polygon
-[Display2]
+[Display3]
 ClassName=rviz::MarkerArrayDisplay
 Name=MarkerArray
 [Window]
-Height=1056
-Width=1855
-X=0
+Height=1092
+Width=1871
+X=-7
 Y=0
