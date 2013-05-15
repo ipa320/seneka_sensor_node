@@ -56,6 +56,7 @@
 // ----
 
 // ros message includes
+#include <ros/ros.h> 
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/Point32.h>

@@ -118,8 +118,8 @@ namespace seneka_utilities
                                       const nav_msgs::OccupancyGrid & map)
   {
     geometry_msgs::Point32 p;
-    p.x = map.info.origin.position.x + (map_x * map.info.resolution);
-    p.y = map.info.origin.position.y + (map_y * map.info.resolution);
+    p.x = mapToWorldX(map_x,map);
+    p.y = mapToWorldX(map_y,map);
     p.z = 0.0;
     return p;
   }
@@ -128,8 +128,8 @@ namespace seneka_utilities
                     const nav_msgs::OccupancyGrid &map,
                     unsigned int &map_x, unsigned int &map_y)
   {
-    map_x = (p.x - map.info.origin.position.x) / map.info.resolution;
-    map_y = (p.y - map.info.origin.position.y) / map.info.resolution;
+    map_x = worldToMapX(p.x, map);
+    map_y = worldToMapY(p.y, map);
   }
 
   // crops a map to the given bounding_box 
@@ -142,10 +142,10 @@ namespace seneka_utilities
     uint32_t left_index; 
     uint32_t bottom_index; 
     uint32_t right_index; 
-
+    
     // first point of polygon contains x_min and y_min, 3rd contains x_max and y_max
-    worldToMap2D(bounding_box.points.at(0), map, left_index, bottom_index);
-    worldToMap2D(bounding_box.points.at(2), map, right_index, top_index);
+    worldToMap2D(bounding_box.points.at(0), map, left_index, top_index);
+    worldToMap2D(bounding_box.points.at(2), map, right_index, bottom_index);
 
     croppedMap.info = map.info; 
     croppedMap.info.width = right_index - left_index; 

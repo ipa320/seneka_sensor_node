@@ -166,7 +166,7 @@ public:
   // declaration of ros publishers
   ros::Publisher poly_pub_;
   ros::Publisher marker_array_pub_; 
-  ros::Publisher map_pub_; 
+  ros::Publisher map_pub_, map_meta_pub_; 
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
