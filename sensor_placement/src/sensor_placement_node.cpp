@@ -60,9 +60,9 @@ sensor_placement_node::sensor_placement_node()
   // ros subscribers
 
   // ros publishers
-  poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_poly",1);
-  marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1);
-  map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1);
+  poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_poly",1,true);
+  marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
+  map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
 
   // ros service servers
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
