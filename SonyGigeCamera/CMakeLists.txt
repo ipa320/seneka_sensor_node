@@ -19,7 +19,7 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined messages
 #rosbuild_genmsg()
 #uncomment if you have defined services
-#rosbuild_gensrv()
+rosbuild_gensrv()
 
 #common commands for building c++ executables and libraries
 #rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
@@ -34,7 +34,6 @@ add_definitions(-D_UNIX_)
 
 
 include_directories(/opt/pleora/ebus_sdk/include /opt/ros/fuerte/include ${PROJECT_SOURCE_DIR}/src /opt/ros/fuerte/stacks/image_common/image_transport)
-#include_directories(/opt/pleora/ebus_sdk/include ${PROJECT_SOURCE_DIR}/include)
 LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib)
 LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib/genicam/bin/Linux64_x64)
 

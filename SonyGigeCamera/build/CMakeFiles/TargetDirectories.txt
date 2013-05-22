@@ -1,0 +1,16 @@
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/ROSBUILD_genmsg_cpp.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/ROSBUILD_genmsg_lisp.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/ROSBUILD_gensrv_cpp.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/ROSBUILD_gensrv_lisp.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/SonyGigeCamera.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/clean-test-results.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/rosbuild_precompile.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/rosbuild_premsgsrvgen.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/rospack_genmsg.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/rospack_genmsg_libexe.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/rospack_gensrv.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/test.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/test-future.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/test-results.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/test-results-run.dir
+/home/mig-rb/git/fuerte_workspace/seneka/SonyGigeCamera/build/CMakeFiles/tests.dir
