@@ -395,13 +395,12 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     }
 
     // set new sensor pose
-    sensors_[i].setSensorPose(new_pose);
-
-    // update the coverage matrix
-    calcCoverageMatrix();
-    // calculate new coverage
-    calcCoverage();                      
- }
+    sensors_[i].setSensorPose(new_pose);                   
+  }
+  // update the coverage matrix
+  calcCoverageMatrix();
+  // calculate new coverage
+  calcCoverage();   
 }
 
 // function to calculate the actual  and personal best coverage

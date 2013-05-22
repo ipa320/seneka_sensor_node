@@ -119,7 +119,7 @@ namespace seneka_utilities
   {
     geometry_msgs::Point32 p;
     p.x = mapToWorldX(map_x,map);
-    p.y = mapToWorldX(map_y,map);
+    p.y = mapToWorldY(map_y,map);
     p.z = 0.0;
     return p;
   }
@@ -402,11 +402,14 @@ namespace seneka_utilities
   // get 2D bounding box of polygon 
   // (assuming z=0 for all points, otherwise, a down-projection occurs)
   // returns bounding polygon consisting of 4 points
-  geometry_msgs::Polygon getBoundingBox2D(const geometry_msgs::Polygon & polygon)
+  geometry_msgs::Polygon getBoundingBox2D(const geometry_msgs::Polygon & polygon, const nav_msgs::OccupancyGrid &map)
   {
     geometry_msgs::Polygon out_poly;
-    double x_min = 0.0, x_max = 0.0;
-    double y_min = 0.0, y_max = 0.0;
+    double x_min = mapToWorldX(map.info.width, map);
+    double x_max = mapToWorldX(0, map);
+    double y_min = mapToWorldY(map.info.height, map);
+    double y_max = mapToWorldY(0, map);
+
     
     for (unsigned int i = 0; i < polygon.points.size(); i++)
     {
@@ -434,8 +437,9 @@ namespace seneka_utilities
   
   // get 3D bounding box of polygon 
   // returns 8 points, first four are lower plane
-  geometry_msgs::Polygon getBoundingBox3D(const geometry_msgs::Polygon & polygon)
+  geometry_msgs::Polygon getBoundingBox3D(const geometry_msgs::Polygon & polygon, const nav_msgs::OccupancyGrid &map)
   {
+    // TO DO: remove zero-init and initialize variables with min and max values of the map 
     geometry_msgs::Polygon out_poly;
     double x_min = 0.0, x_max = 0.0;
     double y_min = 0.0, y_max = 0.0;

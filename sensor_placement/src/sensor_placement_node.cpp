@@ -379,7 +379,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
     ROS_INFO("Map service called successfully");
     
     // get bounding box of area of interest
-    geometry_msgs::Polygon bound_box = getBoundingBox2D(poly_.polygon);
+    geometry_msgs::Polygon bound_box = getBoundingBox2D(poly_.polygon, srv_map.response.map);
     // cropMap to boundingBox
     cropMap(bound_box, srv_map.response.map, map_);
     // publish cropped map

@@ -125,11 +125,11 @@ namespace seneka_utilities
   // get 2D bounding box of polygon 
   // (assuming z=0 for all points, otherwise, a down-projection occurs)
   // returns bounding polygon consisting of 4 points
-  geometry_msgs::Polygon getBoundingBox2D(const geometry_msgs::Polygon &polygon);
+  geometry_msgs::Polygon getBoundingBox2D(const geometry_msgs::Polygon &polygon, const nav_msgs::OccupancyGrid &map);
 
   // get 3D bounding box of polygon 
   // returns 8 points, first four are lower plane
-  geometry_msgs::Polygon getBoundingBox3D(const geometry_msgs::Polygon &polygon);
+  geometry_msgs::Polygon getBoundingBox3D(const geometry_msgs::Polygon &polygon, const nav_msgs::OccupancyGrid &map);
 
 }; // end namespace
 
