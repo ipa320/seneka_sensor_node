@@ -138,7 +138,8 @@ private:
   int target_num_;
 
   // target vectors
-  vector<geometry_msgs::Point32> targets_;
+  vector<geometry_msgs::Point32> targets_; // remove if targets_with_info_ works better
+  vector<target_info> targets_with_info_;
 
   // perimeter vectors
   vector<int> perimeter_x_;

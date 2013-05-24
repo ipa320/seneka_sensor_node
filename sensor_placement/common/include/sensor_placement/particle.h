@@ -86,10 +86,11 @@ private:
   std::vector< FOV_2D_model > sensors_;
 
   // std-vector storing the personal best solution of the particle
-  std::vector< FOV_2D_model> pers_best_;
+  std::vector< FOV_2D_model > pers_best_;
 
   // target vectors
-  std::vector<geometry_msgs::Point32> targets_;
+  std::vector<geometry_msgs::Point32> targets_; // remove if targets_with_info_ works better
+  std::vector<target_info> targets_with_info_;
 
   // perimeter vectors
   std::vector<int> perimeter_x_;
@@ -100,6 +101,7 @@ private:
 
   // number of targets
   int target_num_;
+  int covered_targets_num_;
 
   // actual coverage
   double coverage_;
@@ -165,6 +167,9 @@ public:
   // function that sets the member variable targets_
   void setTargets(const std::vector<geometry_msgs::Point32> & targets);
 
+  // function that sets the member variable targets_with_info_
+  void setTargetsWithInfo(const std::vector<target_info> &targets_with_inf, int target_num);
+
   // function that sets the member variables perimeter_x_ and perimeter_y_
   void setPerimeter(const std::vector<int> & in_x, const std::vector<int> & in_y);
 
@@ -185,11 +190,17 @@ public:
   // function to place the sensors randomly on the perimeter
   void placeSensorsRandomlyOnPerimeter();
 
+  // function to place all sensors at a given pose
+  void placeSensorsAtPos(geometry_msgs::Pose new_pose);
+
   // function to initialize the sensors velocities randomly
   void initializeRandomSensorVelocities();
 
   // function to update particle during PSO
   void updateParticle(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3);
+
+  // function to update the targets_with_info variable
+  void updateTargetsInfo(size_t sensor_index);
 
   // function to calculate the actual  and personal best coverage
   void calcCoverage();

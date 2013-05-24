@@ -409,7 +409,6 @@ namespace seneka_utilities
     double x_max = mapToWorldX(0, map);
     double y_min = mapToWorldY(map.info.height, map);
     double y_max = mapToWorldY(0, map);
-
     
     for (unsigned int i = 0; i < polygon.points.size(); i++)
     {

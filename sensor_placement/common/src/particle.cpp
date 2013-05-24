@@ -185,6 +185,15 @@ void particle::setTargets(const std::vector<geometry_msgs::Point32> & targets)
   target_num_ = targets_.size();
 }
 
+// function that sets the member variable targets_with_info_
+void particle::setTargetsWithInfo(const std::vector<target_info> &targets_with_info, int target_num)
+{
+  targets_with_info_ = targets_with_info;
+  target_num_ = target_num;
+  covered_targets_num_ = 0;
+  multiple_coverage_ = 0;
+}
+
 // function that sets the member variables perimeter_x_ and perimeter_y_
 void particle::setPerimeter(const std::vector<int> & in_x, const std::vector<int> & in_y)
 {
@@ -264,7 +273,30 @@ void particle::placeSensorsRandomlyOnPerimeter()
 
     sensors_[i].setSensorPose(randomPose);
 
+    // update the target information
+    updateTargetsInfo(i);
   }
+  // calculate new coverage
+  calcCoverage();
+  if(coverage_ == 0)
+  {
+    pers_best_coverage_ = coverage_;
+    pers_best_multiple_coverage_ = multiple_coverage_;
+    pers_best_ = sensors_;
+  }
+  //ROS_INFO_STREAM("inital personal best: " << pers_best_coverage_);
+  //ROS_INFO_STREAM("inital personal best: " << pers_best_.size());
+}
+
+// function to place all sensors at a given pose
+void particle::placeSensorsAtPos(geometry_msgs::Pose new_pose)
+{
+  for(size_t i = 0; i < sensors_.size(); i++)
+  {
+    sensors_[i].setSensorPose(new_pose);
+    updateTargetsInfo(i);
+  }
+  calcCoverage();
 }
 
 // function to initialize the sensors velocities randomly
@@ -291,6 +323,7 @@ void particle::initializeRandomSensorVelocities()
 // function to update particle during PSO
 void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3)
 {
+  ////ROS_INFO("begin update step");
   // initialize workspace
   double actual_angle = 0;
   double p_best_angle = 0;
@@ -308,6 +341,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
+    //ROS_INFO("new loop over sensors");
     // get initial velocity for actual sensor
     initial_vel = sensors_[i].getVelocity();
 
@@ -315,6 +349,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     actual_pose = sensors_[i].getSensorPose();
 
     // get personal best pose for actual sensor
+    //ROS_INFO_STREAM("pers_best_: " << pers_best_.size());
     personal_best_pose = pers_best_[i].getSensorPose();
 
     // get global best pose for actual sensor
@@ -331,13 +366,14 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
 
     // calculate vector of camera facing direction
     geometry_msgs::Vector3 vec_sensor_dir;
+
     vec_sensor_dir.x = cos(actual_angle);
     vec_sensor_dir.y = sin(actual_angle);
     vec_sensor_dir.z = 0;
 
     // here is the actual particle swarm optimization step
     // update the velocities for each sensor
-
+    //ROS_INFO("before velocity update");
     // update the linear part
     new_vel.linear.x = (PSO_param_1 * initial_vel.linear.x)
                      + (PSO_param_2 * randomNumber(0,1) * (personal_best_pose.position.x - actual_pose.position.x))
@@ -363,13 +399,13 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     new_pose.position.z = 0;
 
     new_angle = actual_angle + new_vel.angular.z;
-
+    //ROS_INFO("before angle readjustment");
     // readjust the new angle in the correct interval [-PI,PI]
     while(fabs(new_angle) > PI)
-      new_angle = new_angle + (-1) * signum(new_angle) * PI;
+      new_angle = new_angle + (-2) * signum(new_angle) * PI;
 
     new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
-
+    //ROS_INFO("before new position");
     if(!newPositionAccepted(new_pose))
     {
       // find uncovered target far away from initial sensor position
@@ -384,7 +420,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
       new_angle = new_angle + (-1) * signum(new_angle) * PI;
       new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
     }
-
+    //ROS_INFO("before new orientation");
     while(!newOrientationAccepted(i, new_pose))
     {
       // try next angle in 10/180*PI steps
@@ -395,18 +431,159 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     }
 
     // set new sensor pose
-    sensors_[i].setSensorPose(new_pose);                   
+    sensors_[i].setSensorPose(new_pose);
+
+    // update the target information
+    //ROS_INFO("before target info update");
+    updateTargetsInfo(i);
+    //ROS_INFO("after target info update");
   }
   // update the coverage matrix
-  calcCoverageMatrix();
+  //calcCoverageMatrix();
   // calculate new coverage
-  calcCoverage();   
+  calcCoverage(); 
+  //ROS_INFO("end update step");  
+}
+
+// function to update the targets_with_info variable
+void particle::updateTargetsInfo(size_t sensor_index)
+{
+  // initialize workspace
+  geometry_msgs::Pose sensor_pose = sensors_[sensor_index].getSensorPose();
+
+  double sensor_range = sensors_[sensor_index].getRange();
+
+  std::vector<double> open_ang = sensors_[sensor_index].getOpenAngles();
+
+  double delta = open_ang[0];
+
+  double alpha = tf::getYaw(sensor_pose.orientation);
+
+  double help_angle = 0;
+
+  double x_min = mapToWorldX(0, map_);
+  double x_max = mapToWorldX(map_.info.width, map_);
+  double y_min = mapToWorldY(0, map_);
+  double y_max = mapToWorldY(map_.info.height, map_);
+
+  ROS_INFO_STREAM("map-borders: " << x_min << " , " << x_max << " , " << y_min << " , " << y_max);
+
+  // initialize index variables
+  uint32_t top_index; 
+  uint32_t left_index; 
+  uint32_t bottom_index; 
+  uint32_t right_index; 
+
+  // initialize sensor_kite to approximate the sensors' FOV
+  geometry_msgs::Polygon sensor_kite;
+
+  // initialize new point for sensor_kite
+  geometry_msgs::Point32 p;
+
+  p.z = 0;
+
+  p.x = std::max(x_min, std::min(x_max, sensor_pose.position.x));
+  p.y = std::max(y_min, std::min(y_max, sensor_pose.position.y));
+
+  sensor_kite.points.push_back(p);
+
+  ROS_INFO_STREAM("new point in kite: " << p);
+
+  help_angle = alpha - (0.5 * delta);
+
+  if(fabs(help_angle) > PI)
+    help_angle = help_angle + (-2) * signum(help_angle) * PI;
+
+  p.x = std::max(x_min, std::min(x_max, sensor_pose.position.x + cos(help_angle)*sensor_range));
+  p.y = std::max(y_min, std::min(y_max, sensor_pose.position.y + sin(help_angle)*sensor_range));
+
+  sensor_kite.points.push_back(p);
+
+  ROS_INFO_STREAM("new point in kite: " << p);
+
+  help_angle = alpha;
+
+  if(fabs(help_angle) > PI)
+    help_angle = help_angle + (-2) * signum(help_angle) * PI;
+
+  p.x = std::max(x_min, std::min(x_max, sensor_pose.position.x + cos(help_angle)*sensor_range));
+  p.y = std::max(y_min, std::min(y_max, sensor_pose.position.y + sin(help_angle)*sensor_range));
+
+  sensor_kite.points.push_back(p);
+
+  ROS_INFO_STREAM("new point in kite: " << p);
+
+  help_angle = alpha + (0.5 * delta);
+
+  if(fabs(help_angle) > PI)
+    help_angle = help_angle + (-2) * signum(help_angle) * PI;
+
+  p.x = std::max(x_min, std::min(x_max, sensor_pose.position.x + cos(help_angle)*sensor_range));
+  p.y = std::max(y_min, std::min(y_max, sensor_pose.position.y + sin(help_angle)*sensor_range));
+
+  sensor_kite.points.push_back(p);
+
+  ROS_INFO_STREAM("new point in kite: " << p);
+
+  // get bounding box around the sensors' FOV
+  geometry_msgs::Polygon bounding_box = getBoundingBox2D(sensor_kite, map_);
+
+  // go through bounding box and update only the targets_with_info within 
+    
+  // first point of polygon contains x_min and y_min, 3rd contains x_max and y_max
+  worldToMap2D(bounding_box.points.at(0), map_, left_index, top_index);
+  worldToMap2D(bounding_box.points.at(2), map_, right_index, bottom_index);
+
+  ROS_INFO("--------------------------------------------------------");
+  ROS_INFO_STREAM("bounding_box min: " << bounding_box.points.at(0));
+  ROS_INFO_STREAM("bounding_box min: " << bounding_box.points.at(1));
+  ROS_INFO_STREAM("bounding_box max: " << bounding_box.points.at(2));
+  ROS_INFO_STREAM("bounding_box max: " << bounding_box.points.at(3));
+
+  for(uint32_t y = top_index; y < bottom_index; y++ )
+  { 
+    for (uint32_t x = left_index; x < right_index; x++)
+    { 
+      // now check every potential target in the sensors' bounding box
+      if(targets_with_info_[y * map_.info.width + x].potential_target == 1)
+      {
+        //ROS_INFO_STREAM("this target is found now: " << targets_with_info_[y * map_.info.width + x].world_pos);
+        // now we found a target
+        if(!targets_with_info_[y * map_.info.width + x].occupied)
+        {
+          // now we found a non-occupied target, so check the coverage
+          if(checkCoverage(sensors_[sensor_index], targets_with_info_[y * map_.info.width + x].world_pos))
+          {
+            // now we found a non-occupied target covered by the given sensor
+            targets_with_info_[y * map_.info.width + x].covered_by_sensor[sensor_index] = true;
+
+            if(!targets_with_info_[y * map_.info.width + x].covered)
+            {
+              // now the given target is covered by at least one sensor
+              targets_with_info_[y * map_.info.width + x].covered = true;
+              // increment the covered targets counter only if the given target is not covered by another sensor yet
+              covered_targets_num_++;
+
+            }
+            else
+            {
+              if(!targets_with_info_[y * map_.info.width + x].multiple_covered)
+                multiple_coverage_++;
+
+              // now the given target is covered by multiple sensors
+              targets_with_info_[y * map_.info.width + x].multiple_covered = true;
+            }
+          }
+        }
+      }
+    } 
+  } 
 }
 
 // function to calculate the actual  and personal best coverage
 void particle::calcCoverage()
 {
-  // initialize workspace
+  /*/ initialize workspace
   int num_covered_targets = 0;
   std::vector<bool> target_already_counted;
   target_already_counted.assign(target_num_, false);
@@ -436,18 +613,23 @@ void particle::calcCoverage()
         }
       }
     }
-  }
+  }*/
   // calculate coverage percentage
-  coverage_ = (double) num_covered_targets / target_num_;
+  coverage_ = (double) covered_targets_num_ / target_num_;
+  ROS_INFO_STREAM("number of covered targets: " << covered_targets_num_);
+  ROS_INFO_STREAM("number of targets: " << target_num_);
+  ROS_INFO_STREAM("new calculated coverage: " << coverage_);
 
-  calcMultipleCoverage();
+
+  //calcMultipleCoverage();
 
   // check if the actual coverage is a new personal best
   if(coverage_ > pers_best_coverage_)
   {
     pers_best_coverage_ = coverage_;
     pers_best_multiple_coverage_ = multiple_coverage_;
-    pers_best_ = sensors_;    
+    pers_best_ = sensors_;
+    
   }
   else
   {
@@ -456,6 +638,7 @@ void particle::calcCoverage()
       pers_best_coverage_ = coverage_;
       pers_best_multiple_coverage_ = multiple_coverage_;
       pers_best_ = sensors_;
+    
     }
   }
 }
