@@ -137,13 +137,8 @@ private:
   // number of targets for PSO
   int target_num_;
 
-  // target vectors
-  vector<geometry_msgs::Point32> targets_; // remove if targets_with_info_ works better
+  // target vector (also holds occupation and coverage information)
   vector<target_info> targets_with_info_;
-
-  // perimeter vectors
-  vector<int> perimeter_x_;
-  vector<int> perimeter_y_;
 
   // PSO parameter constants
   double PSO_param_1_;
@@ -157,6 +152,10 @@ public:
 
   // destrcutor
   ~sensor_placement_node();
+
+  /* ----------------------------------- */
+  /* --------- ROS Variables ----------- */
+  /* ----------------------------------- */
 
   // create node handles
   ros::NodeHandle nh_, pnh_;
@@ -176,7 +175,12 @@ public:
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
 
-  // *************************** functions ***************************
+  /* ----------------------------------- */
+  /* ----------- functions ------------- */
+  /* ----------------------------------- */
+
+  // function to get the ROS parameters from yaml-file
+  void getParams();
 
   // function to get an array of targets from the map and the area of interest specified as polygon
   bool getTargets();
@@ -189,6 +193,10 @@ public:
 
   // function to get the current global best solution
   void getGlobalBest();
+
+  /* ----------------------------------- */
+  /* --------- ROS Callbacks ----------- */
+  /* ----------------------------------- */
 
   // callback function for the start PSO service
   bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);

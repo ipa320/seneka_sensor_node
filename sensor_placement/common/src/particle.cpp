@@ -125,7 +125,7 @@ std::vector<geometry_msgs::Pose> particle::getSolutionPositions()
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
-    result.push_back(sensors_[i].getSensorPose());
+    result.push_back(sensors_.at(i).getSensorPose());
   }
 
   return result;
@@ -139,7 +139,7 @@ std::vector<geometry_msgs::Pose> particle::getPersonalBestPositions()
 
   for(size_t i = 0; i < pers_best_.size(); i++)
   {
-    result.push_back(pers_best_[i].getSensorPose());
+    result.push_back(pers_best_.at(i).getSensorPose());
   }
 
   return result;
@@ -178,13 +178,6 @@ void particle::setSensorNum(int num_of_sensors)
 
 }
 
-// function that sets the member variable targets_
-void particle::setTargets(const std::vector<geometry_msgs::Point32> & targets)
-{
-  targets_ = targets;
-  target_num_ = targets_.size();
-}
-
 // function that sets the member variable targets_with_info_
 void particle::setTargetsWithInfo(const std::vector<target_info> &targets_with_info, int target_num)
 {
@@ -192,13 +185,6 @@ void particle::setTargetsWithInfo(const std::vector<target_info> &targets_with_i
   target_num_ = target_num;
   covered_targets_num_ = 0;
   multiple_coverage_ = 0;
-}
-
-// function that sets the member variables perimeter_x_ and perimeter_y_
-void particle::setPerimeter(const std::vector<int> & in_x, const std::vector<int> & in_y)
-{
-  perimeter_x_ = in_x;
-  perimeter_y_ = in_y;
 }
 
 // function that set the map
@@ -226,7 +212,7 @@ bool particle::setOpenAngles(std::vector<double> new_angles)
   {
     for(size_t i = 0; i < sensors_.size(); i++)
     {
-      sensors_[i].setOpenAngles(new_angles[0], new_angles[1]);
+      sensors_.at(i).setOpenAngles(new_angles.at(0), new_angles.at(1));
     }
     result = true;
     return result;
@@ -238,7 +224,7 @@ void particle::setRange(double new_range)
 {
   for(size_t i = 0; i < sensors_.size(); i++)
   {
-    sensors_[i].setRange(new_range);
+    sensors_.at(i).setRange(new_range);
   }
 }
 
@@ -263,15 +249,15 @@ void particle::placeSensorsRandomlyOnPerimeter()
     t = randomNumber(0,1);
 
     // get random Pose on perimeter of the area of interest specified by a polygon
-    randomPose.position.x = area_of_interest_.polygon.points[edge_ind].x
-                          + t * (area_of_interest_.polygon.points[successor].x - area_of_interest_.polygon.points[edge_ind].x);
-    randomPose.position.y = area_of_interest_.polygon.points[edge_ind].y 
-                          + t * (area_of_interest_.polygon.points[successor].y - area_of_interest_.polygon.points[edge_ind].y);
+    randomPose.position.x = area_of_interest_.polygon.points.at(edge_ind).x
+                          + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x);
+    randomPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y 
+                          + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y);
     randomPose.position.z = 0;
 
     randomPose.orientation = tf::createQuaternionMsgFromYaw(randomNumber(-PI,PI));
 
-    sensors_[i].setSensorPose(randomPose);
+    sensors_.at(i).setSensorPose(randomPose);
 
     // update the target information
     updateTargetsInfo(i);
@@ -291,7 +277,7 @@ void particle::placeSensorsAtPos(geometry_msgs::Pose new_pose)
 {
   for(size_t i = 0; i < sensors_.size(); i++)
   {
-    sensors_[i].setSensorPose(new_pose);
+    sensors_.at(i).setSensorPose(new_pose);
     updateTargetsInfo(i);
   }
   calcCoverage();
@@ -306,7 +292,7 @@ void particle::initializeRandomSensorVelocities()
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
-    maxVel = sensors_[i].getMaxVelocity();
+    maxVel = sensors_.at(i).getMaxVelocity();
     randomVel.linear.x = -maxVel.linear.x + 2 * maxVel.linear.x * randomNumber(0,1);
     randomVel.linear.y = -maxVel.linear.y + 2 * maxVel.linear.y * randomNumber(0,1);
     randomVel.linear.z = 0;
@@ -314,7 +300,7 @@ void particle::initializeRandomSensorVelocities()
     randomVel.angular.y = 0;
     randomVel.angular.z = -maxVel.angular.z + 2 * maxVel.angular.z * randomNumber(0,1);
 
-    sensors_[i].setVelocity(randomVel);
+    sensors_.at(i).setVelocity(randomVel);
   }
 }
 
@@ -339,16 +325,16 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
   for(size_t i = 0; i < sensors_.size(); i++)
   {
     // get initial velocity for actual sensor
-    initial_vel = sensors_[i].getVelocity();
+    initial_vel = sensors_.at(i).getVelocity();
 
     // get current pose for actual sensor
-    actual_pose = sensors_[i].getSensorPose();
+    actual_pose = sensors_.at(i).getSensorPose();
 
     // get personal best pose for actual sensor
-    personal_best_pose = pers_best_[i].getSensorPose();
+    personal_best_pose = pers_best_.at(i).getSensorPose();
 
     // get global best pose for actual sensor
-    global_best_pose = global_best[i];
+    global_best_pose = global_best.at(i);
 
     // get orientation angle for actual sensor
     actual_angle = tf::getYaw(actual_pose.orientation);
@@ -385,7 +371,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
                       + (PSO_param_3 * randomNumber(0,1) * (actual_angle - g_best_angle));
 
     // set new velocity
-    sensors_[i].setVelocity(new_vel);
+    sensors_.at(i).setVelocity(new_vel);
 
     // update sensor pose
     new_pose.position.x = actual_pose.position.x + new_vel.linear.x;
@@ -404,8 +390,8 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
       target_ind = findFarthestUncoveredTarget(i);
 
       // update sensor position
-      new_pose.position.x = targets_[target_ind].x;
-      new_pose.position.y = targets_[target_ind].y;
+      new_pose.position.x = targets_with_info_.at(target_ind).world_pos.x;
+      new_pose.position.y = targets_with_info_.at(target_ind).world_pos.y;
       new_pose.position.z = 0;
 
       // invert sensor direction
@@ -423,7 +409,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     }
 
     // set new sensor pose
-    sensors_[i].setSensorPose(new_pose);
+    sensors_.at(i).setSensorPose(new_pose);
 
     // update the target information
     updateTargetsInfo(i);
@@ -436,11 +422,11 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
 void particle::updateTargetsInfo(size_t sensor_index)
 {
   // initialize workspace
-  geometry_msgs::Pose sensor_pose = sensors_[sensor_index].getSensorPose();
+  geometry_msgs::Pose sensor_pose = sensors_.at(sensor_index).getSensorPose();
 
-  double sensor_range = sensors_[sensor_index].getRange();
+  double sensor_range = sensors_.at(sensor_index).getRange();
 
-  std::vector<double> open_ang = sensors_[sensor_index].getOpenAngles();
+  std::vector<double> open_ang = sensors_.at(sensor_index).getOpenAngles();
 
   double delta = open_ang.front();
 
@@ -517,32 +503,32 @@ void particle::updateTargetsInfo(size_t sensor_index)
     { 
 
       // now check every potential target in the sensors' bounding box
-      if(targets_with_info_[y * map_.info.width + x].potential_target == 1)
+      if(targets_with_info_.at(y * map_.info.width + x).potential_target == 1)
       {
         // now we found a target
-        if(!targets_with_info_[y * map_.info.width + x].occupied)
+        if(!targets_with_info_.at(y * map_.info.width + x).occupied)
         {
           // now we found a non-occupied target, so check the coverage
-          if(checkCoverage(sensors_[sensor_index], targets_with_info_[y * map_.info.width + x].world_pos))
+          if(checkCoverage(sensors_.at(sensor_index), targets_with_info_.at(y * map_.info.width + x).world_pos))
           {
             // now we found a non-occupied target covered by the given sensor
-            targets_with_info_[y * map_.info.width + x].covered_by_sensor[sensor_index] = true;
+            targets_with_info_.at(y * map_.info.width + x).covered_by_sensor.at(sensor_index) = true;
 
-            if(!targets_with_info_[y * map_.info.width + x].covered)
+            if(!targets_with_info_.at(y * map_.info.width + x).covered)
             {
               // now the given target is covered by at least one sensor
-              targets_with_info_[y * map_.info.width + x].covered = true;
+              targets_with_info_.at(y * map_.info.width + x).covered = true;
               // increment the covered targets counter only if the given target is not covered by another sensor yet
               covered_targets_num_++;
 
             }
             else
             {
-              if(!targets_with_info_[y * map_.info.width + x].multiple_covered)
+              if(!targets_with_info_.at(y * map_.info.width + x).multiple_covered)
                 multiple_coverage_++;
 
               // now the given target is covered by multiple sensors
-              targets_with_info_[y * map_.info.width + x].multiple_covered = true;
+              targets_with_info_.at(y * map_.info.width + x).multiple_covered = true;
             }
           }
         }
@@ -614,7 +600,7 @@ bool particle::checkCoverage(FOV_2D_model sensor, geometry_msgs::Point32 target)
   // calculate angle between camera facing direction and target
   beta = acos( fabs(vecDotProd(vec_sensor_target, vec_sensor_dir) ) / (vecNorm(vec_sensor_target) * vecNorm(vec_sensor_dir) ));
   // check if given target is visible by given sensor
-  if( (beta <= ((double) sensor_angles[0]/2)) && (vecNorm(vec_sensor_target) <= sensor_range) )
+  if( (beta <= ((double) sensor_angles.front()/2)) && (vecNorm(vec_sensor_target) <= sensor_range) )
     result = true;
 
   return result;
@@ -658,18 +644,18 @@ int particle::findFarthestUncoveredTarget(size_t sensor_index)
   int result = -1;
   double max_distance = 0;
   double actual_distance = 0;
-  geometry_msgs::Pose sensor_pose = sensors_[sensor_index].getSensorPose();
+  geometry_msgs::Pose sensor_pose = sensors_.at(sensor_index).getSensorPose();
   geometry_msgs::Vector3 vec_sensor_target, vec_sensor_dir;
 
-  for(size_t i = 0; i < targets_.size(); i++)
+  for(size_t i = 0; i < targets_with_info_.size(); i++)
   {
-    if(coverage_matrix_[i * sensors_.size() + sensor_index] == 0)
+    if( (!targets_with_info_.at(i).covered) && (targets_with_info_.at(i).potential_target == 1) )
     {
       // we found an uncovered target, check if this is further away from the sensor than the current maximum
 
       // calculate vector between sensor and target
-      vec_sensor_target.x = targets_[i].x - sensor_pose.position.x;
-      vec_sensor_target.y = targets_[i].y - sensor_pose.position.y;
+      vec_sensor_target.x = targets_with_info_.at(i).world_pos.x - sensor_pose.position.x;
+      vec_sensor_target.y = targets_with_info_.at(i).world_pos.y - sensor_pose.position.y;
       vec_sensor_target.z = 0;
 
       actual_distance = vecNorm(vec_sensor_target);
@@ -696,7 +682,7 @@ bool particle::sensorBeamIntersectsPerimeter(size_t sensor_index, geometry_msgs:
   geometry_msgs::Point32 poly_point_2 = geometry_msgs::Point32();
 
   double alpha = tf::getYaw(new_pose_candidate.orientation);
-  double sensor_range = sensors_[sensor_index].getRange();
+  double sensor_range = sensors_.at(sensor_index).getRange();
 
   double v1, v2, t;
 
@@ -711,13 +697,13 @@ bool particle::sensorBeamIntersectsPerimeter(size_t sensor_index, geometry_msgs:
     // check each edge of the perimeter
     if(loop_index + 1 < poly_size)
     {
-      poly_point_1 = area_of_interest_.polygon.points[loop_index];
-      poly_point_2 = area_of_interest_.polygon.points[loop_index+1];
+      poly_point_1 = area_of_interest_.polygon.points.at(loop_index);
+      poly_point_2 = area_of_interest_.polygon.points.at(loop_index+1);
     }
     else
     {
-      poly_point_1 = area_of_interest_.polygon.points[loop_index];
-      poly_point_2 = area_of_interest_.polygon.points[0];
+      poly_point_1 = area_of_interest_.polygon.points.at(loop_index);
+      poly_point_2 = area_of_interest_.polygon.points.at(0);
     }
     if(v1 == 0)
       t = intersectionCalculation(v2,v1,poly_point_2.y - poly_point_1.y, poly_point_2.x - poly_point_1.x, poly_point_1.y - new_pose_candidate.position.y, poly_point_1.x - new_pose_candidate.position.x);

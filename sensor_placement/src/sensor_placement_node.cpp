@@ -73,6 +73,62 @@ sensor_placement_node::sensor_placement_node()
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
 
   // get parameters from parameter server if possible
+  getParams();
+
+  // initialize best coverage
+  best_cov_ = 0;
+
+  // initialize global best multiple coverage
+  global_best_multiple_coverage_ = 0;
+
+  // initialize number of targets
+  target_num_ = 0;
+
+  // initialize other variables
+  map_received_ = false;
+  poly_received_ = true;
+  targets_saved_ = false;
+
+  if(poly_.polygon.points.empty())
+  {
+    geometry_msgs::Point32 p_test;
+    p_test.x = 0;
+    p_test.y = 0;
+    p_test.z = 0;
+
+    poly_.polygon.points.push_back(p_test);
+
+    p_test.x = 10;
+    p_test.y = 0;
+    p_test.z = 0;
+
+    poly_.polygon.points.push_back(p_test);
+
+    p_test.x = 10;
+    p_test.y = 10;
+    p_test.z = 0;
+
+    poly_.polygon.points.push_back(p_test);
+
+    p_test.x = 0;
+    p_test.y = 10;
+    p_test.z = 0;
+
+    poly_.polygon.points.push_back(p_test);
+
+    poly_.header.frame_id = "/map";
+  }
+
+  area_of_interest_ = poly_;
+
+}
+
+// destructor
+sensor_placement_node::~sensor_placement_node(){}
+
+// function to get the ROS parameters from yaml-file
+void sensor_placement_node::getParams()
+{
   if(!pnh_.hasParam("number_of_sensors"))
   {
     ROS_WARN("No parameter number_of_sensors on parameter server. Using default [5]");
@@ -151,57 +207,7 @@ sensor_placement_node::sensor_placement_node()
     ROS_WARN("No parameter c3 on parameter server. Using default [1.49445]");
   }
   pnh_.param("c3",PSO_param_3_,1.49445);
-
-  // initialize best coverage
-  best_cov_ = 0;
-
-  // initialize global best multiple coverage
-  global_best_multiple_coverage_ = 0;
-
-  // initialize number of targets
-  target_num_ = 0;
-
-  // initialize other variables
-  map_received_ = false;
-  poly_received_ = true;
-  targets_saved_ = false;
-
-  if(poly_.polygon.points.empty())
-  {
-    geometry_msgs::Point32 p_test;
-    p_test.x = 0;
-    p_test.y = 0;
-    p_test.z = 0;
-
-    poly_.polygon.points.push_back(p_test);
-
-    p_test.x = 10;
-    p_test.y = 0;
-    p_test.z = 0;
-
-    poly_.polygon.points.push_back(p_test);
-
-    p_test.x = 10;
-    p_test.y = 10;
-    p_test.z = 0;
-
-    poly_.polygon.points.push_back(p_test);
-
-    p_test.x = 0;
-    p_test.y = 10;
-    p_test.z = 0;
-
-    poly_.polygon.points.push_back(p_test);
-
-    poly_.header.frame_id = "/map";
-  }
-
-  area_of_interest_ = poly_;
-
 }
-
-// destructor
-sensor_placement_node::~sensor_placement_node(){}
 
 bool sensor_placement_node::getTargets()
 {
@@ -233,9 +239,8 @@ bool sensor_placement_node::getTargets()
           dummy_target_info.multiple_covered = false;
           dummy_target_info.potential_target = -1;
 
-          if(map_.data[ j * map_.info.width + i] == 0)
+          if(map_.data.at( j * map_.info.width + i) == 0)
           {
-            targets_.push_back(mapToWorld2D(i,j, map_));
             dummy_target_info.occupied = false;
             dummy_target_info.potential_target = 1;
             target_num_++;
@@ -272,9 +277,8 @@ bool sensor_placement_node::getTargets()
 
             dummy_target_info.potential_target = 1;
 
-            if(map_.data[ j * map_.info.width + i] == 0)
+            if(map_.data.at( j * map_.info.width + i) == 0)
             {
-              targets_.push_back(mapToWorld2D(i,j, map_));
               target_num_++;
               dummy_target_info.occupied = false;
             }
@@ -284,12 +288,10 @@ bool sensor_placement_node::getTargets()
           {
             dummy_target_info.potential_target = 0;
 
-            if(map_.data[ j * map_.info.width + i] == 0)
+            if(map_.data.at( j * map_.info.width + i) == 0)
             {
               dummy_target_info.occupied = false;
             }
-            perimeter_x_.push_back(i);
-            perimeter_y_.push_back(j);
           }
           // save the target information
           targets_with_info_.at(j * map_.info.width + i) = dummy_target_info;
@@ -324,23 +326,22 @@ void sensor_placement_node::initializePSO()
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
       // set map, area of interest, targets and open angles for each particle
-      particle_swarm_[i].setMap(map_);
-      particle_swarm_[i].setAreaOfInterest(area_of_interest_);
-      particle_swarm_[i].setOpenAngles(open_angles_);
-      particle_swarm_[i].setRange(sensor_range_);
-      particle_swarm_[i].setTargets(targets_);
-      particle_swarm_[i].setTargetsWithInfo(targets_with_info_, target_num_);
+      particle_swarm_.at(i).setMap(map_);
+      particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
+      particle_swarm_.at(i).setOpenAngles(open_angles_);
+      particle_swarm_.at(i).setRange(sensor_range_);
+      particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
       // initiliaze sensor poses randomly on perimeter
-      particle_swarm_[i].placeSensorsRandomlyOnPerimeter();
+      particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
       // initialze sensor velocities randomly
-      particle_swarm_[i].initializeRandomSensorVelocities();
+      particle_swarm_.at(i).initializeRandomSensorVelocities();
       // get calculated coverage
-      actual_coverage = particle_swarm_[i].getActualCoverage();
+      actual_coverage = particle_swarm_.at(i).getActualCoverage();
       // check if the actual coverage is a new global best
       if(actual_coverage > best_cov_)
       {
         best_cov_ = actual_coverage;
-        global_best_ = particle_swarm_[i];
+        global_best_ = particle_swarm_.at(i);
       }
     }
   }
@@ -363,9 +364,9 @@ void sensor_placement_node::PSOptimize()
     for(size_t i=0; i < particle_swarm_.size(); i++)
     {
       // reset targets_with_info_ for each particle before the update step
-      particle_swarm_[i].setTargetsWithInfo(targets_with_info_, target_num_);
+      particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
       // now we're ready to update the particle
-      particle_swarm_[i].updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+      particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
     }
     // after the update step we're looking for a new global best solution 
     getGlobalBest();
@@ -388,19 +389,19 @@ void sensor_placement_node::getGlobalBest()
   // (2) the coverage is equal to the old best coverage but there are less targets covered by multiple sensors
   for(size_t i=0; i < particle_swarm_.size(); i++)
   {
-    if(particle_swarm_[i].getActualCoverage() > best_cov_)
+    if(particle_swarm_.at(i).getActualCoverage() > best_cov_)
     {
-      best_cov_ = particle_swarm_[i].getActualCoverage();
-      global_best_ = particle_swarm_[i];
-      global_best_multiple_coverage_ = particle_swarm_[i].getMultipleCoverageIndex();
+      best_cov_ = particle_swarm_.at(i).getActualCoverage();
+      global_best_ = particle_swarm_.at(i);
+      global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
     }
     else
     {
-      if( (particle_swarm_[i].getActualCoverage() == best_cov_) && (particle_swarm_[i].getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
+      if( (particle_swarm_.at(i).getActualCoverage() == best_cov_) && (particle_swarm_.at(i).getMultipleCoverageIndex() < global_best_multiple_coverage_ ))
       {
-        best_cov_ = particle_swarm_[i].getActualCoverage();
-        global_best_ = particle_swarm_[i];
-        global_best_multiple_coverage_ = particle_swarm_[i].getMultipleCoverageIndex();
+        best_cov_ = particle_swarm_.at(i).getActualCoverage();
+        global_best_ = particle_swarm_.at(i);
+        global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
       }
     }
   }
@@ -470,7 +471,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 
   ROS_INFO("Clean up everything");
   particle_swarm_.clear();
-  targets_.clear();
+  targets_with_info_.clear();
   target_num_ = 0;
   best_cov_ = 0;
 
@@ -547,20 +548,19 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
       // set map, area of interest, targets and open angles for each particle
-      particle_swarm_[i].setMap(map_);
-      particle_swarm_[i].setAreaOfInterest(area_of_interest_);
-      particle_swarm_[i].setOpenAngles(open_angles_);
-      particle_swarm_[i].setRange(sensor_range_);
-      particle_swarm_[i].setTargets(targets_);
-      particle_swarm_[i].setTargetsWithInfo(targets_with_info_, target_num_);
+      particle_swarm_.at(i).setMap(map_);
+      particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
+      particle_swarm_.at(i).setOpenAngles(open_angles_);
+      particle_swarm_.at(i).setRange(sensor_range_);
+      particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
       geometry_msgs::Pose test_pos = geometry_msgs::Pose();
-      test_pos.position.x = area_of_interest_.polygon.points[0].x;
-      test_pos.position.y = area_of_interest_.polygon.points[0].y;
+      test_pos.position.x = area_of_interest_.polygon.points.at(0).x;
+      test_pos.position.y = area_of_interest_.polygon.points.at(0).y;
       test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
       
-      particle_swarm_[i].placeSensorsAtPos(test_pos);
+      particle_swarm_.at(i).placeSensorsAtPos(test_pos);
       
-      global_best_ = particle_swarm_[i];
+      global_best_ = particle_swarm_.at(i);
 
       ROS_INFO_STREAM("orientation: " << test_pos.orientation);
       ROS_INFO_STREAM("orientation-map: " << tf::getYaw(map_.info.origin.orientation));
@@ -571,14 +571,6 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
 
   return true;
 }
-
-// callback function for the map topic
-/*void sensor_placement_node::mapCB(const nav_msgs::OccupancyGrid::ConstPtr &map)
-{
-  map_ = *map;
-
-  map_received_ = true;
-}*/
 
 void sensor_placement_node::publishPolygon()
 {  
