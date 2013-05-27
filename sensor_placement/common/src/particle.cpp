@@ -284,8 +284,6 @@ void particle::placeSensorsRandomlyOnPerimeter()
     pers_best_multiple_coverage_ = multiple_coverage_;
     pers_best_ = sensors_;
   }
-  //ROS_INFO_STREAM("inital personal best: " << pers_best_coverage_);
-  //ROS_INFO_STREAM("inital personal best: " << pers_best_.size());
 }
 
 // function to place all sensors at a given pose
@@ -323,7 +321,6 @@ void particle::initializeRandomSensorVelocities()
 // function to update particle during PSO
 void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, double PSO_param_1, double PSO_param_2, double PSO_param_3)
 {
-  ////ROS_INFO("begin update step");
   // initialize workspace
   double actual_angle = 0;
   double p_best_angle = 0;
@@ -341,7 +338,6 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
-    //ROS_INFO("new loop over sensors");
     // get initial velocity for actual sensor
     initial_vel = sensors_[i].getVelocity();
 
@@ -349,7 +345,6 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     actual_pose = sensors_[i].getSensorPose();
 
     // get personal best pose for actual sensor
-    //ROS_INFO_STREAM("pers_best_: " << pers_best_.size());
     personal_best_pose = pers_best_[i].getSensorPose();
 
     // get global best pose for actual sensor
@@ -373,7 +368,6 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
 
     // here is the actual particle swarm optimization step
     // update the velocities for each sensor
-    //ROS_INFO("before velocity update");
     // update the linear part
     new_vel.linear.x = (PSO_param_1 * initial_vel.linear.x)
                      + (PSO_param_2 * randomNumber(0,1) * (personal_best_pose.position.x - actual_pose.position.x))
@@ -399,13 +393,11 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     new_pose.position.z = 0;
 
     new_angle = actual_angle + new_vel.angular.z;
-    //ROS_INFO("before angle readjustment");
     // readjust the new angle in the correct interval [-PI,PI]
     while(fabs(new_angle) > PI)
       new_angle = new_angle + (-2) * signum(new_angle) * PI;
 
     new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
-    //ROS_INFO("before new position");
     if(!newPositionAccepted(new_pose))
     {
       // find uncovered target far away from initial sensor position
@@ -420,7 +412,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
       new_angle = new_angle + (-1) * signum(new_angle) * PI;
       new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
     }
-    //ROS_INFO("before new orientation");
+
     while(!newOrientationAccepted(i, new_pose))
     {
       // try next angle in 10/180*PI steps
@@ -434,15 +426,10 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     sensors_[i].setSensorPose(new_pose);
 
     // update the target information
-    //ROS_INFO("before target info update");
     updateTargetsInfo(i);
-    //ROS_INFO("after target info update");
   }
-  // update the coverage matrix
-  //calcCoverageMatrix();
   // calculate new coverage
   calcCoverage(); 
-  //ROS_INFO("end update step");  
 }
 
 // function to update the targets_with_info variable
@@ -455,7 +442,7 @@ void particle::updateTargetsInfo(size_t sensor_index)
 
   std::vector<double> open_ang = sensors_[sensor_index].getOpenAngles();
 
-  double delta = open_ang[0];
+  double delta = open_ang.front();
 
   double alpha = tf::getYaw(sensor_pose.orientation);
 
@@ -465,8 +452,6 @@ void particle::updateTargetsInfo(size_t sensor_index)
   double x_max = mapToWorldX(map_.info.width, map_);
   double y_min = mapToWorldY(0, map_);
   double y_max = mapToWorldY(map_.info.height, map_);
-
-  ROS_INFO_STREAM("map-borders: " << x_min << " , " << x_max << " , " << y_min << " , " << y_max);
 
   // initialize index variables
   uint32_t top_index; 
@@ -487,8 +472,6 @@ void particle::updateTargetsInfo(size_t sensor_index)
 
   sensor_kite.points.push_back(p);
 
-  ROS_INFO_STREAM("new point in kite: " << p);
-
   help_angle = alpha - (0.5 * delta);
 
   if(fabs(help_angle) > PI)
@@ -498,8 +481,6 @@ void particle::updateTargetsInfo(size_t sensor_index)
   p.y = std::max(y_min, std::min(y_max, sensor_pose.position.y + sin(help_angle)*sensor_range));
 
   sensor_kite.points.push_back(p);
-
-  ROS_INFO_STREAM("new point in kite: " << p);
 
   help_angle = alpha;
 
@@ -511,8 +492,6 @@ void particle::updateTargetsInfo(size_t sensor_index)
 
   sensor_kite.points.push_back(p);
 
-  ROS_INFO_STREAM("new point in kite: " << p);
-
   help_angle = alpha + (0.5 * delta);
 
   if(fabs(help_angle) > PI)
@@ -523,8 +502,6 @@ void particle::updateTargetsInfo(size_t sensor_index)
 
   sensor_kite.points.push_back(p);
 
-  ROS_INFO_STREAM("new point in kite: " << p);
-
   // get bounding box around the sensors' FOV
   geometry_msgs::Polygon bounding_box = getBoundingBox2D(sensor_kite, map_);
 
@@ -534,20 +511,14 @@ void particle::updateTargetsInfo(size_t sensor_index)
   worldToMap2D(bounding_box.points.at(0), map_, left_index, top_index);
   worldToMap2D(bounding_box.points.at(2), map_, right_index, bottom_index);
 
-  ROS_INFO("--------------------------------------------------------");
-  ROS_INFO_STREAM("bounding_box min: " << bounding_box.points.at(0));
-  ROS_INFO_STREAM("bounding_box min: " << bounding_box.points.at(1));
-  ROS_INFO_STREAM("bounding_box max: " << bounding_box.points.at(2));
-  ROS_INFO_STREAM("bounding_box max: " << bounding_box.points.at(3));
-
   for(uint32_t y = top_index; y < bottom_index; y++ )
   { 
     for (uint32_t x = left_index; x < right_index; x++)
     { 
+
       // now check every potential target in the sensors' bounding box
       if(targets_with_info_[y * map_.info.width + x].potential_target == 1)
       {
-        //ROS_INFO_STREAM("this target is found now: " << targets_with_info_[y * map_.info.width + x].world_pos);
         // now we found a target
         if(!targets_with_info_[y * map_.info.width + x].occupied)
         {
@@ -583,45 +554,9 @@ void particle::updateTargetsInfo(size_t sensor_index)
 // function to calculate the actual  and personal best coverage
 void particle::calcCoverage()
 {
-  /*/ initialize workspace
-  int num_covered_targets = 0;
-  std::vector<bool> target_already_counted;
-  target_already_counted.assign(target_num_, false);
-  num_sensors_cover_target_.assign(target_num_, 0);
 
-  if(coverage_matrix_.empty())
-  {
-    coverage_matrix_.assign(sensor_num_*target_num_, 0);
-  }
-  // go through the sensor vector
-  for(size_t i = 0; i < sensors_.size(); i++)
-  {
-    // go through the target vectors
-    for(size_t j = 0; j < targets_.size(); j++)
-    {
-      if( coverage_matrix_[j * sensors_.size() + i] == 1)
-      {
-        if(target_already_counted[j] == false)
-        {
-          num_covered_targets++;
-          target_already_counted[j] = true;
-          num_sensors_cover_target_[j]++;
-        }
-        else
-        {
-          num_sensors_cover_target_[j]++;
-        }
-      }
-    }
-  }*/
   // calculate coverage percentage
   coverage_ = (double) covered_targets_num_ / target_num_;
-  ROS_INFO_STREAM("number of covered targets: " << covered_targets_num_);
-  ROS_INFO_STREAM("number of targets: " << target_num_);
-  ROS_INFO_STREAM("new calculated coverage: " << coverage_);
-
-
-  //calcMultipleCoverage();
 
   // check if the actual coverage is a new personal best
   if(coverage_ > pers_best_coverage_)
@@ -640,38 +575,6 @@ void particle::calcCoverage()
       pers_best_ = sensors_;
     
     }
-  }
-}
-
-// function to calculate coverage matrix
-void particle::calcCoverageMatrix()
-{
-  if(coverage_matrix_.empty())
-  {
-    coverage_matrix_.assign(sensor_num_*target_num_, 0);
-  }
-  // go through the sensor vector
-  for(size_t i = 0; i < sensors_.size(); i++)
-  {
-    // go through the target vectors
-    for(size_t j = 0; j < targets_.size(); j++)  
-    {
-      if(checkCoverage(sensors_[i], targets_[j]))
-        coverage_matrix_[ j * sensors_.size() + i] = 1;
-      else
-        coverage_matrix_[ j * sensors_.size() + i] = 0;
-    }
-  }
-}
-
-// function to the multiple coverage number
-void particle::calcMultipleCoverage()
-{
-  multiple_coverage_ = 0;
-  for(size_t i = 0; i < num_sensors_cover_target_.size(); i++)
-  {
-    if(num_sensors_cover_target_[i] > 0)
-      multiple_coverage_++;
   }
 }
 

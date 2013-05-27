@@ -205,12 +205,6 @@ public:
   // function to calculate the actual  and personal best coverage
   void calcCoverage();
 
-  // function to calculate coverage matrix
-  void calcCoverageMatrix();
-
-  // function to the multiple coverage number
-  void calcMultipleCoverage();
-
   // function to check coverage of given sensor and target
   bool checkCoverage(FOV_2D_model sensor, geometry_msgs::Point32 target);
 

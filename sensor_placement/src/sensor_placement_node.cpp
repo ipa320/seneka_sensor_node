@@ -169,25 +169,25 @@ sensor_placement_node::sensor_placement_node()
   if(poly_.polygon.points.empty())
   {
     geometry_msgs::Point32 p_test;
-    p_test.x = -20;
-    p_test.y = 0;
-    p_test.z = 0;
-
-    poly_.polygon.points.push_back(p_test);
-
     p_test.x = 0;
     p_test.y = 0;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 0;
+    p_test.x = 10;
+    p_test.y = 0;
+    p_test.z = 0;
+
+    poly_.polygon.points.push_back(p_test);
+
+    p_test.x = 10;
     p_test.y = 10;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = -10;
+    p_test.x = 0;
     p_test.y = 10;
     p_test.z = 0;
 
@@ -214,6 +214,7 @@ bool sensor_placement_node::getTargets()
 
     // initialize a dummy target_info object 
     target_info dummy_target_info;
+    targets_with_info_.assign(map_.info.width * map_.info.height, dummy_target_info);
     dummy_target_info.covered_by_sensor.assign(sensor_num_, false);
 
     if(poly_received_ == false)
@@ -291,7 +292,7 @@ bool sensor_placement_node::getTargets()
             perimeter_y_.push_back(j);
           }
           // save the target information
-          targets_with_info_.push_back(dummy_target_info);
+          targets_with_info_.at(j * map_.info.width + i) = dummy_target_info;
         }
       }
       result = true;
@@ -333,10 +334,6 @@ void sensor_placement_node::initializePSO()
       particle_swarm_[i].placeSensorsRandomlyOnPerimeter();
       // initialze sensor velocities randomly
       particle_swarm_[i].initializeRandomSensorVelocities();
-      // calculate the initial coverage matrix
-      //particle_swarm_[i].calcCoverageMatrix();
-      // calculate the initial coverage
-      //particle_swarm_[i].calcCoverage();
       // get calculated coverage
       actual_coverage = particle_swarm_[i].getActualCoverage();
       // check if the actual coverage is a new global best
@@ -366,12 +363,9 @@ void sensor_placement_node::PSOptimize()
     for(size_t i=0; i < particle_swarm_.size(); i++)
     {
       // reset targets_with_info_ for each particle before the update step
-      //ROS_INFO_STREAM("Reset Targets for particle: " << i);
       particle_swarm_[i].setTargetsWithInfo(targets_with_info_, target_num_);
-      //ROS_INFO_STREAM("After Reset Targets for particle: " << i);
       // now we're ready to update the particle
       particle_swarm_[i].updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
-      //ROS_INFO_STREAM("After Update Step");
     }
     // after the update step we're looking for a new global best solution 
     getGlobalBest();
@@ -560,9 +554,9 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
       particle_swarm_[i].setTargets(targets_);
       particle_swarm_[i].setTargetsWithInfo(targets_with_info_, target_num_);
       geometry_msgs::Pose test_pos = geometry_msgs::Pose();
-      test_pos.position.x = area_of_interest_.polygon.points[0].x+5;
-      test_pos.position.y = area_of_interest_.polygon.points[0].y+1;
-      test_pos.orientation = tf::createQuaternionMsgFromYaw(0);
+      test_pos.position.x = area_of_interest_.polygon.points[0].x;
+      test_pos.position.y = area_of_interest_.polygon.points[0].y;
+      test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
       
       particle_swarm_[i].placeSensorsAtPos(test_pos);
       
