@@ -86,17 +86,20 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh){
     publish_rgb_image = it.advertise("SonyGigCam_rgb_image", 10);
 
     // advertise zooming service
-    zoom_service_= nh.advertiseService("get_zoomin",&Sony_Camera_Node::zoom_in_out, this);
+    zoom_service_= nh.advertiseService("set_zoomin",&Sony_Camera_Node::zoom_in_out, this);
 
-     // advertise autofocus service
-    focus_service_ = nh.advertiseService("get_autofocus",&Sony_Camera_Node::focusControl, this);
+    // advertise autofocus service
+    focus_service_ = nh.advertiseService("set_autofocus",&Sony_Camera_Node::focusControl, this);
 
+   // advertise videomodenext service
+    videoModeNext_service_= nh.advertiseService("set_videomodenext",&Sony_Camera_Node::videoModeNext, this);
     //connect with the camera device
     connectCamera();
 
     //start streaming of the camera device
     startStreaming();
 }
+
 
 Sony_Camera_Node::~Sony_Camera_Node(){
 
@@ -112,7 +115,7 @@ void Sony_Camera_Node::connectCamera(){
 
     PvString address("192.168.0.1");
 
-    printf( "\n1. Connecting to the device SOnyHD......" );
+    printf( "\n1. Connecting to the device SonyHD Camera..." );
     PvResult lResult1 = lDevice.Connect( address, PvAccessControl );
     if(lResult1 != 0)
     {
@@ -227,8 +230,6 @@ void Sony_Camera_Node::publishImage()
                 m_RGB->imageData[i+5] = b2;
             }
 
-
-
             //IplImage image to cv::Mat
             cv::Mat image(m_RGB);
             cv::namedWindow("Sony",cv::WINDOW_AUTOSIZE);
@@ -295,155 +296,134 @@ void Sony_Camera_Node::disconnectCamera(){
 }
 
 
-
+//Service: zooming functionalities- Optical Zoom/Digital Zoom
 bool Sony_Camera_Node::zoom_in_out(seneka_srv::zoom::Request &req,
                                    seneka_srv::zoom::Response &res){
 
     // Optical zoom: x_x_= x{1-20}x{1}.
-    // x in frist position = req.zoom_ratio_optical
+    // x in first position = req.zoom_ratio_optical
     // x in 2nd position = req.zoom_ratio_digital
 
-    if(req.zoom_ratio_digital==1)
-    {
-        // printf( "\n entered here!\n");
+    if(req.zoom_ratio_digital==1){
 
         switch(req.zoom_ratio_optical)
         {
         //zoomRatio: x1x1
         case 1:
             lDeviceParams->SetEnumValue("ZoomRatio",0);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x2x1
         case 2:
             lDeviceParams->SetEnumValue("ZoomRatio",4);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x3x1
         case 3:
             lDeviceParams->SetEnumValue("ZoomRatio",6);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x4x1
         case 4:
             lDeviceParams->SetEnumValue("ZoomRatio",8);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x5x1
         case 5:
             lDeviceParams->SetEnumValue("ZoomRatio",10);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x6x1
         case 6:
             lDeviceParams->SetEnumValue("ZoomRatio",11);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x7x1
         case 7:
             lDeviceParams->SetEnumValue("ZoomRatio",13);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x8x1
         case 8:
             lDeviceParams->SetEnumValue("ZoomRatio",14);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x9x1
         case 9:
             lDeviceParams->SetEnumValue("ZoomRatio",15);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x10x1
         case 10:
             lDeviceParams->SetEnumValue("ZoomRatio",16);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x11x1
         case 11:
             lDeviceParams->SetEnumValue("ZoomRatio",23);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x12x1
         case 12:
             lDeviceParams->SetEnumValue("ZoomRatio",24);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x13x1
         case 13:
             lDeviceParams->SetEnumValue("ZoomRatio",25);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x14x1
         case 14:
             lDeviceParams->SetEnumValue("ZoomRatio",26);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x15x1
         case 15:
             lDeviceParams->SetEnumValue("ZoomRatio",27);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x16x1
         case 16:
             lDeviceParams->SetEnumValue("ZoomRatio",28);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x17x1
         case 17:
             lDeviceParams->SetEnumValue("ZoomRatio",29);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x18x1
         case 18:
             lDeviceParams->SetEnumValue("ZoomRatio",31);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x19x1
         case 19:
             lDeviceParams->SetEnumValue("ZoomRatio",43);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x1
         case 20:
             lDeviceParams->SetEnumValue("ZoomRatio",44);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x1x1(default value)
         default:
-            printf( "\n Zoom ratio should be given according to the camera standard. Default is set to 0 \n");
+            ROS_WARN("\n Warning!!: Zoom ratio should be given according to the camera standard. Default is set to 1 \n");
             lDeviceParams->SetEnumValue("ZoomRatio",0);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
         }
+        lDeviceParams->ExecuteCommand("CAM_Zoom");
         res.success = true;
 
     }
 
     //Digital zoom: x_x_= x{20}x{2-12}.
-    //x in frist position = req.zoom_ratio_optical and x in 2nd position = req.zoom_ratio_digital
+    //x in frist position = req.zoom_ratio_optical and
+    //x in 2nd position = req.zoom_ratio_digital
 
-    else if (req.zoom_ratio_optical==20 & req.zoom_ratio_digital>=2) {
+    else if (req.zoom_ratio_optical==20 && req.zoom_ratio_digital>=2) {
 
         switch(req.zoom_ratio_digital)
         {
@@ -451,80 +431,67 @@ bool Sony_Camera_Node::zoom_in_out(seneka_srv::zoom::Request &req,
         //zoomRatio: x20x2
         case 2:
             lDeviceParams->SetEnumValue("ZoomRatio",83);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x3
         case 3:
             lDeviceParams->SetEnumValue("ZoomRatio",84);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x4
         case 4:
             lDeviceParams->SetEnumValue("ZoomRatio",85);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x5
         case 5:
             lDeviceParams->SetEnumValue("ZoomRatio",86);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x6
         case 6:
             lDeviceParams->SetEnumValue("ZoomRatio",87);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x7
         case 7:
             lDeviceParams->SetEnumValue("ZoomRatio",88);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x8
         case 8:
             lDeviceParams->SetEnumValue("ZoomRatio",89);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x9
         case 9:
             lDeviceParams->SetEnumValue("ZoomRatio",90);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x10
         case 10:
             lDeviceParams->SetEnumValue("ZoomRatio",91);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x11
         case 11:
             lDeviceParams->SetEnumValue("ZoomRatio",92);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
 
             //zoomRatio: x20x12
         case 12:
             lDeviceParams->SetEnumValue("ZoomRatio",93);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
         default:
             printf( "\n Zoom ratio should be given according to the camera standard. Default is set to 0 \n");
             lDeviceParams->SetEnumValue("ZoomRatio",0);
-            lDeviceParams->ExecuteCommand("CAM_Zoom");
             break;
         }
 
+        lDeviceParams->ExecuteCommand("CAM_Zoom");
         res.success = true;
-
     }
-    else
-    {
+    else{
         res.success = false;
     }
     return true;
@@ -532,46 +499,120 @@ bool Sony_Camera_Node::zoom_in_out(seneka_srv::zoom::Request &req,
 }
 
 
-
+//Service: Auto Focus functionalities
 bool Sony_Camera_Node::focusControl(seneka_srv::focus::Request &req,
                                     seneka_srv::focus::Response &res){
 
-    switch(req.focusAuto)
-    {
+    switch(req.focusAuto){
 
     //Auto Focus: Off
     case 0:
         lDeviceParams->SetEnumValue("FocusAuto",0);
-        lDeviceParams->ExecuteCommand("CAM_Focus");
         break;
 
         //Auto Focus: Once
     case 1:
         lDeviceParams->SetEnumValue("FocusAuto",1);
-        lDeviceParams->ExecuteCommand("CAM_Focus");
         break;
 
         //Auto Focus: Infinity
     case 2:
         lDeviceParams->SetEnumValue("FocusAuto",2);
-        lDeviceParams->ExecuteCommand("CAM_Focus");
         break;
 
         //Auto Focus: Continuous
     case 3:
         lDeviceParams->SetEnumValue("FocusAuto",3);
-        lDeviceParams->ExecuteCommand("CAM_Focus");
         break;
 
     default:
         printf( "\nDefault AutoFocus is set to Continuous mode. \n");
         lDeviceParams->SetEnumValue("FocusAuto",3);
-        lDeviceParams->ExecuteCommand("CAM_Focus");
         break;
     }
+
+    lDeviceParams->ExecuteCommand("CAM_Focus");
     res.success = true;
 
     return true;
+}
+
+//Service: videoModeNext- set on next power cycle
+bool Sony_Camera_Node::videoModeNext(seneka_srv::videoMode::Request &req,
+                                     seneka_srv::videoMode::Response &res){
+
+    switch(req.video_mode_next){
+
+    //Sony Block Video Mode Next: HD_1080i_60Hz
+    case 0:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",8);
+        break;
+
+        //Sony Block Video Mode Next: HD_1080i_59p94_Hz
+    case 1:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",9);
+        break;
+
+        //Sony Block Video Mode Next: HD_1080i_50_Hz
+    case 2:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",10);
+        break;
+
+        //Sony Block Video Mode Next: HD_1080p_30_Hz
+    case 3:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",11);
+        break;
+
+        //Sony Block Video Mode Next: HD_1080p_29p97_Hz
+    case 4:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",12);
+        break;
+
+        //Sony Block Video Mode Next: HD_1080p_25_Hz
+    case 5:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",13);
+        break;
+
+        //Sony Block Video Mode Next: HD_720p_60_Hz
+    case 6:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",14);
+        break;
+
+        //Sony Block Video Mode Next: HD_720p_59p94_Hz
+    case 7:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",15);
+        break;
+
+        //Sony Block Video Mode Next: HD_720p_50_Hz
+    case 8:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",16);
+        break;
+
+        //Sony Block Video Mode Next: HD_720p_30_Hz
+    case 9:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",17);
+        break;
+
+        //Sony Block Video Mode Next: HD_720p_29p97_Hz
+    case 10:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",18);
+        break;
+
+        //Sony Block Video Mode Next: HD_720p_25_Hz
+    case 11:
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",19);
+        break;
+
+    default:
+        printf( "\nDefault AutoFocus is set to HD_720p_60_Hz mode. \n");
+        lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",14);
+        break;
+    }
+
+    res.success = true;
+
+    return true;
+
 }
 
 

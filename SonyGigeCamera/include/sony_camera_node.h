@@ -74,6 +74,7 @@
 #include <opencv2/opencv.hpp>
 #include <seneka_srv/zoom.h>
 #include <seneka_srv/focus.h>
+#include <seneka_srv/videoMode.h>
 
 
 
@@ -106,9 +107,11 @@ public:
 
     bool focusControl(seneka_srv::focus::Request &req,
                 seneka_srv::focus::Response &res);
+    bool videoModeNext(seneka_srv::videoMode::Request &req,
+                seneka_srv::videoMode::Response &res);
 
     ros::NodeHandle nh;
-    ros::ServiceServer zoom_service_, focus_service_;
+    ros::ServiceServer zoom_service_, focus_service_,videoModeNext_service_;
     image_transport::ImageTransport it;
     image_transport::Publisher publish_rgb_image;
     cv_bridge::CvImage out_msg;

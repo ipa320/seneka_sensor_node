@@ -1,3 +1,4 @@
-int64 zoom_ratio
+int64 zoom_ratio_optical
+int64 zoom_ratio_digital
 ---
 bool success
