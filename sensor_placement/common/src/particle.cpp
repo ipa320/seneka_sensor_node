@@ -609,17 +609,46 @@ bool particle::checkCoverage(FOV_2D_model sensor, geometry_msgs::Point32 target)
 // function to check if the new sensor position is accepted
 bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
 {
+  // initialize workspace
   bool result = false;
   geometry_msgs::Pose2D dummy_pose2D;
+  unsigned int pose_x_index, pose_y_index = 0;
 
   dummy_pose2D.x = new_pose_candidate.position.x;
   dummy_pose2D.y = new_pose_candidate.position.y;
   dummy_pose2D.theta = tf::getYaw(new_pose_candidate.orientation);
-
+  
   if(pointInPolygon(dummy_pose2D, area_of_interest_.polygon) == -1)
+  {
+    // the pose candidate is not within the area of interest
     result = false;
+  }
   else
-    result = true;
+  {
+    pose_x_index = worldToMapX(new_pose_candidate.position.x, map_);
+    pose_y_index = worldToMapY(new_pose_candidate.position.y, map_);
+
+    if(pose_y_index * map_.info.width + pose_x_index >= targets_with_info_.size())
+    {
+      // indices are out of bounds
+      result = false;
+    }
+    else
+    {
+      if(targets_with_info_.at(pose_y_index * map_.info.width + pose_x_index).occupied)
+      {
+        // the pose candidate is within the area of interest 
+        // but the desired position is occupied
+        result = false;
+      }
+      else
+      {
+        // the pose candidate was accepted
+        result = true;
+      }
+    }
+
+  }
 
   return result;
 }
