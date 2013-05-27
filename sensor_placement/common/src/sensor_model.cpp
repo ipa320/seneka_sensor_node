@@ -269,8 +269,8 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
   geometry_msgs::Point p, last_p;
   for (unsigned int i = 0; i <= num_steps; i++)
   {
-    p.x = range_ * cos(open_angles_.front() / 2 + i * step_size);
-    p.y = range_ * sin(open_angles_.front() / 2 + i * step_size);
+    p.x = range_ * cos(open_angles_.front() / 2 - i * step_size);
+    p.y = range_ * sin(open_angles_.front() / 2 - i * step_size);
     // intermediate point of border
     border.points.push_back(p);
 

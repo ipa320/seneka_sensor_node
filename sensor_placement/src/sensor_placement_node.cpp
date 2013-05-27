@@ -562,7 +562,7 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
       geometry_msgs::Pose test_pos = geometry_msgs::Pose();
       test_pos.position.x = area_of_interest_.polygon.points[0].x+5;
       test_pos.position.y = area_of_interest_.polygon.points[0].y+1;
-      test_pos.orientation = tf::createQuaternionMsgFromYaw(-PI/2);
+      test_pos.orientation = tf::createQuaternionMsgFromYaw(0);
       
       particle_swarm_[i].placeSensorsAtPos(test_pos);
       
