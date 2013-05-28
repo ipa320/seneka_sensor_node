@@ -458,7 +458,7 @@ void particle::updateTargetsInfo(size_t sensor_index)
 
   sensor_kite.points.push_back(p);
 
-  help_angle = alpha - (0.5 * delta);
+  help_angle = alpha - std::min(PI/2, 0.5 * delta);
 
   if(fabs(help_angle) > PI)
     help_angle = help_angle + (-2) * signum(help_angle) * PI;
@@ -478,7 +478,7 @@ void particle::updateTargetsInfo(size_t sensor_index)
 
   sensor_kite.points.push_back(p);
 
-  help_angle = alpha + (0.5 * delta);
+  help_angle = alpha + std::min(PI/2, 0.5 * delta);
 
   if(fabs(help_angle) > PI)
     help_angle = help_angle + (-2) * signum(help_angle) * PI;
@@ -598,7 +598,7 @@ bool particle::checkCoverage(FOV_2D_model sensor, geometry_msgs::Point32 target)
   vec_sensor_dir.z = 0;
 
   // calculate angle between camera facing direction and target
-  beta = acos( fabs(vecDotProd(vec_sensor_target, vec_sensor_dir) ) / (vecNorm(vec_sensor_target) * vecNorm(vec_sensor_dir) ));
+  beta = acos( vecDotProd(vec_sensor_target, vec_sensor_dir) / (vecNorm(vec_sensor_target) * vecNorm(vec_sensor_dir) ));
   // check if given target is visible by given sensor
   if( (beta <= ((double) sensor_angles.front()/2)) && (vecNorm(vec_sensor_target) <= sensor_range) )
     result = true;

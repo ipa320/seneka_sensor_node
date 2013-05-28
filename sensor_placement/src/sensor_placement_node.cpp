@@ -554,13 +554,17 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
       particle_swarm_.at(i).setRange(sensor_range_);
       particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
       geometry_msgs::Pose test_pos = geometry_msgs::Pose();
-      test_pos.position.x = area_of_interest_.polygon.points.at(0).x;
-      test_pos.position.y = area_of_interest_.polygon.points.at(0).y;
+      test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
+      test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
       test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
       
       particle_swarm_.at(i).placeSensorsAtPos(test_pos);
       
       global_best_ = particle_swarm_.at(i);
+
+      actual_coverage = global_best_.getActualCoverage();
+
+      ROS_INFO_STREAM("coverage: " << actual_coverage);
 
       ROS_INFO_STREAM("orientation: " << test_pos.orientation);
       ROS_INFO_STREAM("orientation-map: " << tf::getYaw(map_.info.origin.orientation));
