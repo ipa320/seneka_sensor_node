@@ -315,7 +315,7 @@ void sensor_placement_node::initializePSO()
   // initialize particle swarm with given number of particles containing given number of sensors
   particle_swarm_.assign(particle_num_,dummy_particle);
 
-  // initialze the global best solution
+  // initialize the global best solution
   global_best_ = dummy_particle;
 
   double actual_coverage = 0;
@@ -331,9 +331,9 @@ void sensor_placement_node::initializePSO()
       particle_swarm_.at(i).setOpenAngles(open_angles_);
       particle_swarm_.at(i).setRange(sensor_range_);
       particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
-      // initiliaze sensor poses randomly on perimeter
+      // initialize sensor poses randomly on perimeter
       particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
-      // initialze sensor velocities randomly
+      // initialize sensor velocities randomly
       particle_swarm_.at(i).initializeRandomSensorVelocities();
       // get calculated coverage
       actual_coverage = particle_swarm_.at(i).getActualCoverage();
@@ -431,7 +431,8 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
       map_pub_.publish(map_);
       map_meta_pub_.publish(map_.info);
       map_received_ = true;
-    }else
+    }
+    else
     {
       map_ = srv_map.response.map;
       map_pub_.publish(map_);
@@ -504,7 +505,8 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
       map_pub_.publish(map_);
       map_meta_pub_.publish(map_.info);
       map_received_ = true;
-    }else
+    }
+    else
     {
       map_ = srv_map.response.map;
       map_pub_.publish(map_);
