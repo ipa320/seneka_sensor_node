@@ -61,7 +61,7 @@
 #define FRAMEMANAGER_H_
 
 
-// own stuff
+// project files
 #include "frameManager.h"
 #include "videoRecorder.h"
 #include "videoRecorder.cpp"

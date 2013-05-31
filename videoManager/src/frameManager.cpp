@@ -90,8 +90,8 @@ namespace io = boost::iostreams;
 FrameManager::FrameManager() {
 
 	// initialize parameters
-	binaryFilePath = "/home/cmm-jg/Bilder/container";
-	videoFilePath = "/home/cmm-jg/Bilder/videoOnDemand.avi";
+	binaryFilePath = "container";
+	videoFilePath = "videoOnDemand.avi";
 	fpv = 400;	 	// frame per video -> 40 sec * 10 frames = 400 frames
 	fpc = 100;		// frames per cache -> 10 sec * 10 frames = 100 frames
 	fpb = fpc;		// frames per binary
@@ -125,16 +125,56 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	nHandler.getParam("framesPerCache", tmp_fpc);
 	nHandler.getParam("framesPerBinary", tmp_fpb);
 	nHandler.getParam("videoFrameRate", tmp_vfr);
-	nHandler.getParam("binaryFilePath", binaryFilePath);
-	nHandler.getParam("videoFilePath", videoFilePath);
-	nHandler.getParam("showFrame", showFrame);
+
+	if(!nHandler.hasParam("framesPerVideo") || tmp_fpv<=0){
+		ROS_WARN("Used default parameter for framesPerVideo [200]");
+		fpv = 200;
+	}
+	else
+		fpv=(u_int)tmp_fpv;
+
+	if(!nHandler.hasParam("framesPerCache") || tmp_fpc<=0){
+		ROS_WARN("Used default parameter for framesPerCache [100]");
+		fpc = 100;
+	}
+	else
+		fpc=(u_int)tmp_fpc;
 
 
+	if(!nHandler.hasParam("framesPerBinary") || tmp_fpb<=0){
+		ROS_WARN("Used default parameter for framesPerBinary [100]");
+		fpb = 100;
+	}
+	else
+		fpb=(u_int)tmp_fpb;
 
-	if(tmp_fpv>0) fpv=(u_int)tmp_fpv;
-	if(tmp_fpc>0) fpc=(u_int)tmp_fpc;
-	if(tmp_fpb>0) fpb=(u_int)tmp_fpb;
-	if(tmp_vfr>0) vfr=(u_int)tmp_vfr;
+	if(!nHandler.hasParam("videoFrameRate") || tmp_vfr<=0){
+		ROS_WARN("Used default parameter for videoFrameRate [10]");
+		vfr = 10;
+	}
+	else
+		vfr=(u_int)tmp_vfr;
+
+	if(!nHandler.hasParam("binaryFilePath")){
+		ROS_WARN("Used default parameter for binaryFilePath [current folder]");
+		binaryFilePath = "container";
+	}
+	else
+		nHandler.getParam("binaryFilePath", binaryFilePath);
+
+	if(!nHandler.hasParam("videoFilePath")){
+		ROS_WARN("Used default parameter for videoFilePath [current folder]");
+		videoFilePath = "videoOnDemand.avi";
+	}
+	else
+		nHandler.getParam("videoFilePath", videoFilePath);
+
+	if(!nHandler.hasParam("showFrame")){
+		ROS_WARN("Used default parameter for showFrame [true]");
+		showFrame = true;
+	}
+	else
+		nHandler.getParam("showFrame", showFrame);
 
 	// initialize fixed parameters
 	videoCodec = CV_FOURCC('D','I','V','X');
@@ -342,7 +382,6 @@ int FrameManager::createVideo(){
 			// load currentIndex - numBinaries-1
 			inputFileName << binaryFilePath << (currentIndex) << ".bin";
 			mutexID = currentIndex;
-			std::cout << "currentIndex: " << currentIndex << " mutexID: " << mutexID << std::endl;
 			currentIndex++;
 
 		}
@@ -350,7 +389,6 @@ int FrameManager::createVideo(){
 			// load currentIndex - numBinaries-1
 			inputFileName << binaryFilePath << (currentIndex-numBinaries) << ".bin";
 			mutexID = currentIndex-numBinaries;
-			std::cout << "currentIndex: " << currentIndex << " mutexID: " << mutexID << std::endl;
 			currentIndex++;
 		}
 

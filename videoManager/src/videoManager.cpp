@@ -86,7 +86,7 @@ void processFrameCallback(const sensor_msgs::Image& img)
 
 bool getLiveStreamCallback(videoManager::getLiveStream::Request &req, videoManager::getLiveStream::Response &res){
 
-	std::cout << "Remote getLiveStream call ..." << std::endl;
+	ROS_INFO("Remote getLiveStream call ...");
 
 	// start snapShots
 	if(!fManager->isLiveStreamRunning()){
@@ -104,7 +104,7 @@ bool getLiveStreamCallback(videoManager::getLiveStream::Request &req, videoManag
 
 bool getSnapShotCallback(videoManager::getSnapShots::Request &req, videoManager::getSnapShots::Response &res){
 
-	std::cout << "Remote getSnapShots call ..." << std::endl;
+	ROS_INFO("Remote getSnapShots call ...");
 
 	// start snapShots
 	if(!fManager->isSnapShotRunning()){
@@ -121,7 +121,7 @@ bool getSnapShotCallback(videoManager::getSnapShots::Request &req, videoManager:
 
 bool getVideoCallback(videoManager::getVideo::Request &req, videoManager::getVideo::Response &res){
 
-	std::cout << "Remote getVideo call ..." << std::endl;
+	ROS_INFO("Remote getVideo call ...");
 
 	// start video creation
 	if(req.createVideo == 1){

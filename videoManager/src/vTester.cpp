@@ -148,9 +148,9 @@ int main(int argc, char **argv)
 			ROS_ERROR("Connection to VIDEO_MANAGER failed");
 		break;
 	default:
-		std::cout << "Unknown mode of vTEster ... Enter one of the following modes: \n(1) create VideoOnDemand"
+		ROS_INFO("Unknown mode of vTEster ... Enter one of the following modes: \n(1) create VideoOnDemand"
 				"\n(2) start/stop SnapShot and optional an interval in seconds (e.g 5)"
-				"\n(3) start/stop LiveStream"<< std::endl;
+				"\n(3) start/stop LiveStream");
 		break;
 	}
 }

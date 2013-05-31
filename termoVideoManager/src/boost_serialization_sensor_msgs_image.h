@@ -103,8 +103,6 @@ namespace boost {
 			ar & m.is_bigendian;
 			ar & m.step;
 
-			//std::cout << "reading matrix data rows, cols, elemSize, type, datasize: (" << m.height << "," << m.width << "," << m.encoding << "," << ")" << std::endl;
-
 			size_t dataSize = m.height * m.width *2;
 
 			unsigned char tmp;
