@@ -203,7 +203,7 @@ geometry_msgs::Twist FOV_2D_model::getVelocity()
   return vel_;
 }
 
-// functgion to get the maximal velocity
+// function to get the maximal velocity
 geometry_msgs::Twist FOV_2D_model::getMaxVelocity()
 {
   return max_vel_;
@@ -214,7 +214,7 @@ geometry_msgs::Pose FOV_2D_model::getSensorPose()
   return sensor_pose_;
 }
 
-// functions to get sensor opening angles
+// function to get sensor opening angles
 std::vector<double> FOV_2D_model::getOpenAngles()
 {
   return open_angles_;

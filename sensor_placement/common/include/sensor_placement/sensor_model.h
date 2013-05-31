@@ -108,11 +108,11 @@ public:
   // function to set the name
   virtual void setName(std::string new_name) = 0;
 
-  // function to set actual velocity
+  // functions to set actual velocity
   virtual void setVelocity(double lin_x, double lin_y, double lin_z, double ang_x, double ang_y, double ang_z) = 0;
   virtual void setVelocity(geometry_msgs::Twist new_vel) = 0;
 
-  // function to set maximal velocity
+  // functions to set maximal velocity
   virtual void setMaxVelocity(double lin_x, double lin_y, double lin_z, double ang_x, double ang_y, double ang_z) = 0;
   virtual void setMaxVelocity(geometry_msgs::Twist new_max_vel) = 0;
 
@@ -130,16 +130,16 @@ public:
 
   // ************************ getter functions ************************
 
-  // functgion to get actual velocity
+  // function to get actual velocity
   virtual geometry_msgs::Twist getVelocity() = 0;
 
-  // functgion to get the maximal velocity
+  // function to get the maximal velocity
   virtual geometry_msgs::Twist getMaxVelocity() = 0;
 
   // function to get actual sensor pose
   virtual geometry_msgs::Pose getSensorPose() = 0;
 
-  // functions to get sensor opening angles
+  // function to get sensor opening angles
   virtual std::vector<double> getOpenAngles() = 0;
 
   // function to set sensor range
@@ -191,12 +191,13 @@ public:
   // function to set sensor range
   void setRange(double new_range);
 
+
   // ************************ getter functions ************************
 
   // function to get actual velocity
   geometry_msgs::Twist getVelocity();
 
-  // functgion to get the maximal velocity
+  // function to get the maximal velocity
   geometry_msgs::Twist getMaxVelocity();
 
   // function to get actual sensor pose
