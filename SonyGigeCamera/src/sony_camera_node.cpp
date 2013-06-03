@@ -91,8 +91,39 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh){
     // advertise autofocus service
     focus_service_ = nh.advertiseService("set_autofocus",&Sony_Camera_Node::focusControl, this);
 
-   // advertise videomodenext service
+    // advertise videomodenext service
     videoModeNext_service_= nh.advertiseService("set_videomodenext",&Sony_Camera_Node::videoModeNext, this);
+
+    // advertise focus position service
+    focusPosition_servie_= nh.advertiseService("set_focusPosition",&Sony_Camera_Node::focusPosition, this);
+
+    // advertise focus infraredCutFilterAuto service
+    focusNearLimit_service_= nh.advertiseService("set_focusNearLimit",&Sony_Camera_Node::focusNearLimit, this);
+
+    // advertise focus focusNearLimit service
+    infraredCutFilterAuto_service = nh.advertiseService("set_infraredCutFilterAuto",&Sony_Camera_Node::infraredCutFilterAuto, this);
+
+    // advertise focus infraredCutFilter service
+    infraredCutFilter_service = nh.advertiseService("set_infraredCutFilter",&Sony_Camera_Node::infraredCutFilter, this);
+
+    // advertise pictureEffect service
+    pictureEffect_service = nh.advertiseService("set_pictureEffect",&Sony_Camera_Node::pictureEffect, this);
+
+    // advertise noiseReduction service
+    noiseReduction_service = nh.advertiseService("set_noiseReduction",&Sony_Camera_Node::noiseReduction, this);
+
+    // advertise backLightCompensation service
+    backLightCompensation_service = nh.advertiseService("set_backLightCompensation",&Sony_Camera_Node::backLightCompensation, this);
+
+    // advertise  statusDisplay service
+    statusDisplay_service = nh.advertiseService("set_statusDisplay",&Sony_Camera_Node::statusDisplay, this);
+
+    // advertise  titleDisplay service
+    titleDisplay_service = nh.advertiseService("set_titleDisplay",&Sony_Camera_Node::titleDisplay, this);
+
+    // advertise  titleText service
+    titleText_service =  nh.advertiseService("set_titleText",&Sony_Camera_Node::titleText, this);
+
     //connect with the camera device
     connectCamera();
 
@@ -410,7 +441,7 @@ bool Sony_Camera_Node::zoom_in_out(seneka_srv::zoom::Request &req,
 
             //zoomRatio: x1x1(default value)
         default:
-            ROS_WARN("\n Warning!!: Zoom ratio should be given according to the camera standard. Default is set to 1 \n");
+            ROS_WARN("\n Warning!: Zoom ratio should be given according to the camera standard. Default is set to 1 \n");
             lDeviceParams->SetEnumValue("ZoomRatio",0);
             break;
         }
@@ -483,7 +514,7 @@ bool Sony_Camera_Node::zoom_in_out(seneka_srv::zoom::Request &req,
             lDeviceParams->SetEnumValue("ZoomRatio",93);
             break;
         default:
-            printf( "\n Zoom ratio should be given according to the camera standard. Default is set to 0 \n");
+            ROS_WARN( "\n Zoom ratio should be given according to the camera standard. Default is set to 1 \n");
             lDeviceParams->SetEnumValue("ZoomRatio",0);
             break;
         }
@@ -500,8 +531,8 @@ bool Sony_Camera_Node::zoom_in_out(seneka_srv::zoom::Request &req,
 
 
 //Service: Auto Focus functionalities
-bool Sony_Camera_Node::focusControl(seneka_srv::focus::Request &req,
-                                    seneka_srv::focus::Response &res){
+bool Sony_Camera_Node::focusControl(seneka_srv::focusAuto::Request &req,
+                                    seneka_srv::focusAuto::Response &res){
 
     switch(req.focusAuto){
 
@@ -526,7 +557,7 @@ bool Sony_Camera_Node::focusControl(seneka_srv::focus::Request &req,
         break;
 
     default:
-        printf( "\nDefault AutoFocus is set to Continuous mode. \n");
+        ROS_WARN( "\nPlease specify the correct focus formate. Default AutoFocus is set to Continuous mode. \n");
         lDeviceParams->SetEnumValue("FocusAuto",3);
         break;
     }
@@ -604,7 +635,7 @@ bool Sony_Camera_Node::videoModeNext(seneka_srv::videoMode::Request &req,
         break;
 
     default:
-        printf( "\nDefault AutoFocus is set to HD_720p_60_Hz mode. \n");
+        ROS_WARN("\nPlease specify the correct video mode. Default AutoFocus is set to HD_720p_60_Hz mode. \n");
         lDeviceParams->SetEnumValue("SonyBlockVideoModeNext",14);
         break;
     }
@@ -616,12 +647,349 @@ bool Sony_Camera_Node::videoModeNext(seneka_srv::videoMode::Request &req,
 }
 
 
+//Service: set Focus Position
+bool Sony_Camera_Node::focusPosition(seneka_srv::focus::Request &req,
+                                     seneka_srv::focus::Response &res){
+
+    lDeviceParams->GetEnumValue("FocusAuto",focus_auto);
+
+    if (focus_auto == 0){
+        //min:4096 Max: 61440
+        if(4096 <= req.focus_position && req.focus_position <=61440){
+
+            lDeviceParams->SetEnumValue("Focus",req.focus_position);
+            lDeviceParams->ExecuteCommand("CAM_FocusPosInq");
+            //lDeviceParams->ExecuteCommand("CAM_Focus");
+            //lDeviceParams->GetEnumValue("Focus",focus_pos);
+            //ROS_INFO("\nFocus position %d",focus_pos);
+            res.success = true;
+        }
+        else{
+            ROS_WARN("\nFocus position must be in-between 4096 and 61440.\n");
+            res.success = false;
+        }
+    }else{
+        ROS_WARN("\nFocus position cannot be change, while the camera is in continuous AutoFocus mode.\n");
+        res.success = false;
+    }
+    return true;
+
+}
+
+//Service: set FocusNearLimit while FocusAuto is other than Off
+bool Sony_Camera_Node::focusNearLimit(seneka_srv::focusNearLimit::Request &req,
+                                      seneka_srv::focusNearLimit::Response &res){
+
+    lDeviceParams->GetEnumValue("FocusAuto",focus_auto);
+
+    if (focus_auto != 0){
+        switch(req.focus_near_limit)
+        {
+
+        //FocusNearLimit: Infinity
+        case 0:
+            lDeviceParams->SetEnumValue("FocusNearLimit",0);
+            break;
+
+            //FocusNearLimit: Fd25m
+        case 1:
+            lDeviceParams->SetEnumValue("FocusNearLimit",1);
+            break;
+
+            //FocusNearLimit: Fd11m
+        case 2:
+            lDeviceParams->SetEnumValue("FocusNearLimit",4);
+            break;
+
+            //FocusNearLimit: Fd7m
+        case 3:
+            lDeviceParams->SetEnumValue("FocusNearLimit",7);
+            break;
+
+            //FocusNearLimit: Fd4p9m
+        case 4:
+            lDeviceParams->SetEnumValue("FocusNearLimit",10);
+            break;
+
+            //FocusNearLimit: Fd3p7m
+        case 5:
+            lDeviceParams->SetEnumValue("FocusNearLimit",13);
+            break;
+
+            //FocusNearLimit: Fd2p9m
+        case 6:
+            lDeviceParams->SetEnumValue("FocusNearLimit",16);
+            break;
+
+            //FocusNearLimit: Fd2p3m
+        case 7:
+            lDeviceParams->SetEnumValue("FocusNearLimit",18);
+            break;
+
+            //FocusNearLimit: Fd1p85m
+        case 10:
+            lDeviceParams->SetEnumValue("FocusNearLimit",91);
+            break;
+
+            //FocusNearLimit: Fd1p85m
+        case 11:
+            lDeviceParams->SetEnumValue("FocusNearLimit",20);
+            break;
+
+            //FocusNearLimit: Fd1p5m
+        case 12:
+            lDeviceParams->SetEnumValue("FocusNearLimit",21);
+            break;
+
+            //FocusNearLimit: Fd1p23m
+        case 13:
+            lDeviceParams->SetEnumValue("FocusNearLimit",23);
+            break;
+
+            //FocusNearLimit: Fd1m
+        case 14:
+            lDeviceParams->SetEnumValue("FocusNearLimit",25);
+            break;
+
+            //FocusNearLimit: Fd1p85m
+        case 15:
+            lDeviceParams->SetEnumValue("FocusNearLimit",30);
+            break;
+
+            //FocusNearLimit: Fd8cm
+        case 16:
+            lDeviceParams->SetEnumValue("FocusNearLimit",37);
+            break;
+            //FocusNearLimit: Fd1cm
+        case 17:
+            lDeviceParams->SetEnumValue("FocusNearLimit",45);
+            break;
+
+        default:
+            ROS_WARN( "\n FocusNearLimit should be given according to the camera standard. Default is set to Infinity(0) \n");
+            lDeviceParams->SetEnumValue("FocusNearLimit",0);
+            break;
+        }
+        lDeviceParams->ExecuteCommand("CAM_FocusNearLimitInq");
+        //lDeviceParams->ExecuteCommand("CAM_Focus Near Limit");
+        res.success = true;
+
+    }
+    else{
+        ROS_WARN("\nFocusNearLimit is only valid while the camera is in continuous AutoFocus mode.\n");
+        res.success = false;
+    }
+
+    return true;
+}
+
+
+//Service: Enable or Disable Infrared CutFilterAuto
+bool  Sony_Camera_Node::infraredCutFilterAuto(seneka_srv::infraredCutFilterAuto::Request &req,
+                                              seneka_srv::infraredCutFilterAuto::Response &res){
+
+    switch(req.cutfilter_auto)
+    {
+
+    //InfraredCutFilterAuto: false
+    case 0:
+        lDeviceParams->SetBooleanValue("InfraredCutFilterAuto",false);
+        break;
+
+        //InfraredCutFilterAuto: true
+    case 1:
+        lDeviceParams->SetBooleanValue("InfraredCutFilterAuto",true);
+        break;
+
+    default:
+        ROS_WARN("\n Default InfraredCutFilterAuto is set to false. \n");
+        lDeviceParams->SetBooleanValue("InfraredCutFilterAuto",false);
+        break;
+    }
+
+    lDeviceParams->ExecuteCommand("CAM_AutoICRModeInq");
+    res.success = true;
+    return true;
+}
+
+//Service: Enable or Disable Infrared CutFilter
+bool  Sony_Camera_Node::infraredCutFilter(seneka_srv::infraredCutFilter::Request &req,
+                                          seneka_srv::infraredCutFilter::Response &res){
+    switch(req.cutfilter)
+    {
+
+    //InfraredCutFilter: false
+    case 0:
+        lDeviceParams->SetBooleanValue("InfraredCutFilter",false);
+        break;
+
+        //InfraredCutFilter: true
+    case 1:
+        lDeviceParams->SetBooleanValue("InfraredCutFilter",true);
+        break;
+
+    default:
+        ROS_WARN("\n Default InfraredCutFilterAuto is set to false. \n");
+        lDeviceParams->SetBooleanValue("InfraredCutFilter",false);
+        break;
+
+    }
+
+    lDeviceParams->ExecuteCommand("CAM_ICRModeInq");
+    res.success = true;
+    return true;
+}
+
+//Service: set Picture Effect: Off, NegReversal, BlackAndWhite
+bool Sony_Camera_Node::pictureEffect(seneka_srv::pictureEffect::Request &req,
+                                     seneka_srv::pictureEffect::Response &res){
+    switch(req.picture_effect)
+    {
+
+    //PictureEffect: Off
+    case 0:
+        lDeviceParams->SetEnumValue("PictureEffect",0);
+        break;
+
+        //PictureEffect: NegReversal
+    case 1:
+        lDeviceParams->SetEnumValue("PictureEffect",1);
+        break;
+        //PictureEffect:BlackAndWhite
+    case 2:
+        lDeviceParams->SetEnumValue("PictureEffect",2);
+        break;
+
+    default:
+        ROS_WARN("\n PictureEffect should be according to the camera standard. Default PictureEffect is set to Off(0). \n");
+        lDeviceParams->SetEnumValue("PictureEffect",0);
+        break;
+    }
+    lDeviceParams->ExecuteCommand("CAM_PictureEffect");
+    res.success = true;
+    return true;
+}
+
+//Service: Set noise reduction maximum of 5
+bool Sony_Camera_Node::noiseReduction(seneka_srv::noiseReduction::Request &req,
+                                      seneka_srv::noiseReduction::Response &res){
+
+    if(0 <= req.noise_reduction && req.noise_reduction <= 5)
+    {
+        lDeviceParams->SetIntegerValue("NoiseReduction",req.noise_reduction);
+        lDeviceParams->ExecuteCommand("CAM_NR");
+        res.success = true;
+
+    }else{
+        ROS_WARN("\nNoise Reduction should be in between 0 to 5. \n");
+        res.success = false;
+    }
+    return true;
+
+}
+
+//Service: Enable or Disable Back Light Compensation
+bool  Sony_Camera_Node::backLightCompensation(seneka_srv::backLightCompensation::Request &req,
+                                              seneka_srv::backLightCompensation::Response &res){
+    switch(req.back_light)
+    {
+
+    //BackLightCompensation: false
+    case 0:
+        lDeviceParams->SetBooleanValue("BackLightCompensation",false);
+        break;
+
+        //BackLightCompensation: true
+    case 1:
+        lDeviceParams->SetBooleanValue("BackLightCompensation",true);
+        break;
+
+    default:
+        ROS_WARN("\nBack Light Compensation can be either 0(false) or 1(true). Default BackLightCompensation is set to false. \n");
+        lDeviceParams->SetBooleanValue("BackLightCompensation",false);
+        break;
+
+    }
+
+    lDeviceParams->ExecuteCommand("CAM_BackLight");
+    res.success = true;
+    return true;
+}
+
+//Service: Enable or disable status display
+bool  Sony_Camera_Node::statusDisplay(seneka_srv::statusDisplay::Request &req,
+                                      seneka_srv::statusDisplay::Response &res){
+
+    switch(req.display_status)
+    {
+
+    //Status Display: false
+    case 0:
+        lDeviceParams->SetBooleanValue("StatusDisplay",false);
+        break;
+
+        //StatusDisplay: true
+    case 1:
+        lDeviceParams->SetBooleanValue("StatusDisplay",true);
+        break;
+
+    default:
+        ROS_WARN("\nStatus Display can be either 0(false) or 1 (true). Default Status Display is set to false. \n");
+        lDeviceParams->SetBooleanValue("StatusDisplay",false);
+        break;
+
+    }
+
+    lDeviceParams->ExecuteCommand("CAM_Display");
+    res.success = true;
+    return true;
+}
+
+//Service: Enable or disable to display title
+bool Sony_Camera_Node::titleDisplay(seneka_srv::titleDisplay::Request &req,
+                                    seneka_srv::titleDisplay::Response &res){
+
+    switch(req.title_display)
+    {
+
+    //TitleDisplay: false
+    case 0:
+        lDeviceParams->SetBooleanValue("TitleDisplay",false);
+        break;
+
+        //TitleDisplay: true
+    case 1:
+        lDeviceParams->SetBooleanValue("TitleDisplay",true);
+        break;
+
+    default:
+        ROS_WARN("Title Display can be either 0(false) or 1 (true). Default Title Display is set to false. \n");
+        lDeviceParams->SetBooleanValue("TitleDisplay",false);
+        break;
+
+    }
+
+    lDeviceParams->ExecuteCommand("CAM_Title");
+    res.success = true;
+    return true;
+}
+
+//Service: set title text of images
+bool Sony_Camera_Node::titleText(seneka_srv::titleText::Request &req,
+                                 seneka_srv::titleText::Response &res){
+    PvString str = req.title_text.c_str();
+    lDeviceParams->SetString("TitleText",str);
+    lDeviceParams->ExecuteCommand("CAM_Title");
+    res.success = true;
+    return true;
+}
+
+
 
 int main(int argc, char** argv){
 
-
     // initialize ROS, specify name of node
-    ros::init(argc,argv,"SonyGigeCam_images");
+    ros::init(argc,argv,"SonyGigeCamera");
 
     Sony_Camera_Node SonyCameraNode;
 

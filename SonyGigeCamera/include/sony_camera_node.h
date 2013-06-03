@@ -72,11 +72,20 @@
 #include "opencv/highgui.h"
 #include "stdio.h"
 #include <opencv2/opencv.hpp>
+
 #include <seneka_srv/zoom.h>
+#include <seneka_srv/focusAuto.h>
 #include <seneka_srv/focus.h>
 #include <seneka_srv/videoMode.h>
-
-
+#include <seneka_srv/focusNearLimit.h>
+#include <seneka_srv/infraredCutFilter.h>
+#include <seneka_srv/infraredCutFilterAuto.h>
+#include <seneka_srv/pictureEffect.h>
+#include <seneka_srv/noiseReduction.h>
+#include <seneka_srv/backLightCompensation.h>
+#include <seneka_srv/statusDisplay.h>
+#include <seneka_srv/titleDisplay.h>
+#include <seneka_srv/titleText.h>
 
 #include <PvSampleUtils.h>
 #include <PvDevice.h>
@@ -103,24 +112,47 @@ public:
     void disconnectCamera();
 
     bool zoom_in_out(seneka_srv::zoom::Request &req,
-                seneka_srv::zoom::Response &res);
-
-    bool focusControl(seneka_srv::focus::Request &req,
-                seneka_srv::focus::Response &res);
+                     seneka_srv::zoom::Response &res);
+    bool focusControl(seneka_srv::focusAuto::Request &req,
+                      seneka_srv::focusAuto::Response &res);
     bool videoModeNext(seneka_srv::videoMode::Request &req,
-                seneka_srv::videoMode::Response &res);
+                       seneka_srv::videoMode::Response &res);
+    bool focusPosition(seneka_srv::focus::Request &req,
+                       seneka_srv::focus::Response &res);
+    bool focusNearLimit(seneka_srv::focusNearLimit::Request &req,
+                        seneka_srv::focusNearLimit::Response &res);
+    bool infraredCutFilterAuto(seneka_srv::infraredCutFilterAuto::Request &req,
+                               seneka_srv::infraredCutFilterAuto::Response &res);
+    bool infraredCutFilter(seneka_srv::infraredCutFilter::Request &req,
+                           seneka_srv::infraredCutFilter::Response &res);
+    bool pictureEffect(seneka_srv::pictureEffect::Request &req,
+                       seneka_srv::pictureEffect::Response &res);
+    bool noiseReduction(seneka_srv::noiseReduction::Request &req,
+                       seneka_srv::noiseReduction::Response &res);
+    bool backLightCompensation(seneka_srv::backLightCompensation::Request &req,
+                            seneka_srv::backLightCompensation::Response &res);
+    bool statusDisplay(seneka_srv::statusDisplay::Request &req,
+                       seneka_srv::statusDisplay::Response &res);
+    bool titleDisplay(seneka_srv::titleDisplay::Request &req,
+                       seneka_srv::titleDisplay::Response &res);
+    bool titleText(seneka_srv::titleText::Request &req,
+                       seneka_srv::titleText::Response &res);
 
     ros::NodeHandle nh;
-    ros::ServiceServer zoom_service_, focus_service_,videoModeNext_service_;
+    ros::ServiceServer zoom_service_, focus_service_,videoModeNext_service_,
+    focusPosition_servie_, focusNearLimit_service_, infraredCutFilterAuto_service,
+    infraredCutFilter_service,pictureEffect_service, noiseReduction_service,
+    backLightCompensation_service, statusDisplay_service,titleDisplay_service,titleText_service;
     image_transport::ImageTransport it;
     image_transport::Publisher publish_rgb_image;
     cv_bridge::CvImage out_msg;
 
 
-
-
 private:
     PvInt64 lSize;
+    PvInt64 focus_pos;
+    PvInt64 focus_auto;
+    bool flag;
     PvBuffer *lBuffers;
     PvDevice lDevice;
     PvResult lResult;
