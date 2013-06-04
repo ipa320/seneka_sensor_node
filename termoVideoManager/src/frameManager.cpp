@@ -63,7 +63,6 @@
 #include "boost_serialization_sensor_msgs_image.h"
 #include <vector>
 #include <fstream>
-
 // built boost includes
 #include <boost/bind.hpp>
 
