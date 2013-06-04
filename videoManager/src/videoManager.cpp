@@ -142,7 +142,15 @@ int main(int argc, char **argv)
 	fManager = new FrameManager(nHandler);
 
 	std::string inputTopic;
-	nHandler.getParam("inputTopic", inputTopic);
+
+	if(!nHandler.hasParam("inputTopic")){
+		ROS_ERROR("No input topic in launch-file defined!!\n\n");
+		return -1;
+	}
+	else{
+		nHandler.getParam("inputTopic", inputTopic);
+	}
+
 
 	ROS_INFO("advertising getVideo service ...");
 	ros::ServiceServer videoService = nHandler.advertiseService("getVideo", getVideoCallback);

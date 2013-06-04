@@ -102,13 +102,13 @@ int main(int argc, char **argv)
 		case 1 :	ROS_INFO("Creating video ...");
 					break;
 
-		case -1:	ROS_ERROR("Video recorder is busy !!");
+		case -1:	ROS_WARN("Video recorder is busy !!");
 					break;
 
-		case -2:	ROS_ERROR("NO complete video available !!");
+		case -2:	ROS_WARN("NO complete video available !!");
 					break;
 
-		case -3:	ROS_ERROR("VideoOnDemand is in state LIVE_STREAM not available! "
+		case -3:	ROS_WARN("VideoOnDemand is in state LIVE_STREAM not available! "
 					"Cancel state LIVE_STREAM to switch to state ON_DEMAND!");
 					break;
 

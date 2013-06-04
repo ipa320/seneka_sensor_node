@@ -123,6 +123,7 @@ private:
 	// file storage parameters
 	std::string binaryFilePath;
 	std::string videoFilePath;
+	std::string outputFolder;
 	u_int binaryFileIndex;
 	std::vector<boost::mutex*> binaryFileMutexes;
 

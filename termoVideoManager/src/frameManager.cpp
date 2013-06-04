@@ -92,8 +92,9 @@ namespace io = boost::iostreams;
 FrameManager::FrameManager() {
 
 	// initialize parameters
-	binaryFilePath = "container";
-	videoFilePath = "videoOnDemand.avi";
+	outputFolder = "/tmp/";
+	binaryFilePath = outputFolder + "container";
+	videoFilePath = outputFolder + "termoVideoOnDemand.avi";
 	fpv = 400;	 	// frame per video -> 40 sec * 10 frames = 400 frames
 	fpc = 100;		// frames per cache -> 10 sec * 10 frames = 100 frames
 	fpb = fpc;		// frames per binary
@@ -169,19 +170,17 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 	else
 		vfr=(u_int)tmp_vfr;
 
-	if(!nHandler.hasParam("binaryFilePath")){
-		ROS_WARN("Used default parameter for binaryFilePath [current folder]");
-		binaryFilePath = "container";
+	if(!nHandler.hasParam("outputFolder")){
+		ROS_WARN("Used default parameter for outputFolder [/tmp]");
+		outputFolder = "/tmp/";
+		binaryFilePath = outputFolder + "container";
+		videoFilePath = outputFolder + "termoVideoOnDemand.avi";
 	}
-	else
-		nHandler.getParam("binaryFilePath", binaryFilePath);
-
-	if(!nHandler.hasParam("videoFilePath")){
-		ROS_WARN("Used default parameter for videoFilePath [current folder]");
-		videoFilePath = "videoOnDemand.avi";
+	else{
+		nHandler.getParam("outputFolder", outputFolder);
+		binaryFilePath = outputFolder + "container";
+		videoFilePath = outputFolder + "termoVideoOnDemand.avi";
 	}
-	else
-		nHandler.getParam("videoFilePath", videoFilePath);
 
 	if(!nHandler.hasParam("showFrame")){
 		ROS_WARN("Used default parameter for showFrame [true]");
@@ -433,7 +432,7 @@ int FrameManager::getVideo(){
 			return -2;	// return -2 if no full video is available
 	}
 	else if(stateMachine == LIVE_STREAM){
-		ROS_ERROR("This function is in LIVE_STREAM state not available!");
+		ROS_WARN("This function is in LIVE_STREAM state not available!");
 		return -3;
 	}
 	else{
@@ -612,7 +611,7 @@ void FrameManager::createSnapshots(int interval){
 
 				// file name and path to the image files
 				// file name is the current system time stamp
-				imgFile << "/home/cmm-jg/Bilder/snapshots/" << ros::Time::now() << ".jpg";
+				imgFile << outputFolder << ros::Time::now() << ".jpg";
 
 				// create JPEG image
 				cv::Mat m = convertTemperatureValuesToRGB(&img, &imageCounter);
@@ -641,7 +640,7 @@ void FrameManager::createSnapshots(int interval){
 
 				// file name and path to the image files
 				// file name is the current system time stamp
-				imgFile << "/home/cmm-jg/Bilder/snapshots/" << ros::Time::now() << ".jpg";
+				imgFile << outputFolder << ros::Time::now() << ".jpg";
 
 				// create JPEG image
 				cv::imwrite(imgFile.str(), img);
@@ -670,7 +669,7 @@ void FrameManager::startLiveStream(){
 	ROS_INFO("Starting live stream mode ...");
 
 	if(createVideoActive){
-		ROS_ERROR("State change not possible ... creating video at the moment !!");
+		ROS_WARN("State change not possible ... creating video at the moment !!");
 	}
 	else{
 		// initializie the LIVE_STREAM state

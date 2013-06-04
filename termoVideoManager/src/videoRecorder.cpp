@@ -81,7 +81,7 @@ void VideoRecorder::openVideo(){
 		videoWriter.open(videoFileName, codec, fps, videoSize, 1);
 	}
 	else{
-		ROS_ERROR("Video is still open ...!");
+		ROS_WARN("Video is still open ...!");
 	}
 }
 
@@ -96,7 +96,7 @@ void VideoRecorder::addFrame(cv::Mat frame){
 	if(videoWriter.isOpened() == true)
 		videoWriter.write(frame);
 	else
-		ROS_ERROR("Video file is closed ...");
+		ROS_WARN("Video file is closed ...");
 }
 
 void VideoRecorder::releaseVideo(){
