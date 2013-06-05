@@ -30,14 +30,14 @@ rosbuild_gensrv()
 
 rosbuild_add_boost_directories()
 
-# inlcude termo cam converter 
+# include optris library if files are stored in current package
 #INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include)
-#LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib/i386)
+#LINK_DIRECTORIES(${PROJECT_SOURCE_DIR}/lib)
 #LINK_LIBRARIES(PIImager ImageProcessing udev)
 
-
+# include optris library from oprtis_driver package
 INCLUDE_DIRECTORIES( ${optris_drivers_INCLUDE_DIRS}/include) 
-LINK_DIRECTORIES(${optris_drivers_INCLUDE_DIRS}/lib)
+LINK_DIRECTORIES(${optris_drivers_INCLUDE_DIRS}/lib/i386)
 LINK_LIBRARIES(PIImager ImageProcessing udev)
 
 # create executables
