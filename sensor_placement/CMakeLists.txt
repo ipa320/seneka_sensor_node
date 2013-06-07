@@ -29,6 +29,8 @@ rosbuild_add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
 						common/src/particle.cpp
 						common/src/seneka_utilities.cpp
 						common/src/sensor_model.cpp)
+
+rosbuild_add_executable(ray_test common/src/lookup_table.cpp)
 #rosbuild_add_executable(sensor_model common/src/sensor_model.cpp)
 #rosbuild_add_executable(particle common/src/particle.cpp)
 #common commands for building c++ executables and libraries
