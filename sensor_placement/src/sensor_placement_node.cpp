@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2013
  *
- * Fraunhofer Institute for Manufacturing Engineering  
+ * Fraunhofer Institute for Manufacturing Engineering
  * and Automation (IPA)
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -10,9 +10,9 @@
  * Project name: SeNeKa
  * ROS stack name: seneka
  * ROS package name: sensor_placement
- *                
+ *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *      
+ *
  * Author: Florian Mirus, email:Florian.Mirus@ipa.fhg.de
  *
  * Date of creation: April 2013
@@ -27,23 +27,23 @@
  *   * Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of the Fraunhofer Institute for Manufacturing 
+ *   * Neither the name of the Fraunhofer Institute for Manufacturing
  *     Engineering and Automation (IPA) nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License LGPL as 
- * published by the Free Software Foundation, either version 3 of the 
+ * it under the terms of the GNU Lesser General Public License LGPL as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License LGPL for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License LGPL along with this program. 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License LGPL along with this program.
  * If not, see <http://www.gnu.org/licenses/>.
  *
  ****************************************************************/
@@ -60,6 +60,34 @@ sensor_placement_node::sensor_placement_node()
   // ros subscribers
 
   // ros publishers
+
+  //test marker
+  marker_pub = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1,true);
+  //test marker shape is set to be a cube
+  uint32_t shape = visualization_msgs::Marker::CUBE;
+  marker.header.frame_id = "/map";
+  marker.ns = "basic_shapes";
+  marker.id = 0;
+  marker.type = shape;
+  marker.action = visualization_msgs::Marker::ADD;
+  marker.pose.position.x = -2;
+  marker.pose.position.y = -2;
+  marker.pose.position.z = 0;
+  marker.pose.orientation.x = 0.0;
+  marker.pose.orientation.y = 0.0;
+  marker.pose.orientation.z = 0.0;
+  marker.pose.orientation.w = 1.0;
+  marker.scale.x = 1.0;
+  marker.scale.y = 1.0;
+  marker.scale.z = 1.0;
+  marker.color.r = 0.0f;
+  marker.color.g = 1.0f;
+  marker.color.b = 0.0f;
+  marker.color.a = 1.0;
+  marker.lifetime = ros::Duration();
+
+
+
   poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_poly",1,true);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
@@ -140,7 +168,7 @@ void sensor_placement_node::getParams()
     ROS_WARN("No parameter max_sensor_range on parameter server. Using default [5.0 in m]");
   }
   pnh_.param("max_sensor_range",sensor_range_,5.0);
-  
+
   double open_angle_1, open_angle_2;
 
   if(!pnh_.hasParam("open_angle_1"))
@@ -215,10 +243,10 @@ bool sensor_placement_node::getTargets()
   bool result = false;
 
   if(map_received_ == true)
-  { 
+  {
     // only if we received a map, we can get targets
 
-    // initialize a dummy target_info object 
+    // initialize a dummy target_info object
     target_info dummy_target_info;
     targets_with_info_.assign(map_.info.width * map_.info.height, dummy_target_info);
     dummy_target_info.covered_by_sensor.assign(sensor_num_, false);
@@ -353,9 +381,9 @@ void sensor_placement_node::PSOptimize()
   // PSO-iterator
   int iter = 0;
   std::vector<geometry_msgs::Pose> global_pose;
- 
+
   // iteration step
-  // continue calculation as long as there are iteration steps left and actual best coverage is 
+  // continue calculation as long as there are iteration steps left and actual best coverage is
   // lower than mininmal coverage to stop
   while(iter < iter_max_ && best_cov_ < min_cov_)
   {
@@ -368,7 +396,7 @@ void sensor_placement_node::PSOptimize()
       // now we're ready to update the particle
       particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
     }
-    // after the update step we're looking for a new global best solution 
+    // after the update step we're looking for a new global best solution
     getGlobalBest();
 
     // publish the actual global best visualization
@@ -411,7 +439,7 @@ void sensor_placement_node::getGlobalBest()
 bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
 
-  // call static_map-service from map_server to get the actual map  
+  // call static_map-service from map_server to get the actual map
   sc_get_map_.waitForExistence();
 
   nav_msgs::GetMap srv_map;
@@ -456,7 +484,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
     ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
     ROS_INFO_STREAM("Saved " << targets_with_info_.size() << " targets with info in std-vector");
   }
-    
+
 
   ROS_INFO("Initializing particle swarm");
   initializePSO();
@@ -485,7 +513,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 // callback function for the test service
 bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  // call static_map-service from map_server to get the actual map  
+  // call static_map-service from map_server to get the actual map
   sc_get_map_.waitForExistence();
 
   nav_msgs::GetMap srv_map;
@@ -559,9 +587,9 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
       test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
       test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
       test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
-      
+
       particle_swarm_.at(i).placeSensorsAtPos(test_pos);
-      
+
       global_best_ = particle_swarm_.at(i);
 
       actual_coverage = global_best_.getActualCoverage();
@@ -579,9 +607,10 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
 }
 
 void sensor_placement_node::publishPolygon()
-{  
+{
 
   poly_pub_.publish(poly_);
+  marker_pub.publish(marker);
 
 }
 
@@ -601,6 +630,7 @@ int main(int argc, char **argv)
 
   while(my_placement_node.nh_.ok())
   {
+     //can add this later to the funtion below
     my_placement_node.publishPolygon();
     ros::spinOnce();
 
