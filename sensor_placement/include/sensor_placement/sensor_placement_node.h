@@ -103,7 +103,7 @@ private:
   geometry_msgs::PolygonStamped poly_;
 
   //test
-  visualization_msgs::Marker marker;
+  geometry_msgs::PolygonStamped my_poly_;
 
   // number of sensors
   int sensor_num_;
@@ -173,7 +173,7 @@ public:
   ros::Publisher marker_array_pub_;
   ros::Publisher map_pub_, map_meta_pub_;
 
-  ros::Publisher marker_pub;
+  ros::Publisher my_poly_pub_;
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;

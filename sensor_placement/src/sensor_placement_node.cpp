@@ -61,30 +61,38 @@ sensor_placement_node::sensor_placement_node()
 
   // ros publishers
 
-  //test marker
-  marker_pub = nh_.advertise<visualization_msgs::Marker>("visualization_marker", 1,true);
-  //test marker shape is set to be a cube
-  uint32_t shape = visualization_msgs::Marker::CUBE;
-  marker.header.frame_id = "/map";
-  marker.ns = "basic_shapes";
-  marker.id = 0;
-  marker.type = shape;
-  marker.action = visualization_msgs::Marker::ADD;
-  marker.pose.position.x = -2;
-  marker.pose.position.y = -2;
-  marker.pose.position.z = 0;
-  marker.pose.orientation.x = 0.0;
-  marker.pose.orientation.y = 0.0;
-  marker.pose.orientation.z = 0.0;
-  marker.pose.orientation.w = 1.0;
-  marker.scale.x = 1.0;
-  marker.scale.y = 1.0;
-  marker.scale.z = 1.0;
-  marker.color.r = 0.0f;
-  marker.color.g = 1.0f;
-  marker.color.b = 0.0f;
-  marker.color.a = 1.0;
-  marker.lifetime = ros::Duration();
+  //test
+  my_poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("my_polygon", 1,true);
+  //test polygon initialization
+   if(my_poly_.polygon.points.empty())
+  {
+    geometry_msgs::Point32 p2_test;
+    p2_test.x = -5;
+    p2_test.y = -5;
+    p2_test.z = 0;
+
+    my_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 3;
+    p2_test.y = -5;
+    p2_test.z = 0;
+
+    my_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 3;
+    p2_test.y = 3;
+    p2_test.z = 0;
+
+    my_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = -5;
+    p2_test.y = 3;
+    p2_test.z = 0;
+
+    my_poly_.polygon.points.push_back(p2_test);
+
+    my_poly_.header.frame_id = "/map";
+  }
 
 
 
@@ -610,7 +618,7 @@ void sensor_placement_node::publishPolygon()
 {
 
   poly_pub_.publish(poly_);
-  marker_pub.publish(marker);
+  my_poly_pub_.publish(my_poly_);
 
 }
 
