@@ -14,6 +14,8 @@
   <depend package="seneka_environments"/>
   <depend package="seneka_config"/>
   <depend package="rviz"/>
+  <depend package="termoVideoManager"/>
+  <depend package="videoManager"/>
 
 </package>
 
