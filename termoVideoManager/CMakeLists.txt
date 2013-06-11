@@ -36,8 +36,6 @@ rosbuild_add_boost_directories()
 #LINK_LIBRARIES(PIImager ImageProcessing udev)
 
 # include optris library from oprtis_driver package
-INCLUDE_DIRECTORIES( ${optris_drivers_INCLUDE_DIRS}/include) 
-LINK_DIRECTORIES(${optris_drivers_INCLUDE_DIRS}/lib/i386)
 LINK_LIBRARIES(PIImager ImageProcessing udev)
 
 # create executables
