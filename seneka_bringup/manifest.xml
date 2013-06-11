@@ -9,6 +9,12 @@
   <review status="unreviewed" notes=""/>
   <url>http://ros.org/wiki/seneka_bringup</url>
 
+  <depend package="map_server"/>
+  <depend package="sensor_placement"/>
+  <depend package="seneka_environments"/>
+  <depend package="seneka_config"/>
+  <depend package="rviz"/>
+
 </package>
 
 

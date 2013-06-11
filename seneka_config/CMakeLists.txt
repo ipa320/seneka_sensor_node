@@ -21,19 +21,9 @@ set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
 #uncomment if you have defined services
 #rosbuild_gensrv()
 
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/common/include/sensor_placement)
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/common/src)
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/include/sensor_placement)
-
-rosbuild_add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
-						common/src/particle.cpp
-						common/src/seneka_utilities.cpp
-						common/src/sensor_model.cpp)
-#rosbuild_add_executable(sensor_model common/src/sensor_model.cpp)
-#rosbuild_add_executable(particle common/src/particle.cpp)
 #common commands for building c++ executables and libraries
-#rosbuild_add_library(seneka_particle common/src/sensor_model.cpp common/src/particle.cpp)
-#target_link_libraries(sensor_placement_node seneka_particle)
+#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
+#target_link_libraries(${PROJECT_NAME} another_library)
 #rosbuild_add_boost_directories()
 #rosbuild_link_boost(${PROJECT_NAME} thread)
 #rosbuild_add_executable(example examples/example.cpp)

@@ -1,0 +1,14 @@
+<?xml version="1.0"?>
+<launch>
+
+	<!--arg name="seneka_env" default="$(optenv ROBOT_ENV !!NO_ROBOT_ENV_SET!!)"/-->
+	<arg name="seneka_env" default="seneka_demo"/>
+	<arg name="map" default="$(find seneka_environments)/$(arg seneka_env)/map.yaml" />
+
+	<!--- Run map_server -->
+	<node name="map_server" pkg="map_server" type="map_server" args="$(arg map)"/>
+
+	<!--- start sensor_placement_node  -->
+	<include file="$(find seneka_bringup)/components/sensor_placement.xml" />
+
+</launch>

@@ -1,0 +1,14 @@
+<package>
+  <description brief="seneka_config">
+
+     seneka_config holds config files for the SENEKA project at Fraunhofer IPA
+
+  </description>
+  <author>Florian Mirus</author>
+  <license>LGPL</license>
+  <review status="unreviewed" notes=""/>
+  <url>http://ros.org/wiki/seneka_config</url>
+
+</package>
+
+
