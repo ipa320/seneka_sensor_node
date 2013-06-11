@@ -15,7 +15,7 @@ catkin_package(
 ## Mark other files for installation (e.g. launch and bag files, etc.)
  install(FILES
    config/sensor_placement.yaml
-   config/rviz.vcg
+   config/seneka_rviz_groovy_config.rviz
    DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
  )
 
