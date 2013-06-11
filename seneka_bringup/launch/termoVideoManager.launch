@@ -7,7 +7,7 @@
 	<param name="framesPerCache"        type="int"    value="100"/>
 	<param name="framesPerBinary"       type="int"    value="100"/>
 	<param name="videoFrameRate"        type="int"    value="10"/>
-	<param name="outputFolder"	    type="string" value="/home/cmm-jg/Bilder/"/>
+	<param name="outputFolder"	    type="string" value="/tmp/"/>
 	<param name="showFrame"		    type="bool"   value="true"/>
 	<param name="minTemperature"        type="int"    value="20"/>
 	<param name="maxTemperature"        type="int"    value="40"/>
