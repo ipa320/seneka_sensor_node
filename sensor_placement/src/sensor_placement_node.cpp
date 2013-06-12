@@ -61,39 +61,42 @@ sensor_placement_node::sensor_placement_node()
 
   // ros publishers
 
-  //test
-  my_poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("my_polygon", 1,true);
-  //test polygon initialization
-   if(my_poly_.polygon.points.empty())
+  /*-----FEATURE: "forbidden area" (in progress)-----*/
+  forbidden_poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("forbidden_area", 1,true);
+
+  //forbidden area initialization
+   if(forbidden_poly_.polygon.points.empty())
   {
     geometry_msgs::Point32 p2_test;
     p2_test.x = -5;
     p2_test.y = -5;
     p2_test.z = 0;
 
-    my_poly_.polygon.points.push_back(p2_test);
+    forbidden_poly_.polygon.points.push_back(p2_test);
 
     p2_test.x = 3;
     p2_test.y = -5;
     p2_test.z = 0;
 
-    my_poly_.polygon.points.push_back(p2_test);
+    forbidden_poly_.polygon.points.push_back(p2_test);
 
     p2_test.x = 3;
     p2_test.y = 3;
     p2_test.z = 0;
 
-    my_poly_.polygon.points.push_back(p2_test);
+    forbidden_poly_.polygon.points.push_back(p2_test);
 
     p2_test.x = -5;
     p2_test.y = 3;
     p2_test.z = 0;
 
-    my_poly_.polygon.points.push_back(p2_test);
+    forbidden_poly_.polygon.points.push_back(p2_test);
 
-    my_poly_.header.frame_id = "/map";
+    forbidden_poly_.header.frame_id = "/map";
   }
 
+
+  /*-----end FEATURE-----*/
 
 
   poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_poly",1,true);
@@ -261,6 +264,7 @@ bool sensor_placement_node::getTargets()
 
     if(poly_received_ == false)
     {
+      // REMINDER: add logic for forbidden area here too --
       // if no polygon was specified, we consider the non-occupied grid cells as targets
       for(unsigned int i = 0; i < map_.info.width; i++)
       {
@@ -302,31 +306,40 @@ bool sensor_placement_node::getTargets()
           dummy_target_info.world_pos.y = mapToWorldY(j, map_);
           dummy_target_info.world_pos.z = 0;
 
+          dummy_target_info.forbidden = false;    //all targets are allowed unless found in forbidden area --
           dummy_target_info.occupied = true;
           dummy_target_info.covered = false;
           dummy_target_info.multiple_covered = false;
           dummy_target_info.potential_target = -1;
 
-          // the given position lies withhin the polygon
-          if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
+          // if given position is in the forbidden area, mark the position as forbidden --
+          if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1)
           {
-
-            dummy_target_info.potential_target = 1;
-
-            if(map_.data.at( j * map_.info.width + i) == 0)
-            {
-              target_num_++;
-              dummy_target_info.occupied = false;
-            }
+            dummy_target_info.forbidden = true;
           }
-          // the given position lies on the perimeter
-          if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0)
+          else
           {
-            dummy_target_info.potential_target = 0;
-
-            if(map_.data.at( j * map_.info.width + i) == 0)
+            // the given position lies withhin the polygon
+            if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
             {
-              dummy_target_info.occupied = false;
+
+              dummy_target_info.potential_target = 1;
+
+              if(map_.data.at( j * map_.info.width + i) == 0)
+              {
+                target_num_++;
+                dummy_target_info.occupied = false;
+              }
+            }
+            // the given position lies on the perimeter
+            if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0)
+            {
+              dummy_target_info.potential_target = 0;
+
+              if(map_.data.at( j * map_.info.width + i) == 0)
+              {
+                dummy_target_info.occupied = false;
+              }
             }
           }
           // save the target information
@@ -361,7 +374,8 @@ void sensor_placement_node::initializePSO()
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      // set map, area of interest, targets and open angles for each particle
+      // set map, area of interest, forbidden area, targets and open angles for each particle
+      particle_swarm_.at(i).setForbiddenArea(forbidden_poly_);    //--
       particle_swarm_.at(i).setMap(map_);
       particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
       particle_swarm_.at(i).setOpenAngles(open_angles_);
@@ -618,7 +632,7 @@ void sensor_placement_node::publishPolygon()
 {
 
   poly_pub_.publish(poly_);
-  my_poly_pub_.publish(my_poly_);
+  forbidden_poly_pub_.publish(forbidden_poly_);
 
 }
 

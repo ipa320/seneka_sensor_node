@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2013
  *
- * Fraunhofer Institute for Manufacturing Engineering  
+ * Fraunhofer Institute for Manufacturing Engineering
  * and Automation (IPA)
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -10,9 +10,9 @@
  * Project name: SeNeKa
  * ROS stack name: seneka
  * ROS package name: sensor_placement
- *                
+ *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *      
+ *
  * Author: Florian Mirus, email:Florian.Mirus@ipa.fhg.de
  *
  * Date of creation: April 2013
@@ -27,23 +27,23 @@
  *   * Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of the Fraunhofer Institute for Manufacturing 
+ *   * Neither the name of the Fraunhofer Institute for Manufacturing
  *     Engineering and Automation (IPA) nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License LGPL as 
- * published by the Free Software Foundation, either version 3 of the 
+ * it under the terms of the GNU Lesser General Public License LGPL as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License LGPL for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License LGPL along with this program. 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License LGPL along with this program.
  * If not, see <http://www.gnu.org/licenses/>.
  *
  ****************************************************************/
@@ -73,7 +73,7 @@ particle::particle()
   // initialize coverage matrix
 
   // initialize sensor array with as many entries as specified by sensors_num_
-  
+
 }
 
 // constructor with arguments
@@ -199,6 +199,12 @@ void particle::setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly)
   area_of_interest_ = new_poly;
 }
 
+// function that sets forbidden area --
+void particle::setForbiddenArea(const geometry_msgs::PolygonStamped & new_forbidden_area)
+{
+ forbidden_poly_ = new_forbidden_area;
+}
+
 // function that sets the opening angles for each sensor in the particle
 bool particle::setOpenAngles(std::vector<double> new_angles)
 {
@@ -245,13 +251,13 @@ void particle::placeSensorsRandomlyOnPerimeter()
 
     if(edge_ind < (area_of_interest_.polygon.points.size() - 1))
       successor = edge_ind++;
-    
+
     t = randomNumber(0,1);
 
     // get random Pose on perimeter of the area of interest specified by a polygon
     randomPose.position.x = area_of_interest_.polygon.points.at(edge_ind).x
                           + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x);
-    randomPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y 
+    randomPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y
                           + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y);
     randomPose.position.z = 0;
 
@@ -415,7 +421,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     updateTargetsInfo(i);
   }
   // calculate new coverage
-  calcCoverage(); 
+  calcCoverage();
 }
 
 // function to update the targets_with_info variable
@@ -440,10 +446,10 @@ void particle::updateTargetsInfo(size_t sensor_index)
   double y_max = mapToWorldY(map_.info.height, map_);
 
   // initialize index variables
-  uint32_t top_index; 
-  uint32_t left_index; 
-  uint32_t bottom_index; 
-  uint32_t right_index; 
+  uint32_t top_index;
+  uint32_t left_index;
+  uint32_t bottom_index;
+  uint32_t right_index;
 
   // initialize sensor_kite to approximate the sensors' FOV
   geometry_msgs::Polygon sensor_kite;
@@ -491,16 +497,16 @@ void particle::updateTargetsInfo(size_t sensor_index)
   // get bounding box around the sensors' FOV
   geometry_msgs::Polygon bounding_box = getBoundingBox2D(sensor_kite, map_);
 
-  // go through bounding box and update only the targets_with_info within 
-    
+  // go through bounding box and update only the targets_with_info within
+
   // first point of polygon contains x_min and y_min, 3rd contains x_max and y_max
   worldToMap2D(bounding_box.points.at(0), map_, left_index, top_index);
   worldToMap2D(bounding_box.points.at(2), map_, right_index, bottom_index);
 
   for(uint32_t y = top_index; y < bottom_index; y++ )
-  { 
+  {
     for (uint32_t x = left_index; x < right_index; x++)
-    { 
+    {
 
       // now check every potential target in the sensors' bounding box
       if(targets_with_info_.at(y * map_.info.width + x).potential_target == 1)
@@ -533,8 +539,8 @@ void particle::updateTargetsInfo(size_t sensor_index)
           }
         }
       }
-    } 
-  } 
+    }
+  }
 }
 
 // function to calculate the actual  and personal best coverage
@@ -550,7 +556,7 @@ void particle::calcCoverage()
     pers_best_coverage_ = coverage_;
     pers_best_multiple_coverage_ = multiple_coverage_;
     pers_best_ = sensors_;
-    
+
   }
   else
   {
@@ -559,7 +565,7 @@ void particle::calcCoverage()
       pers_best_coverage_ = coverage_;
       pers_best_multiple_coverage_ = multiple_coverage_;
       pers_best_ = sensors_;
-    
+
     }
   }
 }
@@ -617,7 +623,7 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
   dummy_pose2D.x = new_pose_candidate.position.x;
   dummy_pose2D.y = new_pose_candidate.position.y;
   dummy_pose2D.theta = tf::getYaw(new_pose_candidate.orientation);
-  
+
   if(pointInPolygon(dummy_pose2D, area_of_interest_.polygon) == -1)
   {
     // the pose candidate is not within the area of interest
@@ -625,29 +631,38 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
   }
   else
   {
-    pose_x_index = worldToMapX(new_pose_candidate.position.x, map_);
-    pose_y_index = worldToMapY(new_pose_candidate.position.y, map_);
+    // checking if pose candidate is within the forbidden area or not
+    if (pointInPolygon(dummy_pose2D, forbidden_poly_.polygon) == -1)
+    {
+      // the pose candidate is not within the forbidden area, so we can continue
+      pose_x_index = worldToMapX(new_pose_candidate.position.x, map_);
+      pose_y_index = worldToMapY(new_pose_candidate.position.y, map_);
 
-    if(pose_y_index * map_.info.width + pose_x_index >= targets_with_info_.size())
-    {
-      // indices are out of bounds
-      result = false;
-    }
-    else
-    {
-      if(targets_with_info_.at(pose_y_index * map_.info.width + pose_x_index).occupied)
+      if(pose_y_index * map_.info.width + pose_x_index >= targets_with_info_.size())
       {
-        // the pose candidate is within the area of interest 
-        // but the desired position is occupied
+        // indices are out of bounds
         result = false;
       }
       else
       {
-        // the pose candidate was accepted
-        result = true;
+        if(targets_with_info_.at(pose_y_index * map_.info.width + pose_x_index).occupied)
+        {
+          // the pose candidate is within the area of interest
+          // but the desired position is occupied
+          result = false;
+        }
+        else
+        {
+          // the pose candidate was accepted
+          result = true;
+        }
       }
     }
-
+    else
+    {
+      // the pose candidate is within the forbidden area
+      result = false;
+    }
   }
 
   return result;
@@ -753,7 +768,7 @@ double particle::intersectionCalculation(double v1, double v2, double x1, double
 {
   // initialize workspace
   double result = 0;
-  // without loss of generality we assume v1 to be nonzero 
+  // without loss of generality we assume v1 to be nonzero
   if(floor(x2*v1 - x1*v2) > 0.01)
   {
     result = (y1 / v1) - (x1 / v1)*( (y2 - y1 * (v2 / v1) ) / (x2 - x1 * (v2 / v1)) );
@@ -775,7 +790,7 @@ visualization_msgs::MarkerArray particle::getVisualizationMarkers()
     // copy over all markers
     for (unsigned int i = 0; i < tmp.markers.size(); i++)
       array.markers.push_back(tmp.markers.at(i));
-    
+
     id++;
   }
 

@@ -102,8 +102,8 @@ private:
   geometry_msgs::PolygonStamped area_of_interest_;
   geometry_msgs::PolygonStamped poly_;
 
-  //test
-  geometry_msgs::PolygonStamped my_poly_;
+  // polygon for forbidden area --
+  geometry_msgs::PolygonStamped forbidden_poly_;
 
   // number of sensors
   int sensor_num_;
@@ -173,7 +173,8 @@ public:
   ros::Publisher marker_array_pub_;
   ros::Publisher map_pub_, map_meta_pub_;
 
-  ros::Publisher my_poly_pub_;
+  // declaration of publisher for the forbidden area --
+  ros::Publisher forbidden_poly_pub_;
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
