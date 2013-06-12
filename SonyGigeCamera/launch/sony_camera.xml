@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- start  -->
+  <node name="SonyGigeCamera" pkg="SonyGigeCamera" type="SonyGigeCamera" respawn="true" output="screen" >
+    <rosparam file="$(find SonyGigeCamera)/config/sony_camera.yaml" command="load"/>
+  </node>
+
+</launch>
