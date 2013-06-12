@@ -138,7 +138,8 @@ public:
     bool titleText(seneka_srv::titleText::Request &req,
                        seneka_srv::titleText::Response &res);
 
-    ros::NodeHandle nh;
+    std::string camera_ip_address;
+    ros::NodeHandle nh,  pnh_;
     ros::ServiceServer zoom_service_, focus_service_,videoModeNext_service_,
     focusPosition_servie_, focusNearLimit_service_, infraredCutFilterAuto_service,
     infraredCutFilter_service,pictureEffect_service, noiseReduction_service,

@@ -11,7 +11,7 @@
 *****************************************************************
 *
 *
-* Project name: SENEKA
+* Project name: SeNeKa
 *
 * ROS stack name: seneka
 *
@@ -78,7 +78,7 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh){
 
     lSize = 0;
     width_, height_ = 0;
-
+    pnh_ = ros::NodeHandle("~");
     // Get device parameters need to control streaming
     lDeviceParams = lDevice.GetGenParameters();
 
@@ -124,6 +124,14 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh){
     // advertise  titleText service
     titleText_service =  nh.advertiseService("set_titleText",&Sony_Camera_Node::titleText, this);
 
+
+   // read parameter: camera_ip_address
+
+    if(!pnh_.hasParam("camera_ip_address"))
+    ROS_WARN("Checking default location (/SonyGigeCamera/launch) for initial ip_address parameter.");
+    pnh_.param("camera_ip_address", camera_ip_address, std::string("192.168.0.1"));
+
+
     //connect with the camera device
     connectCamera();
 
@@ -144,7 +152,9 @@ Sony_Camera_Node::~Sony_Camera_Node(){
 
 void Sony_Camera_Node::connectCamera(){
 
-    PvString address("192.168.0.1");
+    //PvString address("192.168.0.1");
+    PvString address = camera_ip_address.c_str();
+
 
     printf( "\n1. Connecting to the device SonyHD Camera..." );
     PvResult lResult1 = lDevice.Connect( address, PvAccessControl );
@@ -160,8 +170,8 @@ void Sony_Camera_Node::connectCamera(){
 
 
 void Sony_Camera_Node::startStreaming(){
-
-    PvString address("192.168.0.1");
+    PvString address = camera_ip_address.c_str();
+   // PvString address("192.168.0.1");
     // Negotiate streaming packet size
     lDevice.NegotiatePacketSize();
 
