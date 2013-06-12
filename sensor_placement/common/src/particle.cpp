@@ -199,7 +199,7 @@ void particle::setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly)
   area_of_interest_ = new_poly;
 }
 
-// function that sets forbidden area --
+// function that sets forbidden area
 void particle::setForbiddenArea(const geometry_msgs::PolygonStamped & new_forbidden_area)
 {
  forbidden_poly_ = new_forbidden_area;
