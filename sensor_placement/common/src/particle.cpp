@@ -255,6 +255,7 @@ void particle::placeSensorsRandomlyOnPerimeter()
     t = randomNumber(0,1);
 
     // get random Pose on perimeter of the area of interest specified by a polygon
+    // CAUTION: possibly needed to be modified to check for forbidden area
     randomPose.position.x = area_of_interest_.polygon.points.at(edge_ind).x
                           + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x);
     randomPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y
@@ -263,7 +264,10 @@ void particle::placeSensorsRandomlyOnPerimeter()
 
     randomPose.orientation = tf::createQuaternionMsgFromYaw(randomNumber(-PI,PI));
 
+    if (newPositionAccepted(randomPose))     //additional check required to avoid placement in forbidden area
+    {
     sensors_.at(i).setSensorPose(randomPose);
+    }
 
     // update the target information
     updateTargetsInfo(i);
@@ -543,7 +547,7 @@ void particle::updateTargetsInfo(size_t sensor_index)
   }
 }
 
-// function to calculate the actual  and personal best coverage
+// function to calculate the actual and personal best coverage
 void particle::calcCoverage()
 {
 
