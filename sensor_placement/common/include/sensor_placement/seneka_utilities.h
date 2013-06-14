@@ -151,6 +151,25 @@ namespace seneka_utilities
   // returns 8 points, first four are lower plane
   geometry_msgs::Polygon getBoundingBox3D(const geometry_msgs::Polygon &polygon, const nav_msgs::OccupancyGrid &map);
 
+  /* ----------------------------------- */
+  /* --------- raytracing -------------- */
+  /* ----------------------------------- */
+  //function to raytrace between two cells/positions
+  //returns a vector of the relative positions of cells the ray passes through
+  std::vector<geometry_msgs::Point32> raytraceLine(int end_cell_x, int end_cell_y, int start_cell_x = 0, int start_cell_y = 0);
+
+  //function to raytrace a circle
+  //returns a vector of the relative positions of cells the ray passes through
+  std::vector<geometry_msgs::Point32> raytraceCircle(int radius_in_cells);
+
+  //helper function for raytraceCircle to add cell postion and its 7 mirrors to the vectors
+  void addCircleCells(std::vector< std::vector<geometry_msgs::Point32> >& octants, int x, int y);
+
+  //function to create a lookup table of all cells inside a circle
+  //returns a 2D vector with all rays necessary for all cells inside a circle
+  //each ray is a vector of cells
+  //lookuptable[2][3] is the relativ position of the third cell in the second ray
+  std::vector< std::vector<geometry_msgs::Point32> > createLookupTableCircle(int radius_in_cells);
 }; // end namespace
 
 #endif

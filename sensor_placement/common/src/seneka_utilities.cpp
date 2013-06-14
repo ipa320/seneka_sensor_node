@@ -479,6 +479,199 @@ namespace seneka_utilities
     return out_poly;
   }
 
+  /* ----------------------------------- */
+  /* --------- raytracing -------------- */
+  /* ----------------------------------- */
 
+//function to raytrace between two cells/positions
+//returns a vector of the relative positions of cells the ray passes through
+std::vector<geometry_msgs::Point32> raytraceLine(int end_cell_x, int end_cell_y, int start_cell_x, int start_cell_y)
+{
+  //absolute distances
+  unsigned int dx = std::abs(end_cell_x - start_cell_x);
+  unsigned int dy = std::abs(end_cell_y - start_cell_y);
+
+  //number of cells in the ray is fix due to 4-connectivity
+  unsigned int number_of_points = dx+dy;
+
+  //all cells in the ray
+  std::vector<geometry_msgs::Point32> ray_points;
+
+  //increase or decrease x,y?
+  int x_inc, y_inc;
+
+  if(start_cell_x < end_cell_x)
+    x_inc = 1;
+  else
+    x_inc = -1;
+
+  if(start_cell_y < end_cell_y)
+    y_inc = 1;
+  else
+    y_inc = -1;
+
+  //current cell
+  int x = start_cell_x;
+  int y = start_cell_y;
+
+  //bresenham errors
+  int error = 0;
+  int e_x, e_y;
+
+  //add first cell
+  geometry_msgs::Point32 first_cell;
+  first_cell.x = x;
+  first_cell.y = y;
+  first_cell.z = 0;
+
+  ray_points.push_back(first_cell);
+
+  //make 1 step in either x or y direction
+  for(unsigned int i=0; i<number_of_points; i++)
+  {
+    e_x = error - dx;
+    e_y = error + dy;
+
+    if(std::abs(e_y) < std::abs(e_x))
+      //error is smaller if moving in x direction
+    {
+      x += x_inc;
+      error = e_y;
+    }
+    else
+      //error is smaller moving in y direction
+    {
+      y += y_inc;
+      error = e_x;
+    }
+
+    //add current cell
+    geometry_msgs::Point32 current_cell;
+    current_cell.x = x;
+    current_cell.y = y;
+    current_cell.z = 0;
+
+    ray_points.push_back(current_cell);
+  }
+
+  return ray_points;
+}
+
+//function to raytrace a circle
+//returns a vector of the relative positions of cells the ray passes through
+std::vector<geometry_msgs::Point32> raytraceCircle(int radius_in_cells)
+{
+  //vector storing the circle cells divided in eight parts of the circle due to symmetry
+  std::vector< std::vector<geometry_msgs::Point32> > octants;
+  octants.resize(8);
+
+  int x,y;
+  int error;
+
+  x = radius_in_cells;
+  y = 0;
+  error = 1 - radius_in_cells;
+
+  while(x >= y)
+  {
+    //add current cell and mirrors to the vectors
+    addCircleCells(octants,x,y);
+
+    //go one cell higher
+    y++;
+
+    if(error < 0)
+    {
+      error += y * 2 + 1;
+    }
+    else
+    {
+      x--;
+      error += 2 * (y - x + 1);
+
+      //if x is decreased, also add the cell next to it to ensure 4-connectivity
+      addCircleCells(octants,x+1,y); 
+    } 
+  }
+
+  //final vector for all cells of the circle in correct order
+  std::vector<geometry_msgs::Point32> circle_cells;
+
+  //for every octant
+  for(unsigned int i=0; i<8; i++)
+  {
+    if(i%2 != 0)
+    {
+      //flip every second octant vector
+      std::reverse(octants[i].begin(),octants[i].end());
+    }
+
+    //delete last element and add to final vector
+    octants[i].pop_back();
+    circle_cells.insert(circle_cells.end(), octants[i].begin(), octants[i].end());
+  }
+
+  return circle_cells;
+}
+
+//helper function for raytraceCircle to add cell postion and its 7 mirrors to the vectors
+void addCircleCells(std::vector< std::vector<geometry_msgs::Point32> >& octants, int x, int y)
+{
+  //one cell in each octant
+  geometry_msgs::Point32 cells[8];
+
+  cells[0].x = x;
+  cells[0].y = y;
+
+  cells[1].x = y;
+  cells[1].y = x;
+
+  cells[2].x = -y;
+  cells[2].y = x;
+
+  cells[3].x = -x;
+  cells[3].y = y;
+
+  cells[4].x = -x;
+  cells[4].y = -y;
+
+  cells[5].x = -y;
+  cells[5].y = -x;
+
+  cells[6].x = y;
+  cells[6].y = -x;
+
+  cells[7].x = x;
+  cells[7].y = -y;
+
+  for(unsigned int i=0; i<8; i++)
+  {
+    cells[i].z = 0;
+    octants[i].push_back(cells[i]);
+  } 
+}
+
+//function to create a lookup table of all cells inside a circle
+//returns a 2D vector with all rays necessary for all cells inside a circle
+//each ray is a vector of cells
+//lookuptable[2][3] is the relativ position of the third cell in the second ray
+std::vector< std::vector< geometry_msgs::Point32> > createLookupTableCircle(int radius_in_cells)
+{
+  //get cells on the circle
+  std::vector<geometry_msgs::Point32> circle = raytraceCircle(radius_in_cells);
+  unsigned int number_of_rays = circle.size();
+
+  //final lookup-table containing all rays
+  std::vector< std::vector<geometry_msgs::Point32> > lookup_table_complete_circle;
+  lookup_table_complete_circle.resize(number_of_rays);
+
+  //raytrace to every cell on the circle
+  for(unsigned int i=0; i<number_of_rays; i++)
+  {
+    lookup_table_complete_circle[i] = raytraceLine(circle[i].x,circle[i].y);
+  }
+
+  return lookup_table_complete_circle;
+}
 
 } // end namespace
