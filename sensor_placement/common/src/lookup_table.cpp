@@ -13,14 +13,16 @@ struct Point2D {
 void addCirclePoints(std::vector< std::vector<Point2D> >& octants, int x, int y);
 std::vector<Point2D> bresenhamCircle(int radius_in_cells);
 std::vector<Point2D> bresenhamLine(int x_end, int y_end, int x_start = 0, int y_start = 0);
-std::vector< std::vector<Point2D> > pointsInsideCircle(int radius);
+std::vector< std::vector<Point2D> > lookupTableCircle(int radius);
+std::vector< std::vector<Point2D> > lookupTableAngles(int radius, double angle1, double angle2);
 
 int main()
 {
-	//test with circle of radius 4:
+	//test with circle of radius 10:
 
-	//get points
-	std::vector< std::vector<Point2D> > all_points = pointsInsideCircle(4);
+	//get lookup table
+	//std::vector< std::vector<Point2D> > all_points = lookupTableCircle(10);
+	std::vector< std::vector<Point2D> > all_points = lookupTableAngles(10,0,90);
 
 	//output: one line for each ray
 	for(unsigned int i=0; i<all_points.size(); i++)
@@ -167,7 +169,7 @@ std::vector<Point2D> bresenhamLine(int x_end, int y_end, int x_start, int y_star
 }
 
 //returns a vector of rays to all points on the circle with the given radius
-std::vector< std::vector<Point2D> > pointsInsideCircle(int radius)
+std::vector< std::vector<Point2D> > lookupTableCircle(int radius)
 {
 	//get points on the circle
 	std::vector<Point2D> circle = bresenhamCircle(radius);
@@ -186,6 +188,30 @@ std::vector< std::vector<Point2D> > pointsInsideCircle(int radius)
 	return points_inside_circle;
 }
 
+//returns a lookup table ind form a 2D vector containing all rays in between angle1 and angle2 (degree)
+std::vector< std::vector<Point2D> > lookupTableAngles(int radius, double angle1, double angle2)
+{
+	//create lookup table for complete circle
+	std::vector< std::vector<Point2D> > complete_circle = lookupTableCircle(radius);
+	int number_of_rays = complete_circle.size();
 
+	//calculate the rays according to the angles
+	double degrees_per_ray = 360.0 / number_of_rays;
+	int ray1 = round(angle1 / degrees_per_ray);
+	int ray2 = round(angle2 / degrees_per_ray);
+
+	//DEBUG BEGIN
+	std::cout << "number_of_rays: " << number_of_rays << std::endl;
+	std::cout << "degrees_per_ray: " << degrees_per_ray << std::endl;
+	std::cout << "ray1: " << ray1 << std::endl;
+	std::cout << "ray2: " << ray2 << std::endl;
+	//DEBUG END
+
+	//create lookup table and fill with the relevant rays
+	std::vector< std::vector<Point2D> > lookup_table;
+	lookup_table.insert(lookup_table.begin(), complete_circle.begin()+ray1, complete_circle.begin()+ray2);
+
+	return lookup_table;
+}
 
 
