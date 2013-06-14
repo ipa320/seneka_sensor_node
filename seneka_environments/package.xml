@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<package>
+  <name>seneka_environments</name>
+  <version>0.0.0</version>
+  <description>The seneka_environments package holds maps for the different environments used in the SeNeKA-Project at Fraunhofer IPA.</description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag --> 
+  <maintainer email="mig@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
+  <maintainer email="frm@ipa.fraunhofer.de">Florian Mirus</maintainer>
+
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <!-- Commonly used license strings: -->
+  <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
+  <license>LGPL</license>
+
+
+  <!-- Url tags are optional, but mutiple are allowed, one per tag -->
+  <!-- Optional attribute type can be: website, bugtracker, or repository -->
+  <!-- Example: -->
+  <!-- <url type="website">http://ros.org/wiki/seneka_environments</url> -->
+
+
+  <!-- Author tags are optional, mutiple are allowed, one per tag -->
+  <!-- Authors do not have to be maintianers, but could be -->
+  <author email="mig@ipa.fraunhofer.de">Matthias Gruhler</author>
+  <author email="frm@ipa.fraunhofer.de">Florian Mirus</author>  
+
+
+  <!-- The *_depend tags are used to specify dependencies -->
+  <!-- Dependencies can be catkin packages or system dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>
