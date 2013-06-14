@@ -12,7 +12,7 @@ struct Point2D {
 //function declarations
 void addCirclePoints(std::vector< std::vector<Point2D> >& octants, int x, int y);
 std::vector<Point2D> bresenhamCircle(int radius_in_cells);
-std::vector<Point2D> bresenhamLine(int x_end, int y_end, int x_start, int y_start);
+std::vector<Point2D> bresenhamLine(int x_end, int y_end, int x_start = 0, int y_start = 0);
 std::vector< std::vector<Point2D> > pointsInsideCircle(int radius);
 
 int main()
@@ -106,7 +106,7 @@ std::vector<Point2D> bresenhamCircle(int radius_in_cells)
 
 //returns a vector of points which are travelled by a ray between the start and end point
 //uses bresenham algorithm with 4-connectivity
-std::vector<Point2D> bresenhamLine(int x_end, int y_end, int x_start = 0, int y_start = 0)
+std::vector<Point2D> bresenhamLine(int x_end, int y_end, int x_start, int y_start)
 {
 	//absolute distances
 	unsigned int dx = std::abs(x_end - x_start);
