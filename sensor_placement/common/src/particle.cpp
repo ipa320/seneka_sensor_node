@@ -238,36 +238,58 @@ void particle::setRange(double new_range)
 void particle::placeSensorsRandomlyOnPerimeter()
 {
   // initialize workspace
+  bool pose_accepted=false;
   size_t edge_ind = 0;
   size_t successor = 0;
   double t = 0;
   geometry_msgs::Pose randomPose;
+  geometry_msgs::Pose2D rand_pose2D;
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
-    // get index of a random edge of the area of interest specified by a polygon
-    edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size() -1);
-    successor = 0;
-
-    if(edge_ind < (area_of_interest_.polygon.points.size() - 1))
-      successor = edge_ind++;
-
-    t = randomNumber(0,1);
-
-    // get random Pose on perimeter of the area of interest specified by a polygon
-    // CAUTION: possibly needed to be modified to check for forbidden area
-    randomPose.position.x = area_of_interest_.polygon.points.at(edge_ind).x
-                          + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x);
-    randomPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y
-                          + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y);
-    randomPose.position.z = 0;
-
-    randomPose.orientation = tf::createQuaternionMsgFromYaw(randomNumber(-PI,PI));
-
-    if (newPositionAccepted(randomPose))     //additional check required to avoid placement in forbidden area
+    while(!pose_accepted)
     {
-    sensors_.at(i).setSensorPose(randomPose);
+      // get index of a random edge of the area of interest specified by a polygon
+      edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size() -1);
+      successor = 0;
+
+      if(edge_ind < (area_of_interest_.polygon.points.size() - 1))
+        successor = edge_ind++;
+
+      t = randomNumber(0,1);
+
+      // get random Pose on perimeter of the area of interest specified by a polygon
+      // CAUTION: possibly needed to be modified to check for forbidden area
+      randomPose.position.x = area_of_interest_.polygon.points.at(edge_ind).x
+                            + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x);
+      randomPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y
+                            + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y);
+      randomPose.position.z = 0;
+
+      randomPose.orientation = tf::createQuaternionMsgFromYaw(randomNumber(-PI,PI));
+
+       tf::Quaternion q;
+       q = tf::createQuaternionFromYaw(randomNumber(-PI,PI));
+       q.normalize();
+       tf::quaternionTFToMsg(q,randomPose.orientation);
+
+      rand_pose2D.x = randomPose.position.x;
+      rand_pose2D.y = randomPose.position.y;
+      rand_pose2D.theta = tf::getYaw(randomPose.orientation);
+
+      if (pointInPolygon(rand_pose2D, forbidden_poly_.polygon) == -1)
+      {
+        //given point in not within forbidden area
+        sensors_.at(i).setSensorPose(randomPose);
+        pose_accepted=true;
+      }
+      else
+      {
+        pose_accepted=false;
+
+      }
     }
+
 
     // update the target information
     updateTargetsInfo(i);
