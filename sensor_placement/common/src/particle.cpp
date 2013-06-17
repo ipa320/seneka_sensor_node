@@ -145,7 +145,6 @@ std::vector<geometry_msgs::Pose> particle::getPersonalBestPositions()
   return result;
 }
 
-
 // function to get personal best coverage
 double particle::getBestCoverage()
 {
@@ -249,6 +248,7 @@ void particle::placeSensorsRandomlyOnPerimeter()
   {
     do
     {
+      // loop until a random position is found which is NOT in the forbidden area
       // get index of a random edge of the area of interest specified by a polygon
       edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size() -1);
       successor = 0;
@@ -270,17 +270,16 @@ void particle::placeSensorsRandomlyOnPerimeter()
       rand_pose2D.x = randomPose.position.x;
       rand_pose2D.y = randomPose.position.y;
       rand_pose2D.theta = tf::getYaw(randomPose.orientation);
+
       if (pointInPolygon(rand_pose2D, forbidden_poly_.polygon) == -1)
       {
-        //given point in not within forbidden area
+        //found a point which is not in the forbidden area
         sensors_.at(i).setSensorPose(randomPose);
         pose_accepted=true;
       }
-
       else
       {
         pose_accepted=false;
-
       }
     }while(!pose_accepted);
 
@@ -531,7 +530,7 @@ void particle::updateTargetsInfo(size_t sensor_index)
       if(targets_with_info_.at(y * map_.info.width + x).potential_target == 1)
       {
         // now we found a target
-        if(!targets_with_info_.at(y * map_.info.width + x).occupied)
+        if(!targets_with_info_.at(y * map_.info.width + x).forbidden)
         {
           // now we found a non-occupied target, so check the coverage
           if(checkCoverage(sensors_.at(sensor_index), targets_with_info_.at(y * map_.info.width + x).world_pos))
@@ -712,9 +711,9 @@ int particle::findFarthestUncoveredTarget(size_t sensor_index)
 
   for(size_t i = 0; i < targets_with_info_.size(); i++)
   {
-    if( (!targets_with_info_.at(i).covered) && (targets_with_info_.at(i).potential_target == 1) )
+    if( (!targets_with_info_.at(i).covered) && (targets_with_info_.at(i).potential_target == 1) && (!targets_with_info_.at(i).forbidden) )
     {
-      // we found an uncovered target, check if this is further away from the sensor than the current maximum
+      // we found an uncovered target which is not forbidden, check if this is further away from the sensor than the current maximum
 
       // calculate vector between sensor and target
       vec_sensor_target.x = targets_with_info_.at(i).world_pos.x - sensor_pose.position.x;

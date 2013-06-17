@@ -257,17 +257,22 @@ bool sensor_placement_node::getTargets()
 
     if(poly_received_ == false)
     {
-      // REMINDER: add logic for forbidden area here too --
       // if no polygon was specified, we consider the non-occupied grid cells as targets
       for(unsigned int i = 0; i < map_.info.width; i++)
       {
         for(unsigned int j = 0; j < map_.info.height; j++)
         {
+          // calculate world coordinates from map coordinates of given target
+          geometry_msgs::Pose2D world_Coord;
+          world_Coord.x = mapToWorldX(i, map_);
+          world_Coord.y = mapToWorldY(j, map_);
+          world_Coord.theta = 0;
+
           dummy_target_info.world_pos.x = mapToWorldX(i, map_);
           dummy_target_info.world_pos.y = mapToWorldY(j, map_);
           dummy_target_info.world_pos.z = 0;
 
-          dummy_target_info.forbidden = false;
+          dummy_target_info.forbidden = false;    //all targets are allowed unless found in forbidden area
           dummy_target_info.occupied = true;
           dummy_target_info.covered = false;
           dummy_target_info.multiple_covered = false;
@@ -275,6 +280,11 @@ bool sensor_placement_node::getTargets()
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
+            if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
+            {
+              // the given position is on the forbidden area
+              dummy_target_info.forbidden = true;
+            }
             dummy_target_info.occupied = false;
             dummy_target_info.potential_target = 1;
             target_num_++;
@@ -300,54 +310,18 @@ bool sensor_placement_node::getTargets()
           dummy_target_info.world_pos.y = mapToWorldY(j, map_);
           dummy_target_info.world_pos.z = 0;
 
-          dummy_target_info.forbidden = false;    //all targets are allowed unless found in forbidden area --
+          dummy_target_info.forbidden = false;    //all targets are allowed unless found in forbidden area
           dummy_target_info.occupied = true;
           dummy_target_info.covered = false;
           dummy_target_info.multiple_covered = false;
           dummy_target_info.potential_target = -1;
 
-
-/*        //forbidden area not considered as potential target
-
-          // if given position is in or on the forbidden area, mark the position as forbidden
-          if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
-          {
-            dummy_target_info.forbidden = true;
-          }
-          else
-          {
-            // the given position lies withhin the polygon
-            if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
-            {
-
-              dummy_target_info.potential_target = 1;
-
-              if(map_.data.at( j * map_.info.width + i) == 0)
-              {
-                target_num_++;
-                dummy_target_info.occupied = false;
-              }
-            }
-            // the given position lies on the perimeter
-            if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0)
-            {
-              dummy_target_info.potential_target = 0;
-
-              if(map_.data.at( j * map_.info.width + i) == 0)
-              {
-                dummy_target_info.occupied = false;
-              }
-            }
-          }
-*/
-
-          //forbidden area considered as potential target too
+          // the given position lies withhin the polygon
           if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
           {
-            // the given position lies withhin the polygon
             if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
             {
-              // if given position is in or on the forbidden area, mark the position as forbidden
+              // the given position is on the forbidden area
               dummy_target_info.forbidden = true;
             }
             dummy_target_info.potential_target = 1;
@@ -363,6 +337,7 @@ bool sensor_placement_node::getTargets()
           {
             if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
             {
+              // the given position is on the forbidden area
               dummy_target_info.forbidden = true;
             }
             dummy_target_info.potential_target = 0;

@@ -171,7 +171,7 @@ public:
   // function that sets the area of interest
   void setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly);
 
-// function that sets forbidden area
+  // function that sets forbidden area
   void setForbiddenArea(const geometry_msgs::PolygonStamped & new_forbidden_area);
 
   // function that sets the opening angles for each sensor in the particle
