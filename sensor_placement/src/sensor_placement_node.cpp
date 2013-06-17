@@ -307,12 +307,47 @@ bool sensor_placement_node::getTargets()
           dummy_target_info.potential_target = -1;
 
 
-          // the given position lies withhin the polygon
+/*        //forbidden area not considered as potential target
+
+          // if given position is in or on the forbidden area, mark the position as forbidden
+          if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
+          {
+            dummy_target_info.forbidden = true;
+          }
+          else
+          {
+            // the given position lies withhin the polygon
+            if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
+            {
+
+              dummy_target_info.potential_target = 1;
+
+              if(map_.data.at( j * map_.info.width + i) == 0)
+              {
+                target_num_++;
+                dummy_target_info.occupied = false;
+              }
+            }
+            // the given position lies on the perimeter
+            if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0)
+            {
+              dummy_target_info.potential_target = 0;
+
+              if(map_.data.at( j * map_.info.width + i) == 0)
+              {
+                dummy_target_info.occupied = false;
+              }
+            }
+          }
+*/
+
+          //forbidden area considered as potential target too
           if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
           {
-            // if given position is in or on the forbidden area, mark the position as forbidden
+            // the given position lies withhin the polygon
             if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
             {
+              // if given position is in or on the forbidden area, mark the position as forbidden
               dummy_target_info.forbidden = true;
             }
             dummy_target_info.potential_target = 1;
@@ -337,6 +372,7 @@ bool sensor_placement_node::getTargets()
               dummy_target_info.occupied = false;
             }
           }
+
           // save the target information
           targets_with_info_.at(j * map_.info.width + i) = dummy_target_info;
         }
