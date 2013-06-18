@@ -98,6 +98,10 @@ protected:
   // sensor opening angles
   std::vector<double> open_angles_;
 
+  //NEW NEW NEW
+  //lookup table for raytracing
+  std::vector< std::vector<geometry_msgs::Point32> > lookup_table_;
+
 public:
 
   //destructor
@@ -128,6 +132,9 @@ public:
   // function to set sensor range
   virtual void setRange(double new_range) = 0;
 
+  // function to set the lookup table
+  virtual void setLookupTable(std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table) = 0;
+
   // ************************ getter functions ************************
 
   // function to get actual velocity
@@ -142,9 +149,12 @@ public:
   // function to get sensor opening angles
   virtual std::vector<double> getOpenAngles() = 0;
 
-  // function to set sensor range
+  // function to get sensor range
   virtual double getRange() = 0;
 
+  //NEW NEW NEW
+  // function to get the lookup table
+  virtual const std::vector< std::vector<geometry_msgs::Point32> >& getLookupTable() = 0;
 
   // ************************* help functions *************************
 
@@ -191,6 +201,9 @@ public:
   // function to set sensor range
   void setRange(double new_range);
 
+  //NEW NEW NEW
+  // function to set the lookup table
+  void setLookupTable(std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table);
 
   // ************************ getter functions ************************
 
@@ -206,10 +219,12 @@ public:
   // function to get sensor opening angles
   std::vector<double> getOpenAngles();
 
-  // function to set sensor range
+  // function to get sensor range
   double getRange();
 
-  // ************************* help functions *************************
+  //NEW NEW NEW
+  // function to get the lookup table
+  const std::vector< std::vector<geometry_msgs::Point32> >& getLookupTable();
 
   // returns the visualization markers of the respective sensor model
   visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id);

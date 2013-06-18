@@ -175,7 +175,7 @@ void sensor_placement_node::getParams()
   {
     ROS_WARN("No parameter number_of_particles on parameter server. Using default [20]");
   }
-  pnh_.param("number_of_particles",particle_num_,20);
+  pnh_.param("number_of_particles",particle_num_,20); 
 
   if(!pnh_.hasParam("max_num_iterations"))
   {
@@ -312,6 +312,18 @@ void sensor_placement_node::initializePSO()
 
   // initialize dummy particle
   particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
+
+  //NEW NEW NEW
+  dummy_particle.setMap(map_);
+  dummy_particle.setAreaOfInterest(area_of_interest_);
+  dummy_particle.setOpenAngles(open_angles_);
+  dummy_particle.setRange(sensor_range_);
+  dummy_particle.setTargetsWithInfo(targets_with_info_, target_num_);
+
+  ROS_INFO_STREAM("creating lookup tables for dummy particle..");
+  dummy_particle.setLookupTable(sensor_range_);
+  ROS_INFO_STREAM("lookup tables created.");
+
   // initialize particle swarm with given number of particles containing given number of sensors
   particle_swarm_.assign(particle_num_,dummy_particle);
 
@@ -325,12 +337,12 @@ void sensor_placement_node::initializePSO()
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      // set map, area of interest, targets and open angles for each particle
-      particle_swarm_.at(i).setMap(map_);
-      particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
-      particle_swarm_.at(i).setOpenAngles(open_angles_);
-      particle_swarm_.at(i).setRange(sensor_range_);
-      particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
+      // // set map, area of interest, targets and open angles for each particle
+      // particle_swarm_.at(i).setMap(map_);
+      // particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
+      // particle_swarm_.at(i).setOpenAngles(open_angles_);
+      // particle_swarm_.at(i).setRange(sensor_range_);
+      // particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
       // initialize sensor poses randomly on perimeter
       particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
       // initialize sensor velocities randomly

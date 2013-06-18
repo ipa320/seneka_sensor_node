@@ -228,6 +228,21 @@ void particle::setRange(double new_range)
   }
 }
 
+//NEW NEW NEW
+//function to create and set a lookup table for raytracing for each sensor in the particle
+void particle::setLookupTable(double range)
+{
+  ROS_INFO_STREAM("DEBUG: particle::setLookupTable start");
+  int radius_in_cells = floor(range / map_.info.resolution);
+  std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table = createLookupTableCircle(radius_in_cells);
+
+  for(size_t i = 0; i < sensors_.size(); i++)
+  {
+    sensors_.at(i).setLookupTable(new_lookup_table);
+  }
+  ROS_INFO_STREAM("DEBUG: particle::setLookupTable end");
+}
+
 // function to place the sensors randomly on the perimeter
 void particle::placeSensorsRandomlyOnPerimeter()
 {
@@ -260,7 +275,9 @@ void particle::placeSensorsRandomlyOnPerimeter()
     sensors_.at(i).setSensorPose(randomPose);
 
     // update the target information
-    updateTargetsInfo(i);
+    //updateTargetsInfo(i);
+    //NEW NEW NEW
+    updateTargetsInfoRaytracing(i);
   }
   // calculate new coverage
   calcCoverage();
@@ -278,7 +295,9 @@ void particle::placeSensorsAtPos(geometry_msgs::Pose new_pose)
   for(size_t i = 0; i < sensors_.size(); i++)
   {
     sensors_.at(i).setSensorPose(new_pose);
-    updateTargetsInfo(i);
+    //updateTargetsInfo(i);
+    //NEW NEW NEW
+    updateTargetsInfoRaytracing(i);
   }
   calcCoverage();
 }
@@ -412,7 +431,9 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     sensors_.at(i).setSensorPose(new_pose);
 
     // update the target information
-    updateTargetsInfo(i);
+    //updateTargetsInfo(i);
+    //NEW NEW NEW
+    updateTargetsInfoRaytracing(i);
   }
   // calculate new coverage
   calcCoverage(); 
@@ -535,6 +556,91 @@ void particle::updateTargetsInfo(size_t sensor_index)
       }
     } 
   } 
+}
+
+//NEW NEW NEW
+//function to update the targets_with_info variable with raytracing (lookup table)
+void particle::updateTargetsInfoRaytracing(size_t sensor_index)
+{
+  unsigned int max_number_of_rays = sensors_.at(sensor_index).getLookupTable().size();
+  geometry_msgs::Pose sensor_pose = sensors_.at(sensor_index).getSensorPose();
+
+  std::vector<double> open_ang = sensors_.at(sensor_index).getOpenAngles();
+  double orientation = tf::getYaw(sensor_pose.orientation);
+
+  //get angles of sensor and keep them bewtween 0 and 2*PI
+  double angle1 = orientation - (open_ang.front() / 2);
+  if(angle1 >= 2*PI)
+    angle1 -= 2*PI;
+  if(angle1 < 0)
+    angle1 += 2*PI;
+
+  double angle2 = orientation + (open_ang.front() / 2);
+  if(angle2 >= 2*PI)
+    angle2 -= 2*PI;
+  if(angle2 < 0)
+    angle2 += 2*PI;
+
+  unsigned int ray_start = rayOfAngle(angle1, max_number_of_rays);
+  unsigned int ray_end = rayOfAngle(angle2, max_number_of_rays);
+
+  unsigned int number_of_rays_to_check;
+
+  //are the rays inbetween the beginning and end of the lookup table?
+  if(ray_end >= ray_start)
+    number_of_rays_to_check = ray_end - ray_start;
+  else
+    number_of_rays_to_check = max_number_of_rays - ray_start + ray_end + 1;
+
+  unsigned int rays_checked = 0;
+  unsigned int ray = ray_start;
+
+  while(rays_checked < number_of_rays_to_check)
+  {
+    for(unsigned int cell=0; cell < sensors_.at(sensor_index).getLookupTable().at(ray).size(); cell++)
+    {
+      //absolute x and y coordinates of the current cell
+      int x = sensor_pose.position.x + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).x;        
+      int y = sensor_pose.position.y + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).y;
+
+      //cell inside the area_of_interest and not occupied
+      if((targets_with_info_.at(y * map_.info.width + x).potential_target == 1) &&
+        (targets_with_info_.at(y * map_.info.width + x).occupied == false))
+      {
+        targets_with_info_.at(y * map_.info.width + x).covered_by_sensor.at(sensor_index) = true;
+
+        if(targets_with_info_.at(y * map_.info.width + x).covered == false)
+        {
+          // now the given target is covered by at least one sensor
+          targets_with_info_.at(y * map_.info.width + x).covered = true;
+          // increment the covered targets counter only if the given target is not covered by another sensor yet
+          covered_targets_num_++;
+        }
+        else
+        {
+          if(targets_with_info_.at(y * map_.info.width + x).multiple_covered == false)
+          {
+            // now the given target is covered by multiple sensors
+            targets_with_info_.at(y * map_.info.width + x).multiple_covered = true;
+          }            
+          multiple_coverage_++;
+        }
+      }
+      //cell outside of area_of_interest or occupied -> skip rest of this ray
+      else
+      {
+        break;
+      }
+    }
+    rays_checked++;
+    //reached end of circle -> set ray to 0
+    if(ray == (max_number_of_rays -1))
+    {
+      ray = 0;
+    }
+    else
+      ray++;
+  }
 }
 
 // function to calculate the actual  and personal best coverage
