@@ -197,6 +197,13 @@ void FOV_2D_model::setRange(double new_range)
   range_ = new_range;
 }
 
+//NEW NEW NEW
+// function to set the lookup table
+void FOV_2D_model::setLookupTable(std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table)
+{
+  lookup_table_ = new_lookup_table;
+}
+
 // function to get actual velocity
 geometry_msgs::Twist FOV_2D_model::getVelocity()
 {
@@ -220,10 +227,17 @@ std::vector<double> FOV_2D_model::getOpenAngles()
   return open_angles_;
 }
 
-// function to set sensor range
+// function to get sensor range
 double FOV_2D_model::getRange()
 {
   return range_;
+}
+
+//NEW NEW NEW
+// function to get the lookup table
+const std::vector< std::vector<geometry_msgs::Point32> >& FOV_2D_model::getLookupTable()
+{
+  return lookup_table_;
 }
 
 // returns the visualization markers of the respective sensor model
