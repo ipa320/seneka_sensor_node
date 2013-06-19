@@ -530,7 +530,7 @@ void particle::updateTargetsInfo(size_t sensor_index)
       if(targets_with_info_.at(y * map_.info.width + x).potential_target == 1)
       {
         // now we found a target
-        if(!targets_with_info_.at(y * map_.info.width + x).forbidden)
+        if(!targets_with_info_.at(y * map_.info.width + x).occupied)
         {
           // now we found a non-occupied target, so check the coverage
           if(checkCoverage(sensors_.at(sensor_index), targets_with_info_.at(y * map_.info.width + x).world_pos))
