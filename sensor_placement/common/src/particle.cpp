@@ -414,6 +414,9 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
   double p_best_angle = 0;
   double g_best_angle = 0;
   double new_angle = 0;
+  double dummy_angle = 0;
+
+  bool force_orientation_acceptance = false;
 
   int target_ind = -1;
 
@@ -522,12 +525,19 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
       new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
     }
 
-    while(!newOrientationAccepted(i, new_pose))
+    dummy_angle = new_angle;
+    while(( !newOrientationAccepted(i, new_pose) ) && (!force_orientation_acceptance))
     {
       // try next angle in 10/180*PI steps
       new_angle = new_angle + 0.1745;
       if(new_angle > PI)
         new_angle = new_angle - 2 * PI;
+
+      if( fabs(new_angle - dummy_angle) < 0.001)
+      {
+        new_angle = dummy_angle + PI/2;
+        force_orientation_acceptance = true;
+      }
       new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
     }
 
