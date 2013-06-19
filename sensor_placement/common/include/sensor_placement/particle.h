@@ -185,6 +185,9 @@ public:
   // function to place the sensors randomly on the perimeter
   void placeSensorsRandomlyOnPerimeter();
 
+  // function to initialize the sensors on the perimeter
+  void initializeSensorsOnPerimeter();
+
   // function to place all sensors at a given pose
   void placeSensorsAtPos(geometry_msgs::Pose new_pose);
 

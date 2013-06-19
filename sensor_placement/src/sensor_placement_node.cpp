@@ -388,7 +388,8 @@ void sensor_placement_node::initializePSO()
       particle_swarm_.at(i).setRange(sensor_range_);
       particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
       // initialize sensor poses randomly on perimeter
-      particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
+      //particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
+      particle_swarm_.at(i).initializeSensorsOnPerimeter();
       // initialize sensor velocities randomly
       particle_swarm_.at(i).initializeRandomSensorVelocities();
       // get calculated coverage
@@ -400,6 +401,11 @@ void sensor_placement_node::initializePSO()
         global_best_ = particle_swarm_.at(i);
       }
     }
+    // after the initialization step we're looking for a new global best solution 
+    getGlobalBest();
+
+    // publish the actual global best visualization
+    marker_array_pub_.publish(global_best_.getVisualizationMarkers());
   }
 }
 
