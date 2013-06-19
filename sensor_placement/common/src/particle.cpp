@@ -296,6 +296,108 @@ void particle::placeSensorsRandomlyOnPerimeter()
   }
 }
 
+// function to initialize the sensors on the perimeter
+void particle::initializeSensorsOnPerimeter()
+{
+  // initialize workspace
+  size_t edge_ind = 0;
+  size_t successor = 0;
+  double t = 0;
+  double alpha = 0;
+  geometry_msgs::Pose newPose;
+  geometry_msgs::Vector3 vec_sensor_dir;
+
+  // get bounding box of area of interest
+  geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, map_);
+  double x_min = bound_box.points.at(0).x;
+  double y_min = bound_box.points.at(0).y;
+
+  double x_max = bound_box.points.at(2).x;
+  double y_max = bound_box.points.at(2).y;
+
+  // get center of the area of interest
+  geometry_msgs::Point32 polygon_center = geometry_msgs::Point32();
+
+  polygon_center.x = (double) x_min + (x_max - x_min)/2;
+  polygon_center.y = (double) y_min + (y_max - y_min)/2;
+
+  for(size_t i = 0; i < sensors_.size(); i++)
+  {
+    if(i < area_of_interest_.polygon.points.size() )
+    {
+      // set new sensor pose as one of the corners of the area of interest
+      newPose.position.x = area_of_interest_.polygon.points.at(i).x;
+      newPose.position.y = area_of_interest_.polygon.points.at(i).y;
+      newPose.position.z = 0;
+
+      vec_sensor_dir.x = polygon_center.x - newPose.position.x;
+      vec_sensor_dir.y = polygon_center.y - newPose.position.y;
+      vec_sensor_dir.z = 0;
+
+      // get angle between desired sensor facing direction and x-axis
+      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
+
+      if(vec_sensor_dir.y < 0)
+        alpha = -alpha;
+
+      // get quaternion message for desired sensor facing direction
+      newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+
+      // set new sensor pose
+      sensors_.at(i).setSensorPose(newPose);
+
+      // update the target information
+      updateTargetsInfo(i);
+
+    }
+    else
+    {
+      // get index of a random edge of the area of interest specified by a polygon
+      edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size());
+      successor = 0;
+
+      if(edge_ind < (area_of_interest_.polygon.points.size() - 1))
+        successor = edge_ind++;
+      
+      t = randomNumber(0,1);
+
+      // get random Pose on perimeter of the area of interest specified by a polygon
+      newPose.position.x = area_of_interest_.polygon.points.at(edge_ind).x
+                            + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x);
+      newPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y 
+                            + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y);
+      newPose.position.z = 0;
+
+      vec_sensor_dir.x = polygon_center.x - newPose.position.x;
+      vec_sensor_dir.y = polygon_center.y - newPose.position.y;
+      vec_sensor_dir.z = 0;
+
+      // get angle between desired sensor facing direction and x-axis
+      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
+
+      if(vec_sensor_dir.y < 0)
+        alpha = -alpha;
+
+      // get quaternion message for desired sensor facing direction
+      newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+
+      // set new sensor pose
+      sensors_.at(i).setSensorPose(newPose);
+
+      // update the target information
+      updateTargetsInfo(i);
+    }
+  }
+  // calculate new coverage
+  calcCoverage();
+  if(coverage_ == 0)
+  {
+    pers_best_coverage_ = coverage_;
+    pers_best_multiple_coverage_ = multiple_coverage_;
+    pers_best_ = sensors_;
+  }
+}
+
 // function to place all sensors at a given pose
 void particle::placeSensorsAtPos(geometry_msgs::Pose new_pose)
 {
@@ -336,6 +438,9 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
   double p_best_angle = 0;
   double g_best_angle = 0;
   double new_angle = 0;
+  double dummy_angle = 0;
+
+  bool force_orientation_acceptance = false;
 
   int target_ind = -1;
 
@@ -345,6 +450,21 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
   geometry_msgs::Pose global_best_pose;
   geometry_msgs::Twist new_vel;
   geometry_msgs::Pose new_pose;
+  geometry_msgs::Vector3 vec_sensor_dir;
+
+  // get bounding box of area of interest
+  geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, map_);
+  double x_min = bound_box.points.at(0).x;
+  double y_min = bound_box.points.at(0).y;
+
+  double x_max = bound_box.points.at(2).x;
+  double y_max = bound_box.points.at(2).y;
+
+  // get center of the area of interest
+  geometry_msgs::Point32 polygon_center = geometry_msgs::Point32();
+
+  polygon_center.x = (double) x_min + (x_max - x_min)/2;
+  polygon_center.y = (double) y_min + (y_max - y_min)/2;
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
@@ -370,8 +490,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     g_best_angle = tf::getYaw(global_best_pose.orientation);
 
     // calculate vector of camera facing direction
-    geometry_msgs::Vector3 vec_sensor_dir;
-
+    
     vec_sensor_dir.x = cos(actual_angle);
     vec_sensor_dir.y = sin(actual_angle);
     vec_sensor_dir.z = 0;
@@ -418,17 +537,31 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
       new_pose.position.y = targets_with_info_.at(target_ind).world_pos.y;
       new_pose.position.z = 0;
 
-      // invert sensor direction
-      new_angle = new_angle + (-1) * signum(new_angle) * PI;
+      // desired sensor facing direction is the center of the area of interest
+      vec_sensor_dir.x = polygon_center.x - new_pose.position.x;
+      vec_sensor_dir.y = polygon_center.y - new_pose.position.y;
+      vec_sensor_dir.z = 0;
+
+      // get angle between desired sensor facing direction and x-axis
+      new_angle = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
+      if(vec_sensor_dir.y < 0)
+        new_angle = -new_angle;
       new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
     }
 
-    while(!newOrientationAccepted(i, new_pose))
+    dummy_angle = new_angle;
+    while(( !newOrientationAccepted(i, new_pose) ) && (!force_orientation_acceptance))
     {
       // try next angle in 10/180*PI steps
       new_angle = new_angle + 0.1745;
       if(new_angle > PI)
         new_angle = new_angle - 2 * PI;
+
+      if( fabs(new_angle - dummy_angle) < 0.001)
+      {
+        new_angle = dummy_angle + PI/2;
+        force_orientation_acceptance = true;
+      }
       new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
     }
 
