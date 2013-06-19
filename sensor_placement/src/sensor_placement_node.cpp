@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2013
  *
- * Fraunhofer Institute for Manufacturing Engineering  
+ * Fraunhofer Institute for Manufacturing Engineering
  * and Automation (IPA)
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -10,9 +10,9 @@
  * Project name: SeNeKa
  * ROS stack name: seneka
  * ROS package name: sensor_placement
- *                
+ *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *      
+ *
  * Author: Florian Mirus, email:Florian.Mirus@ipa.fhg.de
  *
  * Date of creation: April 2013
@@ -27,23 +27,23 @@
  *   * Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of the Fraunhofer Institute for Manufacturing 
+ *   * Neither the name of the Fraunhofer Institute for Manufacturing
  *     Engineering and Automation (IPA) nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License LGPL as 
- * published by the Free Software Foundation, either version 3 of the 
+ * it under the terms of the GNU Lesser General Public License LGPL as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License LGPL for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License LGPL along with this program. 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License LGPL along with this program.
  * If not, see <http://www.gnu.org/licenses/>.
  *
  ****************************************************************/
@@ -60,6 +60,7 @@ sensor_placement_node::sensor_placement_node()
   // ros subscribers
 
   // ros publishers
+  forbidden_poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("forbidden_area", 1,true);
   poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_poly",1,true);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
@@ -88,6 +89,37 @@ sensor_placement_node::sensor_placement_node()
   map_received_ = false;
   poly_received_ = true;
   targets_saved_ = false;
+
+  // forbidden area initialization
+  if(forbidden_poly_.polygon.points.empty())
+  {
+    geometry_msgs::Point32 p2_test;
+    p2_test.x = -5;
+    p2_test.y = -5;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 3;
+    p2_test.y = -5;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 3;
+    p2_test.y = 3;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = -5;
+    p2_test.y = 3;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    forbidden_poly_.header.frame_id = "/map";
+  }
 
   if(poly_.polygon.points.empty())
   {
@@ -140,7 +172,7 @@ void sensor_placement_node::getParams()
     ROS_WARN("No parameter max_sensor_range on parameter server. Using default [5.0 in m]");
   }
   pnh_.param("max_sensor_range",sensor_range_,5.0);
-  
+
   double open_angle_1, open_angle_2;
 
   if(!pnh_.hasParam("open_angle_1"))
@@ -215,10 +247,10 @@ bool sensor_placement_node::getTargets()
   bool result = false;
 
   if(map_received_ == true)
-  { 
+  {
     // only if we received a map, we can get targets
 
-    // initialize a dummy target_info object 
+    // initialize a dummy target_info object
     target_info dummy_target_info;
     targets_with_info_.assign(map_.info.width * map_.info.height, dummy_target_info);
     dummy_target_info.covered_by_sensor.assign(sensor_num_, false);
@@ -230,10 +262,17 @@ bool sensor_placement_node::getTargets()
       {
         for(unsigned int j = 0; j < map_.info.height; j++)
         {
+          // calculate world coordinates from map coordinates of given target
+          geometry_msgs::Pose2D world_Coord;
+          world_Coord.x = mapToWorldX(i, map_);
+          world_Coord.y = mapToWorldY(j, map_);
+          world_Coord.theta = 0;
+
           dummy_target_info.world_pos.x = mapToWorldX(i, map_);
           dummy_target_info.world_pos.y = mapToWorldY(j, map_);
           dummy_target_info.world_pos.z = 0;
 
+          dummy_target_info.forbidden = false;    //all targets are allowed unless found in forbidden area
           dummy_target_info.occupied = true;
           dummy_target_info.covered = false;
           dummy_target_info.multiple_covered = false;
@@ -241,6 +280,11 @@ bool sensor_placement_node::getTargets()
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
+            if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
+            {
+              // the given position is on the forbidden area
+              dummy_target_info.forbidden = true;
+            }
             dummy_target_info.occupied = false;
             dummy_target_info.potential_target = 1;
             target_num_++;
@@ -266,6 +310,7 @@ bool sensor_placement_node::getTargets()
           dummy_target_info.world_pos.y = mapToWorldY(j, map_);
           dummy_target_info.world_pos.z = 0;
 
+          dummy_target_info.forbidden = false;    //all targets are allowed unless found in forbidden area
           dummy_target_info.occupied = true;
           dummy_target_info.covered = false;
           dummy_target_info.multiple_covered = false;
@@ -274,7 +319,11 @@ bool sensor_placement_node::getTargets()
           // the given position lies withhin the polygon
           if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
           {
-
+            if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
+            {
+              // the given position is on the forbidden area
+              dummy_target_info.forbidden = true;
+            }
             dummy_target_info.potential_target = 1;
 
             if(map_.data.at( j * map_.info.width + i) == 0)
@@ -286,6 +335,11 @@ bool sensor_placement_node::getTargets()
           // the given position lies on the perimeter
           if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0)
           {
+            if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
+            {
+              // the given position is on the forbidden area
+              dummy_target_info.forbidden = true;
+            }
             dummy_target_info.potential_target = 0;
 
             if(map_.data.at( j * map_.info.width + i) == 0)
@@ -293,6 +347,7 @@ bool sensor_placement_node::getTargets()
               dummy_target_info.occupied = false;
             }
           }
+
           // save the target information
           targets_with_info_.at(j * map_.info.width + i) = dummy_target_info;
         }
@@ -325,7 +380,8 @@ void sensor_placement_node::initializePSO()
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      // set map, area of interest, targets and open angles for each particle
+      // set map, area of interest, forbidden area, targets and open angles for each particle
+      particle_swarm_.at(i).setForbiddenArea(forbidden_poly_);    //--
       particle_swarm_.at(i).setMap(map_);
       particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
       particle_swarm_.at(i).setOpenAngles(open_angles_);
@@ -353,9 +409,9 @@ void sensor_placement_node::PSOptimize()
   // PSO-iterator
   int iter = 0;
   std::vector<geometry_msgs::Pose> global_pose;
- 
+
   // iteration step
-  // continue calculation as long as there are iteration steps left and actual best coverage is 
+  // continue calculation as long as there are iteration steps left and actual best coverage is
   // lower than mininmal coverage to stop
   while(iter < iter_max_ && best_cov_ < min_cov_)
   {
@@ -368,7 +424,7 @@ void sensor_placement_node::PSOptimize()
       // now we're ready to update the particle
       particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
     }
-    // after the update step we're looking for a new global best solution 
+    // after the update step we're looking for a new global best solution
     getGlobalBest();
 
     // publish the actual global best visualization
@@ -411,7 +467,7 @@ void sensor_placement_node::getGlobalBest()
 bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
 
-  // call static_map-service from map_server to get the actual map  
+  // call static_map-service from map_server to get the actual map
   sc_get_map_.waitForExistence();
 
   nav_msgs::GetMap srv_map;
@@ -456,7 +512,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
     ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
     ROS_INFO_STREAM("Saved " << targets_with_info_.size() << " targets with info in std-vector");
   }
-    
+
 
   ROS_INFO("Initializing particle swarm");
   initializePSO();
@@ -485,7 +541,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 // callback function for the test service
 bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  // call static_map-service from map_server to get the actual map  
+  // call static_map-service from map_server to get the actual map
   sc_get_map_.waitForExistence();
 
   nav_msgs::GetMap srv_map;
@@ -549,7 +605,8 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      // set map, area of interest, targets and open angles for each particle
+      // set map, area of interest, forbidden area, targets and open angles for each particle
+      particle_swarm_.at(i).setForbiddenArea(forbidden_poly_);
       particle_swarm_.at(i).setMap(map_);
       particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
       particle_swarm_.at(i).setOpenAngles(open_angles_);
@@ -559,9 +616,9 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
       test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
       test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
       test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
-      
+
       particle_swarm_.at(i).placeSensorsAtPos(test_pos);
-      
+
       global_best_ = particle_swarm_.at(i);
 
       actual_coverage = global_best_.getActualCoverage();
@@ -579,9 +636,10 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
 }
 
 void sensor_placement_node::publishPolygon()
-{  
+{
 
   poly_pub_.publish(poly_);
+  forbidden_poly_pub_.publish(forbidden_poly_);
 
 }
 
@@ -601,6 +659,7 @@ int main(int argc, char **argv)
 
   while(my_placement_node.nh_.ok())
   {
+     //can add this later to the funtion below
     my_placement_node.publishPolygon();
     ros::spinOnce();
 

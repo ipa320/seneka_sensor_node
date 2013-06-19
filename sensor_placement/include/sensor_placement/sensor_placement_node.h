@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2013
  *
- * Fraunhofer Institute for Manufacturing Engineering  
+ * Fraunhofer Institute for Manufacturing Engineering
  * and Automation (IPA)
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -10,9 +10,9 @@
  * Project name: SeNeKa
  * ROS stack name: seneka
  * ROS package name: sensor_placement
- *                
+ *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *      
+ *
  * Author: Florian Mirus, email:Florian.Mirus@ipa.fhg.de
  *
  * Date of creation: April 2013
@@ -27,23 +27,23 @@
  *   * Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of the Fraunhofer Institute for Manufacturing 
+ *   * Neither the name of the Fraunhofer Institute for Manufacturing
  *     Engineering and Automation (IPA) nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License LGPL as 
- * published by the Free Software Foundation, either version 3 of the 
+ * it under the terms of the GNU Lesser General Public License LGPL as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License LGPL for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License LGPL along with this program. 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License LGPL along with this program.
  * If not, see <http://www.gnu.org/licenses/>.
  *
  ****************************************************************/
@@ -72,6 +72,8 @@
 #include <std_srvs/Empty.h>
 #include <nav_msgs/GetMap.h>
 
+#include <visualization_msgs/Marker.h>
+
 // external includes
 #include <sensor_model.h>
 #include <particle.h>
@@ -99,6 +101,9 @@ private:
   // actual area of interest to be covered by the sensor nodes
   geometry_msgs::PolygonStamped area_of_interest_;
   geometry_msgs::PolygonStamped poly_;
+
+  // polygon for forbidden area
+  geometry_msgs::PolygonStamped forbidden_poly_;
 
   // number of sensors
   int sensor_num_;
@@ -165,8 +170,9 @@ public:
 
   // declaration of ros publishers
   ros::Publisher poly_pub_;
-  ros::Publisher marker_array_pub_; 
-  ros::Publisher map_pub_, map_meta_pub_; 
+  ros::Publisher marker_array_pub_;
+  ros::Publisher map_pub_, map_meta_pub_;
+  ros::Publisher forbidden_poly_pub_;
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
