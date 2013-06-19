@@ -294,8 +294,8 @@ void particle::initializeSensorsOnPerimeter()
   // get center of the area of interest
   geometry_msgs::Point32 polygon_center = geometry_msgs::Point32();
 
-  polygon_center.x = (double) (x_max - x_min)/2;
-  polygon_center.y = (double) (y_max - y_min)/2;
+  polygon_center.x = (double) x_min + (x_max - x_min)/2;
+  polygon_center.y = (double) y_min + (y_max - y_min)/2;
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
@@ -439,8 +439,8 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
   // get center of the area of interest
   geometry_msgs::Point32 polygon_center = geometry_msgs::Point32();
 
-  polygon_center.x = (double) (x_max - x_min)/2;
-  polygon_center.y = (double) (y_max - y_min)/2;
+  polygon_center.x = (double) x_min + (x_max - x_min)/2;
+  polygon_center.y = (double) y_min + (y_max - y_min)/2;
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
