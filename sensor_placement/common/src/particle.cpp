@@ -568,7 +568,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
   std::vector<double> open_ang = sensors_.at(sensor_index).getOpenAngles();
   double orientation = tf::getYaw(sensor_pose.orientation);
 
-  //get angles of sensor and keep them bewtween 0 and 2*PI
+  //get angles of sensor and keep them between 0 and 2*PI
   double angle1 = orientation - (open_ang.front() / 2);
   if(angle1 >= 2*PI)
     angle1 -= 2*PI;
@@ -586,9 +586,9 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
 
   unsigned int number_of_rays_to_check;
 
-  //are the rays inbetween the beginning and end of the lookup table?
+  //are the rays in between the beginning and end of the lookup table?
   if(ray_end >= ray_start)
-    number_of_rays_to_check = ray_end - ray_start;
+    number_of_rays_to_check = ray_end - ray_start; // + 1 ?
   else
     number_of_rays_to_check = max_number_of_rays - ray_start + ray_end + 1;
 
@@ -599,35 +599,63 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
   {
     for(unsigned int cell=0; cell < sensors_.at(sensor_index).getLookupTable().at(ray).size(); cell++)
     {
-      //absolute x and y coordinates of the current cell
-      int x = sensor_pose.position.x + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).x;        
-      int y = sensor_pose.position.y + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).y;
+      //absolute x and y map coordinates of the current cell
+      int x = worldToMapX(sensor_pose.position.x, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).x;        
+      int y = worldToMapY(sensor_pose.position.y, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).y;
 
-      //cell inside the area_of_interest and not occupied
-      if((targets_with_info_.at(y * map_.info.width + x).potential_target == 1) &&
-        (targets_with_info_.at(y * map_.info.width + x).occupied == false))
+      int cell_in_vector_coordinates = y * map_.info.width + x;
+
+      //cell coordinates are valid (not outside of the area of interest)
+      if((y >= 0) && (x >= 0) && (cell_in_vector_coordinates < targets_with_info_.size()))
       {
-        targets_with_info_.at(y * map_.info.width + x).covered_by_sensor.at(sensor_index) = true;
-
-        if(targets_with_info_.at(y * map_.info.width + x).covered == false)
+        //cell not on the perimeter
+        if(targets_with_info_.at(cell_in_vector_coordinates).potential_target != 0)
         {
-          // now the given target is covered by at least one sensor
-          targets_with_info_.at(y * map_.info.width + x).covered = true;
-          // increment the covered targets counter only if the given target is not covered by another sensor yet
-          covered_targets_num_++;
+          //cell a potential target and not occupied
+          if((targets_with_info_.at(cell_in_vector_coordinates).potential_target == 1) && (targets_with_info_.at(cell_in_vector_coordinates).occupied == false))
+          {
+            targets_with_info_.at(cell_in_vector_coordinates).covered_by_sensor.at(sensor_index) = true;
+
+            if(targets_with_info_.at(cell_in_vector_coordinates).covered == false)
+            {
+              // now the given target is covered by at least one sensor
+              targets_with_info_.at(cell_in_vector_coordinates).covered = true;
+              // increment the covered targets counter only if the given target is not covered by another sensor yet
+              covered_targets_num_++;
+            }
+            else
+            {
+              if(targets_with_info_.at(cell_in_vector_coordinates).multiple_covered == false)
+              {
+                // now the given target is covered by multiple sensors
+                targets_with_info_.at(cell_in_vector_coordinates).multiple_covered = true;
+              }            
+              multiple_coverage_++;
+            }
+          }
+          //cell not a potential target or occupied -> skip rest of this ray
+          else
+          {
+            break;
+          }
         }
+        //cell on the perimeter
         else
         {
-          if(targets_with_info_.at(y * map_.info.width + x).multiple_covered == false)
+          //cell on perimeter and not occupied -> continue with the next cell on the ray (no coverage)
+          if(targets_with_info_.at(cell_in_vector_coordinates).occupied == false)
           {
-            // now the given target is covered by multiple sensors
-            targets_with_info_.at(y * map_.info.width + x).multiple_covered = true;
-          }            
-          multiple_coverage_++;
+            continue;
+          }
+          else
+          //cell on perimeter and occupied -> skip rest of this ray
+          {
+            break;
+          }
         }
       }
-      //cell outside of area_of_interest or occupied -> skip rest of this ray
       else
+      //cell coordinates not valid (outside the area of interest) -> skip rest of this ray
       {
         break;
       }
@@ -639,7 +667,9 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
       ray = 0;
     }
     else
+    {
       ray++;
+    }
   }
 }
 

@@ -98,13 +98,13 @@ sensor_placement_node::sensor_placement_node()
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 10;
+    p_test.x = 20;
     p_test.y = 0;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 10;
+    p_test.x = 20;
     p_test.y = 10;
     p_test.z = 0;
 
@@ -377,7 +377,7 @@ void sensor_placement_node::PSOptimize()
     {
       // reset targets_with_info_ for each particle before the update step
       particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
-      // now we're ready to update the particle
+      // now we're ready to update the particlez
       particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
     }
     // after the update step we're looking for a new global best solution 
@@ -549,6 +549,18 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   // initialize dummy particle
   particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
   // initialize particle swarm with given number of particles containing given number of sensors
+
+  //NEW NEW NEW
+  dummy_particle.setMap(map_);
+  dummy_particle.setAreaOfInterest(area_of_interest_);
+  dummy_particle.setOpenAngles(open_angles_);
+  dummy_particle.setRange(5);
+  dummy_particle.setTargetsWithInfo(targets_with_info_, target_num_);
+
+  ROS_INFO_STREAM("creating lookup tables for dummy particle..");
+  dummy_particle.setLookupTable(5);
+  ROS_INFO_STREAM("lookup tables created.");
+
   particle_swarm_.assign(particle_num_,dummy_particle);
 
   // initialze the global best solution
@@ -562,15 +574,15 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
       // set map, area of interest, targets and open angles for each particle
-      particle_swarm_.at(i).setMap(map_);
-      particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
-      particle_swarm_.at(i).setOpenAngles(open_angles_);
-      particle_swarm_.at(i).setRange(sensor_range_);
-      particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
+      // particle_swarm_.at(i).setMap(map_);
+      // particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
+      // particle_swarm_.at(i).setOpenAngles(open_angles_);
+      // particle_swarm_.at(i).setRange(sensor_range_);
+      // particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
       geometry_msgs::Pose test_pos = geometry_msgs::Pose();
-      test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
+      test_pos.position.x = area_of_interest_.polygon.points.at(0).x+12;
       test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
-      test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
+      test_pos.orientation = tf::createQuaternionMsgFromYaw(PI);
       
       particle_swarm_.at(i).placeSensorsAtPos(test_pos);
       
