@@ -323,6 +323,15 @@ void particle::initializeSensorsOnPerimeter()
   polygon_center.x = (double) x_min + (x_max - x_min)/2;
   polygon_center.y = (double) y_min + (y_max - y_min)/2;
 
+  // initializing new_pose2D at corner of the polygon
+  new_pose2D.x = area_of_interest_.polygon.points.at(0).x;
+  new_pose2D.y = area_of_interest_.polygon.points.at(0).y;
+  vec_sensor_dir.x = polygon_center.x - new_pose2D.x;
+  vec_sensor_dir.y = polygon_center.y - new_pose2D.y;
+  alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
+  if(vec_sensor_dir.y < 0)    {alpha = -alpha;}
+  new_pose2D.theta = tf::getYaw(tf::createQuaternionMsgFromYaw(alpha));
+
   for(size_t i = 0; i < sensors_.size(); i++)
   {
     if(i < area_of_interest_.polygon.points.size() && (pointInPolygon(new_pose2D, forbidden_poly_.polygon) == -1) )
