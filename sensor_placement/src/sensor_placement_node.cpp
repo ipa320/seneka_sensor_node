@@ -124,26 +124,26 @@ sensor_placement_node::sensor_placement_node()
   if(poly_.polygon.points.empty())
   {
     geometry_msgs::Point32 p_test;
-    p_test.x = 0;
-    p_test.y = 0;
+    p_test.x = -30;
+    p_test.y = -30;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 10;
-    p_test.y = 0;
+    p_test.x = 30;
+    p_test.y = -30;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 10;
-    p_test.y = 10;
+    p_test.x = 30;
+    p_test.y = 30;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 0;
-    p_test.y = 10;
+    p_test.x = -30;
+    p_test.y = 30;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
@@ -172,7 +172,7 @@ void sensor_placement_node::getParams()
     ROS_WARN("No parameter max_sensor_range on parameter server. Using default [5.0 in m]");
   }
   pnh_.param("max_sensor_range",sensor_range_,5.0);
-
+  
   double open_angle_1, open_angle_2;
 
   if(!pnh_.hasParam("open_angle_1"))
