@@ -62,6 +62,7 @@ sensor_placement_node::sensor_placement_node()
   // ros publishers
   forbidden_poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("forbidden_area", 1,true);
   poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_poly",1,true);
+  nav_path_pub_ = nh_.advertise<nav_msgs::Path>("out_path",1,true);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
   map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("out_cropped_map_metadata",1,true);
@@ -85,6 +86,9 @@ sensor_placement_node::sensor_placement_node()
   // initialize number of targets
   target_num_ = 0;
 
+  // initialize best particle index
+  best_particle_index_ = 0;
+
   // initialize other variables
   map_received_ = false;
   poly_received_ = true;
@@ -94,26 +98,26 @@ sensor_placement_node::sensor_placement_node()
   if(forbidden_poly_.polygon.points.empty())
   {
     geometry_msgs::Point32 p2_test;
-    p2_test.x = -5;
-    p2_test.y = -5;
+    p2_test.x = 115;
+    p2_test.y = 145;
     p2_test.z = 0;
 
     forbidden_poly_.polygon.points.push_back(p2_test);
 
-    p2_test.x = 3;
-    p2_test.y = -5;
+    p2_test.x = 123;
+    p2_test.y = 145;
     p2_test.z = 0;
 
     forbidden_poly_.polygon.points.push_back(p2_test);
 
-    p2_test.x = 3;
-    p2_test.y = 3;
+    p2_test.x = 123;
+    p2_test.y = 153;
     p2_test.z = 0;
 
     forbidden_poly_.polygon.points.push_back(p2_test);
 
-    p2_test.x = -5;
-    p2_test.y = 3;
+    p2_test.x = 115;
+    p2_test.y = 153;
     p2_test.z = 0;
 
     forbidden_poly_.polygon.points.push_back(p2_test);
@@ -124,26 +128,26 @@ sensor_placement_node::sensor_placement_node()
   if(poly_.polygon.points.empty())
   {
     geometry_msgs::Point32 p_test;
-    p_test.x = -30;
-    p_test.y = -30;
+    p_test.x = 90;
+    p_test.y = 120;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 30;
-    p_test.y = -30;
+    p_test.x = 210;
+    p_test.y = 120;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 30;
-    p_test.y = 30;
+    p_test.x = 210;
+    p_test.y = 200;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = -30;
-    p_test.y = 30;
+    p_test.x = 90;
+    p_test.y = 200;
     p_test.z = 0;
 
     poly_.polygon.points.push_back(p_test);
@@ -456,6 +460,7 @@ void sensor_placement_node::getGlobalBest()
       best_cov_ = particle_swarm_.at(i).getActualCoverage();
       global_best_ = particle_swarm_.at(i);
       global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+      best_particle_index_ = i;
     }
     else
     {
@@ -464,6 +469,7 @@ void sensor_placement_node::getGlobalBest()
         best_cov_ = particle_swarm_.at(i).getActualCoverage();
         global_best_ = particle_swarm_.at(i);
         global_best_multiple_coverage_ = particle_swarm_.at(i).getMultipleCoverageIndex();
+        best_particle_index_ = i;
       }
     }
   }
@@ -529,6 +535,13 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   ROS_INFO("Particle swarm Optimization step");
   PSOptimize();
 
+  // get the PSO result as nav_msgs::Path in UTM coordinates and publish it
+  PSO_result_ = particle_swarm_.at(best_particle_index_).particle::getSolutionPositionsAsPath();
+
+  nav_path_pub_.publish(PSO_result_);
+
+  ROS_INFO_STREAM("Print the best solution as Path: " << PSO_result_);
+
   // publish global best visualization
   marker_array_pub_.publish(global_best_.getVisualizationMarkers());
 
@@ -537,6 +550,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   targets_with_info_.clear();
   target_num_ = 0;
   best_cov_ = 0;
+  best_particle_index_ = 0;
 
   ROS_INFO("PSO terminated successfully");
 
