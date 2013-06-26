@@ -624,7 +624,7 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
 
   dummy_particle.setMap(map_);
   dummy_particle.setAreaOfInterest(area_of_interest_);
-  dummy_particle..setForbiddenArea(forbidden_poly_);
+  dummy_particle.setForbiddenArea(forbidden_poly_);
   dummy_particle.setOpenAngles(open_angles_);
   dummy_particle.setRange(5);
   dummy_particle.setTargetsWithInfo(targets_with_info_, target_num_);
