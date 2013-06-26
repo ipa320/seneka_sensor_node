@@ -228,11 +228,9 @@ void particle::setRange(double new_range)
   }
 }
 
-//NEW NEW NEW
 //function to create and set a lookup table for raytracing for each sensor in the particle
 void particle::setLookupTable(double range)
 {
-  ROS_INFO_STREAM("DEBUG: particle::setLookupTable start");
   int radius_in_cells = floor(range / map_.info.resolution);
   std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table = createLookupTableCircle(radius_in_cells);
 
@@ -240,7 +238,6 @@ void particle::setLookupTable(double range)
   {
     sensors_.at(i).setLookupTable(new_lookup_table);
   }
-  ROS_INFO_STREAM("DEBUG: particle::setLookupTable end");
 }
 
 // function to place the sensors randomly on the perimeter
@@ -275,8 +272,6 @@ void particle::placeSensorsRandomlyOnPerimeter()
     sensors_.at(i).setSensorPose(randomPose);
 
     // update the target information
-    //updateTargetsInfo(i);
-    //NEW NEW NEW
     updateTargetsInfoRaytracing(i);
   }
   // calculate new coverage
@@ -295,8 +290,7 @@ void particle::placeSensorsAtPos(geometry_msgs::Pose new_pose)
   for(size_t i = 0; i < sensors_.size(); i++)
   {
     sensors_.at(i).setSensorPose(new_pose);
-    //updateTargetsInfo(i);
-    //NEW NEW NEW
+
     updateTargetsInfoRaytracing(i);
   }
   calcCoverage();
@@ -431,8 +425,6 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     sensors_.at(i).setSensorPose(new_pose);
 
     // update the target information
-    //updateTargetsInfo(i);
-    //NEW NEW NEW
     updateTargetsInfoRaytracing(i);
   }
   // calculate new coverage
@@ -558,10 +550,12 @@ void particle::updateTargetsInfo(size_t sensor_index)
   } 
 }
 
-//NEW NEW NEW
 //function to update the targets_with_info variable with raytracing (lookup table)
 void particle::updateTargetsInfoRaytracing(size_t sensor_index)
 {
+  //clear vector of ray end points
+  sensors_.at(sensor_index).clearRayEndPoints();
+
   unsigned int max_number_of_rays = sensors_.at(sensor_index).getLookupTable().size();
   geometry_msgs::Pose sensor_pose = sensors_.at(sensor_index).getSensorPose();
 
@@ -588,7 +582,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
 
   //are the rays in between the beginning and end of the lookup table?
   if(ray_end >= ray_start)
-    number_of_rays_to_check = ray_end - ray_start; // + 1 ?
+    number_of_rays_to_check = ray_end - ray_start + 1;
   else
     number_of_rays_to_check = max_number_of_rays - ray_start + ray_end + 1;
 
@@ -597,11 +591,16 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
 
   while(rays_checked < number_of_rays_to_check)
   {
+    geometry_msgs::Point ray_end_point;
+
+    int x, y;
+
+    //go through ray
     for(unsigned int cell=0; cell < sensors_.at(sensor_index).getLookupTable().at(ray).size(); cell++)
     {
       //absolute x and y map coordinates of the current cell
-      int x = worldToMapX(sensor_pose.position.x, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).x;        
-      int y = worldToMapY(sensor_pose.position.y, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).y;
+      x = worldToMapX(sensor_pose.position.x, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).x;        
+      y = worldToMapY(sensor_pose.position.y, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).y;
 
       int cell_in_vector_coordinates = y * map_.info.width + x;
 
@@ -660,7 +659,15 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
         break;
       }
     }
+
+    //add current cell (end of visible part of the current ray) to the vector
+    ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x;
+    ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y;
+    sensors_.at(sensor_index).addRayEndPoint(ray_end_point);
+
+    //increase counter
     rays_checked++;
+
     //reached end of circle -> set ray to 0
     if(ray == (max_number_of_rays -1))
     {

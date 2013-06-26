@@ -197,11 +197,22 @@ void FOV_2D_model::setRange(double new_range)
   range_ = new_range;
 }
 
-//NEW NEW NEW
 // function to set the lookup table
 void FOV_2D_model::setLookupTable(std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table)
 {
   lookup_table_ = new_lookup_table;
+}
+
+// function to set a point as last visible cell of a ray for visualization purposes
+void FOV_2D_model::addRayEndPoint(geometry_msgs::Point new_end_point)
+{
+  end_of_rays_.push_back(new_end_point);
+}
+
+// function to clear the vector of last visible ray points
+void FOV_2D_model::clearRayEndPoints()
+{
+  end_of_rays_.clear();
 }
 
 // function to get actual velocity
@@ -216,6 +227,7 @@ geometry_msgs::Twist FOV_2D_model::getMaxVelocity()
   return max_vel_;
 }
 
+// function to get the sensor pose
 geometry_msgs::Pose FOV_2D_model::getSensorPose()
 {
   return sensor_pose_;
@@ -233,7 +245,6 @@ double FOV_2D_model::getRange()
   return range_;
 }
 
-//NEW NEW NEW
 // function to get the lookup table
 const std::vector< std::vector<geometry_msgs::Point32> >& FOV_2D_model::getLookupTable()
 {
@@ -241,7 +252,8 @@ const std::vector< std::vector<geometry_msgs::Point32> >& FOV_2D_model::getLooku
 }
 
 // returns the visualization markers of the respective sensor model
-visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned int id)
+// old version
+visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkersOld(unsigned int id)
 {
   visualization_msgs::MarkerArray array;
   visualization_msgs::Marker border, area;
@@ -303,6 +315,88 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
 
   array.markers.push_back(border);
   array.markers.push_back(area);
+
+  return array;
+}
+
+// returns the visualization markers of the respective sensor model
+// new version, uses endpoints of raytracing
+visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned int id)
+{
+  //use triangle_list or line_list?
+  bool use_triangle = true;
+
+  visualization_msgs::MarkerArray array;
+
+  geometry_msgs::Pose dummy_pose;
+  dummy_pose.position.x = sensor_pose_.position.x;
+  dummy_pose.position.y = sensor_pose_.position.y;
+
+  //sensor origin
+  geometry_msgs::Point origin = geometry_msgs::Point();
+
+  if(use_triangle == true)
+  {
+  
+    visualization_msgs::Marker ray_triangle;
+
+    // setup
+    ray_triangle.header.frame_id = "/map";
+    ray_triangle.header.stamp = ros::Time();
+    ray_triangle.ns = name_ + boost::lexical_cast<std::string>(id);
+    ray_triangle.action = visualization_msgs::Marker::ADD;
+
+    ray_triangle.pose = dummy_pose;
+
+    ray_triangle.id = 1;
+    ray_triangle.type = visualization_msgs::Marker::TRIANGLE_LIST;
+    ray_triangle.scale.x = 1.0;
+    ray_triangle.scale.y = 1.0;
+    ray_triangle.scale.z = 1.0;
+    ray_triangle.color.a = 0.8;
+    ray_triangle.color.r = 0.8;
+    ray_triangle.color.g = 0.0;
+    ray_triangle.color.b = 0.0;
+
+    for(unsigned int i = 1; i < end_of_rays_.size(); i++)
+    {
+      ray_triangle.points.push_back(origin);
+      ray_triangle.points.push_back(end_of_rays_.at(i-1));
+      ray_triangle.points.push_back(end_of_rays_.at(i));
+    }
+
+    // add to array
+    array.markers.push_back(ray_triangle);
+  }
+  else
+  {
+    visualization_msgs::Marker ray_line;
+
+    // setup
+    ray_line.header.frame_id = "/map";
+    ray_line.header.stamp = ros::Time();
+    ray_line.ns = name_ + boost::lexical_cast<std::string>(id);
+    ray_line.action = visualization_msgs::Marker::ADD;
+
+    ray_line.pose = dummy_pose;
+
+    ray_line.id = 0;
+    ray_line.type = visualization_msgs::Marker::LINE_LIST;
+    ray_line.scale.x = 0.1;
+    ray_line.color.a = 1.0;
+    ray_line.color.r = 1.0;
+    ray_line.color.g = 0.0;
+    ray_line.color.b = 0.0;
+
+    for(unsigned int i = 1; i < end_of_rays_.size(); i++)
+    {
+      ray_line.points.push_back(origin);
+      ray_line.points.push_back(end_of_rays_.at(i));
+    }
+
+    // add to array
+    array.markers.push_back(ray_line);
+  }
 
   return array;
 }

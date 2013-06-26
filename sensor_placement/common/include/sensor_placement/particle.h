@@ -67,6 +67,7 @@
 #include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Vector3.h>
+#include <geometry_msgs/Point.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_msgs/String.h> 
 #include <std_msgs/String.h> 
@@ -174,7 +175,6 @@ public:
   // function that sets the range for each sensor in the particle
   void setRange(double new_range);
 
-  //NEW NEW NEW
   //function to create and set a lookup table for raytracing for each sensor in the particle
   void setLookupTable(double range);
 
@@ -195,7 +195,6 @@ public:
   // function to update the targets_with_info variable
   void updateTargetsInfo(size_t sensor_index);
 
-  //NEW NEW NEW
   //function to update the targets_with_info variable with raytracing (lookup table)
   void updateTargetsInfoRaytracing(size_t sensor_index);
 

@@ -92,7 +92,7 @@ sensor_placement_node::sensor_placement_node()
   if(poly_.polygon.points.empty())
   {
     geometry_msgs::Point32 p_test;
-    p_test.x = 0;
+    p_test.x = 8;
     p_test.y = 0;
     p_test.z = 0;
 
@@ -110,7 +110,7 @@ sensor_placement_node::sensor_placement_node()
 
     poly_.polygon.points.push_back(p_test);
 
-    p_test.x = 0;
+    p_test.x = 8;
     p_test.y = 10;
     p_test.z = 0;
 
@@ -313,7 +313,6 @@ void sensor_placement_node::initializePSO()
   // initialize dummy particle
   particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
 
-  //NEW NEW NEW
   dummy_particle.setMap(map_);
   dummy_particle.setAreaOfInterest(area_of_interest_);
   dummy_particle.setOpenAngles(open_angles_);
@@ -337,12 +336,6 @@ void sensor_placement_node::initializePSO()
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      // // set map, area of interest, targets and open angles for each particle
-      // particle_swarm_.at(i).setMap(map_);
-      // particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
-      // particle_swarm_.at(i).setOpenAngles(open_angles_);
-      // particle_swarm_.at(i).setRange(sensor_range_);
-      // particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
       // initialize sensor poses randomly on perimeter
       particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
       // initialize sensor velocities randomly
@@ -550,7 +543,6 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
   // initialize particle swarm with given number of particles containing given number of sensors
 
-  //NEW NEW NEW
   dummy_particle.setMap(map_);
   dummy_particle.setAreaOfInterest(area_of_interest_);
   dummy_particle.setOpenAngles(open_angles_);
@@ -573,16 +565,10 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      // set map, area of interest, targets and open angles for each particle
-      // particle_swarm_.at(i).setMap(map_);
-      // particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
-      // particle_swarm_.at(i).setOpenAngles(open_angles_);
-      // particle_swarm_.at(i).setRange(sensor_range_);
-      // particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
       geometry_msgs::Pose test_pos = geometry_msgs::Pose();
       test_pos.position.x = area_of_interest_.polygon.points.at(0).x+12;
       test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
-      test_pos.orientation = tf::createQuaternionMsgFromYaw(PI);
+      test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
       
       particle_swarm_.at(i).placeSensorsAtPos(test_pos);
       

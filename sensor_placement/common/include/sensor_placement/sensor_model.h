@@ -98,9 +98,11 @@ protected:
   // sensor opening angles
   std::vector<double> open_angles_;
 
-  //NEW NEW NEW
   //lookup table for raytracing
   std::vector< std::vector<geometry_msgs::Point32> > lookup_table_;
+
+  //vector of end points of the rays for visualization;
+  std::vector<geometry_msgs::Point> end_of_rays_;
 
 public:
 
@@ -135,6 +137,10 @@ public:
   // function to set the lookup table
   virtual void setLookupTable(std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table) = 0;
 
+  virtual void addRayEndPoint(geometry_msgs::Point new_end_point) = 0;
+
+  virtual void clearRayEndPoints() = 0;
+
   // ************************ getter functions ************************
 
   // function to get actual velocity
@@ -152,13 +158,13 @@ public:
   // function to get sensor range
   virtual double getRange() = 0;
 
-  //NEW NEW NEW
   // function to get the lookup table
   virtual const std::vector< std::vector<geometry_msgs::Point32> >& getLookupTable() = 0;
 
   // ************************* help functions *************************
 
   // draws a visualization of the respective sensor model
+  virtual visualization_msgs::MarkerArray getVisualizationMarkersOld(unsigned int id) = 0;
   virtual visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id) = 0;
 };
 
@@ -201,9 +207,14 @@ public:
   // function to set sensor range
   void setRange(double new_range);
 
-  //NEW NEW NEW
   // function to set the lookup table
   void setLookupTable(std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table);
+
+  // function to set a point as last visible cell of a ray for visualization purposes
+  void addRayEndPoint(geometry_msgs::Point new_end_point);
+
+  // function to clear the vector of last visible ray points
+  void clearRayEndPoints();
 
   // ************************ getter functions ************************
 
@@ -222,11 +233,11 @@ public:
   // function to get sensor range
   double getRange();
 
-  //NEW NEW NEW
   // function to get the lookup table
   const std::vector< std::vector<geometry_msgs::Point32> >& getLookupTable();
 
   // returns the visualization markers of the respective sensor model
+  visualization_msgs::MarkerArray getVisualizationMarkersOld(unsigned int id);
   visualization_msgs::MarkerArray getVisualizationMarkers(unsigned int id);
 };
 

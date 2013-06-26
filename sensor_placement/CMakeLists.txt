@@ -39,9 +39,6 @@ add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
 					common/src/seneka_utilities.cpp
 					common/src/sensor_model.cpp)
 
-#new
-add_executable(lookup_table_test common/src/lookup_table.cpp)
-
 ## Specify libraries to link a library or executable target against
  target_link_libraries(sensor_placement_node
    ${catkin_LIBRARIES}

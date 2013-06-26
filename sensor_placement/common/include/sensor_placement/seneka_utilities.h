@@ -154,28 +154,27 @@ namespace seneka_utilities
   /* ----------------------------------- */
   /* --------- raytracing -------------- */
   /* ----------------------------------- */
-  //NEW NEW NEW
+
   //function to raytrace between two cells/positions
   //returns a vector of the relative positions of cells the ray passes through
   std::vector<geometry_msgs::Point32> raytraceLine(int end_cell_x, int end_cell_y, int start_cell_x = 0, int start_cell_y = 0);
 
-  //NEW NEW NEW
+
   //function to raytrace a circle
   //returns a vector of the relative positions of cells the ray passes through
   std::vector<geometry_msgs::Point32> raytraceCircle(unsigned int radius_in_cells);
 
-  //NEW NEW NEW
+
   //helper function for raytraceCircle to add cell postion and its 7 mirrors to the vectors
   void addCircleCells(std::vector< std::vector<geometry_msgs::Point32> >& octants, int x, int y);
 
-  //NEW NEW NEW
+
   //function to create a lookup table of all cells inside a circle
   //returns a 2D vector with all rays necessary for all cells inside a circle
   //each ray is a vector of cells
   //lookuptable[2][3] is the relativ position of the third cell in the second ray
   std::vector< std::vector<geometry_msgs::Point32> > createLookupTableCircle(unsigned int radius_in_cells);
 
-  //NEW NEW NEW
   //function to get the index for the lookup table of the corresponding angle 
   unsigned int rayOfAngle(double angle, unsigned int number_of_rays);
 }; // end namespace
