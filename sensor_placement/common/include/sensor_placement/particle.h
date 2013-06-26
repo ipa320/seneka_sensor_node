@@ -66,8 +66,10 @@
 #include <geometry_msgs/Twist.h>
 #include <geometry_msgs/Pose2D.h>
 #include <geometry_msgs/Pose.h>
+#include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Vector3.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Path.h> 
 #include <std_msgs/String.h>
 #include <std_msgs/String.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -144,6 +146,9 @@ public:
 
   // function to get the sensor positions of the actual solution
   std::vector<geometry_msgs::Pose> getSolutionPositions();
+
+  // function to get the sensor positions of the actual solution as nav_msgs::Path
+  nav_msgs::Path getSolutionPositionsAsPath();
 
   // function to get the sensor positions of the personal best solution
   std::vector<geometry_msgs::Pose> getPersonalBestPositions();

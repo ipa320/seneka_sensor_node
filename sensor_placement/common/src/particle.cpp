@@ -131,6 +131,26 @@ std::vector<geometry_msgs::Pose> particle::getSolutionPositions()
   return result;
 }
 
+// function to get the sensor positions of the actual solution as nav_msgs::Path
+nav_msgs::Path particle::getSolutionPositionsAsPath()
+{
+  // initialize workspace
+  nav_msgs::Path result = nav_msgs::Path();
+  geometry_msgs::PoseStamped dummy_pose = geometry_msgs::PoseStamped();
+
+  for(size_t i = 0; i < sensors_.size(); i++)
+  {
+    dummy_pose.pose = sensors_.at(i).getSensorPose();
+    // calculate UTM coordinates of the given sensor pose
+    dummy_pose.pose.position.x += UTM_OFFSET_X;
+    dummy_pose.pose.position.y += UTM_OFFSET_Y;
+    // append the given pose to the path message
+    result.poses.push_back(dummy_pose);
+  }
+
+  return result;
+}
+
 // function to get the sensor positions of the personal best solution
 std::vector<geometry_msgs::Pose> particle::getPersonalBestPositions()
 {

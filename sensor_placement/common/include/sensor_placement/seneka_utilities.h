@@ -93,6 +93,9 @@ namespace seneka_utilities
   /* ----------------------------------- */
 #define PI 3.14159265
 #define EPSILON 0.0001
+#define UTM_OFFSET_X 5429177.716900000
+#define UTM_OFFSET_Y 457937.6288770000
+
 
   // function to gerenate random numbers in given interval
   // make sure to have set the seed in the main functions

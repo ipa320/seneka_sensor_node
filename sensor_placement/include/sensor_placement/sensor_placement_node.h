@@ -68,6 +68,7 @@
 #include <geometry_msgs/Pose2D.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/OccupancyGrid.h>
+#include <nav_msgs/Path.h> 
 #include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <nav_msgs/GetMap.h>
@@ -138,6 +139,7 @@ private:
   // PSO actual best coverage
   double best_cov_;
   int global_best_multiple_coverage_;
+  size_t best_particle_index_;
 
   // number of targets for PSO
   int target_num_;
@@ -149,6 +151,9 @@ private:
   double PSO_param_1_;
   double PSO_param_2_;
   double PSO_param_3_;
+
+  // optimization result as nav_msgs::Path
+  nav_msgs::Path PSO_result_;
 
 public:
 
@@ -173,6 +178,7 @@ public:
   ros::Publisher marker_array_pub_;
   ros::Publisher map_pub_, map_meta_pub_;
   ros::Publisher forbidden_poly_pub_;
+  ros::Publisher nav_path_pub_;
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
