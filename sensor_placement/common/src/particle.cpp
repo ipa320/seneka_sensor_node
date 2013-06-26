@@ -320,11 +320,13 @@ void particle::placeSensorsRandomlyOnPerimeter()
 void particle::initializeSensorsOnPerimeter()
 {
   // initialize workspace
+  bool pose_accepted=false;
   size_t edge_ind = 0;
   size_t successor = 0;
   double t = 0;
   double alpha = 0;
   geometry_msgs::Pose newPose;
+  geometry_msgs::Pose2D new_pose2D;
   geometry_msgs::Vector3 vec_sensor_dir;
 
   // get bounding box of area of interest
@@ -343,9 +345,21 @@ void particle::initializeSensorsOnPerimeter()
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
-    if(i < area_of_interest_.polygon.points.size() )
+    if(i < area_of_interest_.polygon.points.size())
     {
-      // set new sensor pose as one of the corners of the area of interest
+      // calculating new_pose2D at corners of the polygon
+      new_pose2D.x = area_of_interest_.polygon.points.at(i).x;
+      new_pose2D.y = area_of_interest_.polygon.points.at(i).y;
+      vec_sensor_dir.x = polygon_center.x - new_pose2D.x;
+      vec_sensor_dir.y = polygon_center.y - new_pose2D.y;
+      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
+      if(vec_sensor_dir.y < 0)    {alpha = -alpha;}
+      new_pose2D.theta = tf::getYaw(tf::createQuaternionMsgFromYaw(alpha));
+    }
+
+    if(i < area_of_interest_.polygon.points.size() && (pointInPolygon(new_pose2D, forbidden_poly_.polygon) == -1) )
+    {
+      // set new sensor pose as one of the corners of the area of interest if not in forbidden area
       newPose.position.x = area_of_interest_.polygon.points.at(i).x;
       newPose.position.y = area_of_interest_.polygon.points.at(i).y;
       newPose.position.z = 0;
@@ -372,37 +386,53 @@ void particle::initializeSensorsOnPerimeter()
     }
     else
     {
-      // get index of a random edge of the area of interest specified by a polygon
-      edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size());
-      successor = 0;
+      do
+      {
+        // get index of a random edge of the area of interest specified by a polygon
+        edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size());
+        successor = 0;
 
-      if(edge_ind < (area_of_interest_.polygon.points.size() - 1))
-        successor = edge_ind++;
-      
-      t = randomNumber(0,1);
+        if(edge_ind < (area_of_interest_.polygon.points.size() - 1))
+          successor = edge_ind++;
 
-      // get random Pose on perimeter of the area of interest specified by a polygon
-      newPose.position.x = area_of_interest_.polygon.points.at(edge_ind).x
-                            + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x);
-      newPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y 
-                            + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y);
-      newPose.position.z = 0;
+        t = randomNumber(0,1);
 
-      vec_sensor_dir.x = polygon_center.x - newPose.position.x;
-      vec_sensor_dir.y = polygon_center.y - newPose.position.y;
-      vec_sensor_dir.z = 0;
+        // get random Pose on perimeter of the area of interest specified by a polygon
+        newPose.position.x = area_of_interest_.polygon.points.at(edge_ind).x
+                              + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x);
+        newPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y
+                              + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y);
+        newPose.position.z = 0;
 
-      // get angle between desired sensor facing direction and x-axis
-      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
+        vec_sensor_dir.x = polygon_center.x - newPose.position.x;
+        vec_sensor_dir.y = polygon_center.y - newPose.position.y;
+        vec_sensor_dir.z = 0;
 
-      if(vec_sensor_dir.y < 0)
-        alpha = -alpha;
+        // get angle between desired sensor facing direction and x-axis
+        alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
 
-      // get quaternion message for desired sensor facing direction
-      newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+        if(vec_sensor_dir.y < 0)
+          alpha = -alpha;
 
-      // set new sensor pose
-      sensors_.at(i).setSensorPose(newPose);
+        // get quaternion message for desired sensor facing direction
+        newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+
+        new_pose2D.x = newPose.position.x;
+        new_pose2D.y = newPose.position.y;
+        new_pose2D.theta = tf::getYaw(newPose.orientation);
+
+        if (pointInPolygon(new_pose2D, forbidden_poly_.polygon) == -1)
+        {
+          //found a point which is not in the forbidden area
+          sensors_.at(i).setSensorPose(newPose);
+          pose_accepted=true;
+        }
+        else
+        {
+          //given point lies in forbidden area
+         pose_accepted=false;
+        }
+      }while(!pose_accepted); //keep looking until a point is found which is outside the forbidden area
 
       // update the target information
       updateTargetsInfo(i);
@@ -510,7 +540,6 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     g_best_angle = tf::getYaw(global_best_pose.orientation);
 
     // calculate vector of camera facing direction
-    
     vec_sensor_dir.x = cos(actual_angle);
     vec_sensor_dir.y = sin(actual_angle);
     vec_sensor_dir.z = 0;
