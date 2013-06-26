@@ -323,8 +323,9 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkersOld(unsigne
 // new version, uses endpoints of raytracing
 visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned int id)
 {
-  //use triangle_list or line_list?
-  bool use_triangle = true;
+  bool show_triangle = true;
+  bool show_border = true;
+  bool show_ray = false;
 
   visualization_msgs::MarkerArray array;
 
@@ -335,40 +336,81 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
   //sensor origin
   geometry_msgs::Point origin = geometry_msgs::Point();
 
-  if(use_triangle == true)
+  if(show_triangle == true)
   {
   
-    visualization_msgs::Marker ray_triangle;
+    visualization_msgs::Marker triangle;
 
     // setup
-    ray_triangle.header.frame_id = "/map";
-    ray_triangle.header.stamp = ros::Time();
-    ray_triangle.ns = name_ + boost::lexical_cast<std::string>(id);
-    ray_triangle.action = visualization_msgs::Marker::ADD;
+    triangle.header.frame_id = "/map";
+    triangle.header.stamp = ros::Time();
+    triangle.ns = name_ + boost::lexical_cast<std::string>(id);
+    triangle.action = visualization_msgs::Marker::ADD;
 
-    ray_triangle.pose = dummy_pose;
+    triangle.pose = dummy_pose;
 
-    ray_triangle.id = 1;
-    ray_triangle.type = visualization_msgs::Marker::TRIANGLE_LIST;
-    ray_triangle.scale.x = 1.0;
-    ray_triangle.scale.y = 1.0;
-    ray_triangle.scale.z = 1.0;
-    ray_triangle.color.a = 0.8;
-    ray_triangle.color.r = 0.8;
-    ray_triangle.color.g = 0.0;
-    ray_triangle.color.b = 0.0;
+    triangle.id = 1;
+    triangle.type = visualization_msgs::Marker::TRIANGLE_LIST;
+    triangle.scale.x = 1.0;
+    triangle.scale.y = 1.0;
+    triangle.scale.z = 1.0;
+    triangle.color.a = 0.8;
+    triangle.color.r = 0.8;
+    triangle.color.g = 0.0;
+    triangle.color.b = 0.0;
 
     for(unsigned int i = 1; i < end_of_rays_.size(); i++)
     {
-      ray_triangle.points.push_back(origin);
-      ray_triangle.points.push_back(end_of_rays_.at(i-1));
-      ray_triangle.points.push_back(end_of_rays_.at(i));
+      triangle.points.push_back(origin);
+      triangle.points.push_back(end_of_rays_.at(i-1));
+      triangle.points.push_back(end_of_rays_.at(i));
     }
 
     // add to array
-    array.markers.push_back(ray_triangle);
+    array.markers.push_back(triangle);
   }
-  else
+
+  if(show_border == true)
+  {
+    visualization_msgs::Marker border;
+
+    // setup
+    border.header.frame_id = "/map";
+    border.header.stamp = ros::Time();
+    border.ns = name_ + boost::lexical_cast<std::string>(id);
+    border.action = visualization_msgs::Marker::ADD;
+
+    border.pose = sensor_pose_;
+
+    border.id = 0;
+    border.type = visualization_msgs::Marker::LINE_STRIP;
+    border.scale.x = 0.05;
+    border.color.a = 1.0;
+    border.color.r = 1.0;
+    border.color.g = 0.0;
+    border.color.b = 0.0;
+
+    unsigned int num_steps = 90;
+    double step_size = open_angles_.front() / num_steps;
+    geometry_msgs::Point p;
+
+    border.points.push_back(origin);
+
+    for (unsigned int i = 0; i <= num_steps; i++)
+    {
+      p.x = range_ * cos(open_angles_.front() / 2 - i * step_size);
+      p.y = range_ * sin(open_angles_.front() / 2 - i * step_size);
+      // intermediate point of border
+      border.points.push_back(p);
+    }
+
+    border.points.push_back(origin);
+
+    // add to array
+    array.markers.push_back(border);
+  }
+
+  if(show_ray == true)
   {
     visualization_msgs::Marker ray_line;
 
@@ -382,10 +424,10 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
 
     ray_line.id = 0;
     ray_line.type = visualization_msgs::Marker::LINE_LIST;
-    ray_line.scale.x = 0.1;
+    ray_line.scale.x = 0.01;
     ray_line.color.a = 1.0;
-    ray_line.color.r = 1.0;
-    ray_line.color.g = 0.0;
+    ray_line.color.r = 0.0;
+    ray_line.color.g = 1.0;
     ray_line.color.b = 0.0;
 
     for(unsigned int i = 1; i < end_of_rays_.size(); i++)

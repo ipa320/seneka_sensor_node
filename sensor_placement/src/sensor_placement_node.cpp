@@ -539,6 +539,10 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   FOV_2D_model dummy_2D_model;
   dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
 
+  particle_num_ = 1;
+  sensor_num_ = 1;
+  open_angles_.at(0) = 1.5 * PI;
+
   // initialize dummy particle
   particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
   // initialize particle swarm with given number of particles containing given number of sensors
@@ -553,6 +557,8 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   dummy_particle.setLookupTable(5);
   ROS_INFO_STREAM("lookup tables created.");
 
+
+
   particle_swarm_.assign(particle_num_,dummy_particle);
 
   // initialze the global best solution
@@ -566,7 +572,7 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
       geometry_msgs::Pose test_pos = geometry_msgs::Pose();
-      test_pos.position.x = area_of_interest_.polygon.points.at(0).x+12;
+      test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
       test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
       test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
       

@@ -605,7 +605,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
       int cell_in_vector_coordinates = y * map_.info.width + x;
 
       //cell coordinates are valid (not outside of the area of interest)
-      if((y >= 0) && (x >= 0) && (cell_in_vector_coordinates < targets_with_info_.size()))
+      if((y >= 0) && (x >= 0) && (y < map_.info.height) && (x < map_.info.width) && (cell_in_vector_coordinates < targets_with_info_.size()))
       {
         //cell not on the perimeter
         if(targets_with_info_.at(cell_in_vector_coordinates).potential_target != 0)
