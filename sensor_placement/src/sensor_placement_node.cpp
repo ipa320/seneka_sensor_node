@@ -351,7 +351,6 @@ bool sensor_placement_node::getTargets()
               dummy_target_info.occupied = false;
             }
           }
-
           // save the target information
           targets_with_info_.at(j * map_.info.width + i) = dummy_target_info;
         }
@@ -371,6 +370,18 @@ void sensor_placement_node::initializePSO()
 
   // initialize dummy particle
   particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
+
+  dummy_particle.setMap(map_);
+  dummy_particle.setAreaOfInterest(area_of_interest_);
+  dummy_particle.setForbiddenArea(forbidden_poly_);
+  dummy_particle.setOpenAngles(open_angles_);
+  dummy_particle.setRange(sensor_range_);
+  dummy_particle.setTargetsWithInfo(targets_with_info_, target_num_);
+
+  ROS_INFO_STREAM("creating lookup tables for dummy particle..");
+  dummy_particle.setLookupTable(sensor_range_);
+  ROS_INFO_STREAM("lookup tables created.");
+
   // initialize particle swarm with given number of particles containing given number of sensors
   particle_swarm_.assign(particle_num_,dummy_particle);
 
@@ -383,14 +394,7 @@ void sensor_placement_node::initializePSO()
   if(poly_received_)
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
-    {
-      // set map, area of interest, forbidden area, targets and open angles for each particle
-      particle_swarm_.at(i).setForbiddenArea(forbidden_poly_);    //--
-      particle_swarm_.at(i).setMap(map_);
-      particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
-      particle_swarm_.at(i).setOpenAngles(open_angles_);
-      particle_swarm_.at(i).setRange(sensor_range_);
-      particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
+    {     
       // initialize sensor poses randomly on perimeter
       //particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
       particle_swarm_.at(i).initializeSensorsOnPerimeter();
@@ -479,7 +483,7 @@ void sensor_placement_node::getGlobalBest()
 bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
 
-  // call static_map-service from map_server to get the actual map
+  // call static_map-service from map_server to get the actual map  
   sc_get_map_.waitForExistence();
 
   nav_msgs::GetMap srv_map;
@@ -561,7 +565,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 // callback function for the test service
 bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  // call static_map-service from map_server to get the actual map
+  // call static_map-service from map_server to get the actual map  
   sc_get_map_.waitForExistence();
 
   nav_msgs::GetMap srv_map;
@@ -610,9 +614,27 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   FOV_2D_model dummy_2D_model;
   dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
 
+  particle_num_ = 1;
+  sensor_num_ = 1;
+  open_angles_.at(0) = 1.5 * PI;
+
   // initialize dummy particle
   particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
   // initialize particle swarm with given number of particles containing given number of sensors
+
+  dummy_particle.setMap(map_);
+  dummy_particle.setAreaOfInterest(area_of_interest_);
+  dummy_particle..setForbiddenArea(forbidden_poly_);
+  dummy_particle.setOpenAngles(open_angles_);
+  dummy_particle.setRange(5);
+  dummy_particle.setTargetsWithInfo(targets_with_info_, target_num_);
+
+  ROS_INFO_STREAM("creating lookup tables for dummy particle..");
+  dummy_particle.setLookupTable(5);
+  ROS_INFO_STREAM("lookup tables created.");
+
+
+
   particle_swarm_.assign(particle_num_,dummy_particle);
 
   // initialze the global best solution
@@ -625,13 +647,6 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
-      // set map, area of interest, forbidden area, targets and open angles for each particle
-      particle_swarm_.at(i).setForbiddenArea(forbidden_poly_);
-      particle_swarm_.at(i).setMap(map_);
-      particle_swarm_.at(i).setAreaOfInterest(area_of_interest_);
-      particle_swarm_.at(i).setOpenAngles(open_angles_);
-      particle_swarm_.at(i).setRange(sensor_range_);
-      particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
       geometry_msgs::Pose test_pos = geometry_msgs::Pose();
       test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
       test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;

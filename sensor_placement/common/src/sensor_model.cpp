@@ -197,6 +197,24 @@ void FOV_2D_model::setRange(double new_range)
   range_ = new_range;
 }
 
+// function to set the lookup table
+void FOV_2D_model::setLookupTable(std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table)
+{
+  lookup_table_ = new_lookup_table;
+}
+
+// function to set a point as last visible cell of a ray for visualization purposes
+void FOV_2D_model::addRayEndPoint(geometry_msgs::Point new_end_point)
+{
+  end_of_rays_.push_back(new_end_point);
+}
+
+// function to clear the vector of last visible ray points
+void FOV_2D_model::clearRayEndPoints()
+{
+  end_of_rays_.clear();
+}
+
 // function to get actual velocity
 geometry_msgs::Twist FOV_2D_model::getVelocity()
 {
@@ -209,6 +227,7 @@ geometry_msgs::Twist FOV_2D_model::getMaxVelocity()
   return max_vel_;
 }
 
+// function to get the sensor pose
 geometry_msgs::Pose FOV_2D_model::getSensorPose()
 {
   return sensor_pose_;
@@ -220,14 +239,21 @@ std::vector<double> FOV_2D_model::getOpenAngles()
   return open_angles_;
 }
 
-// function to set sensor range
+// function to get sensor range
 double FOV_2D_model::getRange()
 {
   return range_;
 }
 
+// function to get the lookup table
+const std::vector< std::vector<geometry_msgs::Point32> >& FOV_2D_model::getLookupTable()
+{
+  return lookup_table_;
+}
+
 // returns the visualization markers of the respective sensor model
-visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned int id)
+// old version
+visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkersOld(unsigned int id)
 {
   visualization_msgs::MarkerArray array;
   visualization_msgs::Marker border, area;
@@ -289,6 +315,130 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
 
   array.markers.push_back(border);
   array.markers.push_back(area);
+
+  return array;
+}
+
+// returns the visualization markers of the respective sensor model
+// new version, uses endpoints of raytracing
+visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned int id)
+{
+  bool show_triangle = true;
+  bool show_border = true;
+  bool show_ray = false;
+
+  visualization_msgs::MarkerArray array;
+
+  geometry_msgs::Pose dummy_pose;
+  dummy_pose.position.x = sensor_pose_.position.x;
+  dummy_pose.position.y = sensor_pose_.position.y;
+
+  //sensor origin
+  geometry_msgs::Point origin = geometry_msgs::Point();
+
+  if(show_triangle == true)
+  {
+  
+    visualization_msgs::Marker triangle;
+
+    // setup
+    triangle.header.frame_id = "/map";
+    triangle.header.stamp = ros::Time();
+    triangle.ns = name_ + boost::lexical_cast<std::string>(id);
+    triangle.action = visualization_msgs::Marker::ADD;
+
+    triangle.pose = dummy_pose;
+
+    triangle.id = 1;
+    triangle.type = visualization_msgs::Marker::TRIANGLE_LIST;
+    triangle.scale.x = 1.0;
+    triangle.scale.y = 1.0;
+    triangle.scale.z = 1.0;
+    triangle.color.a = 0.8;
+    triangle.color.r = 0.8;
+    triangle.color.g = 0.0;
+    triangle.color.b = 0.0;
+
+    for(unsigned int i = 1; i < end_of_rays_.size(); i++)
+    {
+      triangle.points.push_back(origin);
+      triangle.points.push_back(end_of_rays_.at(i-1));
+      triangle.points.push_back(end_of_rays_.at(i));
+    }
+
+    // add to array
+    array.markers.push_back(triangle);
+  }
+
+  if(show_border == true)
+  {
+    visualization_msgs::Marker border;
+
+    // setup
+    border.header.frame_id = "/map";
+    border.header.stamp = ros::Time();
+    border.ns = name_ + boost::lexical_cast<std::string>(id);
+    border.action = visualization_msgs::Marker::ADD;
+
+    border.pose = sensor_pose_;
+
+    border.id = 0;
+    border.type = visualization_msgs::Marker::LINE_STRIP;
+    border.scale.x = 0.05;
+    border.color.a = 1.0;
+    border.color.r = 1.0;
+    border.color.g = 0.0;
+    border.color.b = 0.0;
+
+    unsigned int num_steps = 90;
+    double step_size = open_angles_.front() / num_steps;
+    geometry_msgs::Point p;
+
+    border.points.push_back(origin);
+
+    for (unsigned int i = 0; i <= num_steps; i++)
+    {
+      p.x = range_ * cos(open_angles_.front() / 2 - i * step_size);
+      p.y = range_ * sin(open_angles_.front() / 2 - i * step_size);
+      // intermediate point of border
+      border.points.push_back(p);
+    }
+
+    border.points.push_back(origin);
+
+    // add to array
+    array.markers.push_back(border);
+  }
+
+  if(show_ray == true)
+  {
+    visualization_msgs::Marker ray_line;
+
+    // setup
+    ray_line.header.frame_id = "/map";
+    ray_line.header.stamp = ros::Time();
+    ray_line.ns = name_ + boost::lexical_cast<std::string>(id);
+    ray_line.action = visualization_msgs::Marker::ADD;
+
+    ray_line.pose = dummy_pose;
+
+    ray_line.id = 0;
+    ray_line.type = visualization_msgs::Marker::LINE_LIST;
+    ray_line.scale.x = 0.01;
+    ray_line.color.a = 1.0;
+    ray_line.color.r = 0.0;
+    ray_line.color.g = 1.0;
+    ray_line.color.b = 0.0;
+
+    for(unsigned int i = 1; i < end_of_rays_.size(); i++)
+    {
+      ray_line.points.push_back(origin);
+      ray_line.points.push_back(end_of_rays_.at(i));
+    }
+
+    // add to array
+    array.markers.push_back(ray_line);
+  }
 
   return array;
 }

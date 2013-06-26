@@ -68,6 +68,7 @@
 #include <geometry_msgs/Pose.h>
 #include <geometry_msgs/PoseStamped.h>
 #include <geometry_msgs/Vector3.h>
+#include <geometry_msgs/Point.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h> 
 #include <std_msgs/String.h>
@@ -185,6 +186,9 @@ public:
   // function that sets the range for each sensor in the particle
   void setRange(double new_range);
 
+  //function to create and set a lookup table for raytracing for each sensor in the particle
+  void setLookupTable(double range);
+
   // ************************ update functions ************************
 
   // function to place the sensors randomly on the perimeter
@@ -204,6 +208,9 @@ public:
 
   // function to update the targets_with_info variable
   void updateTargetsInfo(size_t sensor_index);
+
+  //function to update the targets_with_info variable with raytracing (lookup table)
+  void updateTargetsInfoRaytracing(size_t sensor_index);
 
   // function to calculate the actual  and personal best coverage
   void calcCoverage();
@@ -231,7 +238,6 @@ public:
 
   // returns all visualization markers of the particle
   visualization_msgs::MarkerArray getVisualizationMarkers();
-
 };
 
 #endif
