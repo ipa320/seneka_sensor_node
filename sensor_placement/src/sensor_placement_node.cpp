@@ -98,26 +98,80 @@ sensor_placement_node::sensor_placement_node()
   if(forbidden_poly_.polygon.points.empty())
   {
     geometry_msgs::Point32 p2_test;
-    p2_test.x = 115;
-    p2_test.y = 145;
+    p2_test.x = 137;
+    p2_test.y = 147;
     p2_test.z = 0;
 
     forbidden_poly_.polygon.points.push_back(p2_test);
 
-    p2_test.x = 123;
-    p2_test.y = 145;
+    p2_test.x = 145;
+    p2_test.y = 147;
     p2_test.z = 0;
 
     forbidden_poly_.polygon.points.push_back(p2_test);
 
-    p2_test.x = 123;
-    p2_test.y = 153;
+    p2_test.x = 145;
+    p2_test.y = 140;
     p2_test.z = 0;
 
     forbidden_poly_.polygon.points.push_back(p2_test);
 
-    p2_test.x = 115;
-    p2_test.y = 153;
+    p2_test.x = 167;
+    p2_test.y = 140;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 167;
+    p2_test.y = 165;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 175;
+    p2_test.y = 178;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 147;
+    p2_test.y = 178;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 147;
+    p2_test.y = 170;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 133;
+    p2_test.y = 175;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 133;
+    p2_test.y = 165;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 130;
+    p2_test.y = 165;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 130;
+    p2_test.y = 155;
+    p2_test.z = 0;
+
+    forbidden_poly_.polygon.points.push_back(p2_test);
+
+    p2_test.x = 137;
+    p2_test.y = 152;
     p2_test.z = 0;
 
     forbidden_poly_.polygon.points.push_back(p2_test);
