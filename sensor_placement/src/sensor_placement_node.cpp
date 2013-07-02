@@ -58,6 +58,7 @@ sensor_placement_node::sensor_placement_node()
   pnh_ = ros::NodeHandle("~");
 
   // ros subscribers
+
   AoI_sub_ = nh_.subscribe("in_AoI_poly", 1, 
                            &sensor_placement_node::AoICB, this);
   forbidden_area_sub_ = nh_.subscribe("in_forbidden_area", 1,
@@ -612,7 +613,6 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   return true;
 }
 
-
 // callback function saving the AoI received
 void sensor_placement_node::AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI)
 {
@@ -624,6 +624,7 @@ void sensor_placement_node::AoICB(const geometry_msgs::PolygonStamped::ConstPtr 
 void sensor_placement_node::forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_area)
 {
   forbidden_area_ = *forbidden_area;
+
 }
 
 //######################
