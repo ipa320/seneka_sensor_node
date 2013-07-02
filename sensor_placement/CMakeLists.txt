@@ -16,6 +16,7 @@ find_package(catkin REQUIRED COMPONENTS
   tf_conversions
   std_srvs
 )
+
 catkin_package(
   INCLUDE_DIRS 
     include
@@ -28,9 +29,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-include_directories(include/sensor_placement)
-include_directories(common/include/sensor_placement)
-include_directories(${catkin_INCLUDE_DIRS})
+include_directories(include/sensor_placement common/include/sensor_placement ${catkin_INCLUDE_DIRS} )
 
 ## Declare a cpp executable
 # add_executable(seneka_node src/seneka_node.cpp)
