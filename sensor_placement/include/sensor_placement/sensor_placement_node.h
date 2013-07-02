@@ -93,18 +93,17 @@ private:
   // bool variable to check if a map was already received
   bool map_received_;
 
-  // bool variable to check if a polygon was already received
-  bool poly_received_;
+  // bool variable to check if an AoI was already received
+  bool AoI_received_;
 
   // bool variable to check if the targets were already taken from the map
   bool targets_saved_;
 
   // actual area of interest to be covered by the sensor nodes
   geometry_msgs::PolygonStamped area_of_interest_;
-  geometry_msgs::PolygonStamped poly_;
 
   // polygon for forbidden area
-  geometry_msgs::PolygonStamped forbidden_poly_;
+  geometry_msgs::PolygonStamped forbidden_area_;
 
   // number of sensors
   int sensor_num_;
@@ -171,13 +170,12 @@ public:
   ros::NodeHandle nh_, pnh_;
 
   // declaration of ros subscribers
-  ros::Subscriber poly_sub_;
+  ros::Subscriber AoI_sub_;
+  ros::Subscriber forbidden_area_sub_;
 
   // declaration of ros publishers
-  ros::Publisher poly_pub_;
   ros::Publisher marker_array_pub_;
   ros::Publisher map_pub_, map_meta_pub_;
-  ros::Publisher forbidden_poly_pub_;
   ros::Publisher nav_path_pub_;
 
   // declaration of ros service servers
@@ -216,10 +214,9 @@ public:
   // callback function for the test service
   bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
-  // callback function for the polygon topic
-  void polygonCB(const geometry_msgs::Polygon::ConstPtr &poly);
-
-  void publishPolygon();
+  // callback functions
+  void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
+  void forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_area);
 
 };
 
