@@ -16,6 +16,8 @@
   <depend package="opencv2"/>
   <depend package="image_transport"/>
   <depend package="optris_drivers"/>
+
+  <rosdep name="libudev-dev"/>
 </package>
 
 
