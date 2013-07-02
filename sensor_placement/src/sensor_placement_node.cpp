@@ -59,9 +59,12 @@ sensor_placement_node::sensor_placement_node()
 
   // ros subscribers
 
+  AoI_sub_ = nh_.subscribe("in_AoI_poly", 1, 
+                           &sensor_placement_node::AoICB, this);
+  forbidden_area_sub_ = nh_.subscribe("in_forbidden_area", 1,
+                                      &sensor_placement_node::forbiddenAreaCB, this);
+  
   // ros publishers
-  forbidden_poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("forbidden_area", 1,true);
-  poly_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_poly",1,true);
   nav_path_pub_ = nh_.advertise<nav_msgs::Path>("out_path",1,true);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
@@ -91,125 +94,8 @@ sensor_placement_node::sensor_placement_node()
 
   // initialize other variables
   map_received_ = false;
-  poly_received_ = true;
+  AoI_received_ = true;
   targets_saved_ = false;
-
-  // forbidden area initialization
-  if(forbidden_poly_.polygon.points.empty())
-  {
-    geometry_msgs::Point32 p2_test;
-    p2_test.x = 137;
-    p2_test.y = 147;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 145;
-    p2_test.y = 147;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 145;
-    p2_test.y = 140;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 167;
-    p2_test.y = 140;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 167;
-    p2_test.y = 165;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 175;
-    p2_test.y = 178;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 147;
-    p2_test.y = 178;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 147;
-    p2_test.y = 170;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 133;
-    p2_test.y = 175;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 133;
-    p2_test.y = 165;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 130;
-    p2_test.y = 165;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 130;
-    p2_test.y = 155;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    p2_test.x = 137;
-    p2_test.y = 152;
-    p2_test.z = 0;
-
-    forbidden_poly_.polygon.points.push_back(p2_test);
-
-    forbidden_poly_.header.frame_id = "/map";
-  }
-
-  if(poly_.polygon.points.empty())
-  {
-    geometry_msgs::Point32 p_test;
-    p_test.x = 90;
-    p_test.y = 120;
-    p_test.z = 0;
-
-    poly_.polygon.points.push_back(p_test);
-
-    p_test.x = 210;
-    p_test.y = 120;
-    p_test.z = 0;
-
-    poly_.polygon.points.push_back(p_test);
-
-    p_test.x = 210;
-    p_test.y = 200;
-    p_test.z = 0;
-
-    poly_.polygon.points.push_back(p_test);
-
-    p_test.x = 90;
-    p_test.y = 200;
-    p_test.z = 0;
-
-    poly_.polygon.points.push_back(p_test);
-
-    poly_.header.frame_id = "/map";
-  }
-
-  area_of_interest_ = poly_;
 
 }
 
@@ -313,7 +199,7 @@ bool sensor_placement_node::getTargets()
     targets_with_info_.assign(map_.info.width * map_.info.height, dummy_target_info);
     dummy_target_info.covered_by_sensor.assign(sensor_num_, false);
 
-    if(poly_received_ == false)
+    if(AoI_received_ == false)
     {
       // if no polygon was specified, we consider the non-occupied grid cells as targets
       for(unsigned int i = 0; i < map_.info.width; i++)
@@ -338,7 +224,8 @@ bool sensor_placement_node::getTargets()
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
-            if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
+            if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 1 || 
+               pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
             {
               // the given position is on the forbidden area
               dummy_target_info.forbidden = true;
@@ -377,7 +264,8 @@ bool sensor_placement_node::getTargets()
           // the given position lies withhin the polygon
           if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
           {
-            if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
+            if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 1 || 
+               pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
             {
               // the given position is on the forbidden area
               dummy_target_info.forbidden = true;
@@ -393,7 +281,8 @@ bool sensor_placement_node::getTargets()
           // the given position lies on the perimeter
           if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0)
           {
-            if(pointInPolygon(world_Coord, forbidden_poly_.polygon) == 1 || pointInPolygon(world_Coord, forbidden_poly_.polygon) == 0)
+            if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 1 || 
+               pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
             {
               // the given position is on the forbidden area
               dummy_target_info.forbidden = true;
@@ -427,7 +316,7 @@ void sensor_placement_node::initializePSO()
 
   dummy_particle.setMap(map_);
   dummy_particle.setAreaOfInterest(area_of_interest_);
-  dummy_particle.setForbiddenArea(forbidden_poly_);
+  dummy_particle.setForbiddenArea(forbidden_area_);
   dummy_particle.setOpenAngles(open_angles_);
   dummy_particle.setRange(sensor_range_);
   dummy_particle.setTargetsWithInfo(targets_with_info_, target_num_);
@@ -445,7 +334,7 @@ void sensor_placement_node::initializePSO()
   double actual_coverage = 0;
 
   // initialize sensors randomly on perimeter for each particle with random velocities
-  if(poly_received_)
+  if(AoI_received_)
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {     
@@ -546,7 +435,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   {
     ROS_INFO("Map service called successfully");
 
-    if(poly_received_)
+    if(AoI_received_)
     {
       // get bounding box of area of interest
       geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
@@ -628,7 +517,7 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   {
     ROS_INFO("Map service called successfully");
 
-    if(poly_received_)
+    if(AoI_received_)
     {
       // get bounding box of area of interest
       geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
@@ -678,7 +567,7 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
 
   dummy_particle.setMap(map_);
   dummy_particle.setAreaOfInterest(area_of_interest_);
-  dummy_particle.setForbiddenArea(forbidden_poly_);
+  dummy_particle.setForbiddenArea(forbidden_area_);
   dummy_particle.setOpenAngles(open_angles_);
   dummy_particle.setRange(5);
   dummy_particle.setTargetsWithInfo(targets_with_info_, target_num_);
@@ -697,7 +586,7 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   double actual_coverage = 0;
 
   // initialize sensors randomly on perimeter for each particle with random velocities
-  if(poly_received_)
+  if(AoI_received_)
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
@@ -724,14 +613,22 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   return true;
 }
 
-void sensor_placement_node::publishPolygon()
+// callback function saving the AoI received
+void sensor_placement_node::AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI)
 {
+  area_of_interest_ = *AoI;
+  AoI_received_ = true;
+}
 
-  poly_pub_.publish(poly_);
-  forbidden_poly_pub_.publish(forbidden_poly_);
+// callback function saving the forbidden area received
+void sensor_placement_node::forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_area)
+{
+  forbidden_area_ = *forbidden_area;
 
 }
 
+//######################
+//#### main program ####
 int main(int argc, char **argv)
 {
   // initialize ros and specify node name
@@ -749,7 +646,6 @@ int main(int argc, char **argv)
   while(my_placement_node.nh_.ok())
   {
      //can add this later to the funtion below
-    my_placement_node.publishPolygon();
     ros::spinOnce();
 
     loop_rate.sleep();
