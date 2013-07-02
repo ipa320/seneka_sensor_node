@@ -38,14 +38,18 @@ add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
 					common/src/particle.cpp
 					common/src/seneka_utilities.cpp
 					common/src/sensor_model.cpp)
+add_executable(sensor_placement_test	test/sensor_placement_test_publisher.cpp)
 
 ## Specify libraries to link a library or executable target against
  target_link_libraries(sensor_placement_node
    ${catkin_LIBRARIES}
  )
+ target_link_libraries(sensor_placement_test
+   ${catkin_LIBRARIES}
+ )
 
 ## Mark executables and/or libraries for installation
- install(TARGETS sensor_placement_node
+ install(TARGETS sensor_placement_node sensor_placement_test
    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

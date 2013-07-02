@@ -5,9 +5,13 @@
   <node name="sensor_placement" pkg="sensor_placement" type="sensor_placement_node" respawn="true" output="screen" >
     <rosparam file="$(find seneka_config)/config/sensor_placement.yaml" command="load"/>
     <!-- input -->
-    <remap from="in_map" to="/map"/>
+    <remap from="in_AoI_poly" to="/AoI_polygon"/>
+    <remap from="in_forbidden_area" to="/forbidden_area_polygon"/>
     <!-- output -->
-    <!--remap from="out_example" to="/example_topic"/-->
+    <remap from="out_path" to="/sensor_poses"/>
+    <remap from="out_marker_array" to="/sensor_fovs"/>
+    <remap from="out_cropped_map" to="/cropped_map"/>
+    <remap from="out_cropped_map_metadata" to="/cropped_map_metadata"/>
   </node>
 	
 </launch>
