@@ -639,6 +639,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
 }
 
 // function to update the targets_with_info variable
+// old version
 void particle::updateTargetsInfo(size_t sensor_index)
 {
   // initialize workspace
@@ -796,9 +797,12 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
   unsigned int rays_checked = 0;
   unsigned int ray = ray_start;
 
+  //go through all rays
   while(rays_checked < number_of_rays_to_check)
   {
     geometry_msgs::Point ray_end_point;
+    ray_end_point.x = 0;
+    ray_end_point.y = 0;
 
     int x, y;
 
@@ -820,6 +824,30 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
           //cell a potential target and not occupied
           if((targets_with_info_.at(cell_in_vector_coordinates).potential_target == 1) && (targets_with_info_.at(cell_in_vector_coordinates).occupied == false))
           {
+            //update endpoint
+            if(x <= sensor_pose.position.x)
+              //point is left of sensor
+            {
+              ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x;
+            }
+            else
+              //cell is right of sensor
+            {
+              ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x + map_.info.resolution; //add one cell for visualization
+            }
+
+            if(y <= sensor_pose.position.y)
+              //cell is below sensor
+            {
+              ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y;
+            }
+            else
+              //cell is over sensor
+            {
+              ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y + map_.info.resolution; //add one cell for visualization
+            }
+
+            //target covered
             targets_with_info_.at(cell_in_vector_coordinates).covered_by_sensor.at(sensor_index) = true;
 
             if(targets_with_info_.at(cell_in_vector_coordinates).covered == false)
@@ -851,6 +879,30 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
           //cell on perimeter and not occupied -> continue with the next cell on the ray (no coverage)
           if(targets_with_info_.at(cell_in_vector_coordinates).occupied == false)
           {
+            //update endpoint
+            if(x <= sensor_pose.position.x)
+              //point is left of sensor
+            {
+              ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x;
+            }
+            else
+              //cell is right of sensor
+            {
+              ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x + map_.info.resolution; //add one cell for visualization
+            }
+
+            if(y <= sensor_pose.position.y)
+              //cell is below sensor
+            {
+              ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y;
+            }
+            else
+              //cell is over sensor
+            {
+              ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y + map_.info.resolution; //add one cell for visualization
+            }
+
+            //continure with next cell without (no coverage)
             continue;
           }
           else
@@ -867,9 +919,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
       }
     }
 
-    //add current cell (end of visible part of the current ray) to the vector
-    ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x;
-    ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y;
+    //add endpoint to the vector of endpoints
     sensors_.at(sensor_index).addRayEndPoint(ray_end_point);
 
     //increase counter

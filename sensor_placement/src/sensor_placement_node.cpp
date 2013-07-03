@@ -339,7 +339,6 @@ void sensor_placement_node::initializePSO()
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {     
       // initialize sensor poses randomly on perimeter
-      //particle_swarm_.at(i).placeSensorsRandomlyOnPerimeter();
       particle_swarm_.at(i).initializeSensorsOnPerimeter();
       // initialize sensor velocities randomly
       particle_swarm_.at(i).initializeRandomSensorVelocities();
