@@ -1,4 +1,29 @@
 # camera ip address
 camera_ip_address: '192.168.0.1'
-
-
+# zooming parameter
+zoom_ratio_optical: 1
+zoom_ratio_digital: 1
+# Autofoucs parameter
+autoFocus: 3
+# videoModeNext parameter
+videoModeNext: 11
+#focusPosition parameter
+focusPosition: 53245
+#focusNearLimit parameter
+focusNearLimit: 14
+#titleText parameter
+titleText: 'test title....'
+#titleDisplay parameter
+titleDisplay: 1
+#statusDisplay parameter
+statusDisplay: 1
+#backLightCompensation parameter
+backLightCompensation: 0
+#noiseReduction parameter
+noiseReduction: 3
+#pictureEffect parameter
+pictureEffect: 0
+#infraredCutFilter parameter
+infraredCutFilter: 0
+#infraredCutFilterAuto parameter
+infraredCutFilterAuto: 0

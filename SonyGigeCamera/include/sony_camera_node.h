@@ -106,39 +106,70 @@ public:
     ~Sony_Camera_Node();
 
     void connectCamera();
+    void configCamera();
     void startStreaming();
     void stopStreaming();
     void publishImage();
     void disconnectCamera();
+    void zoom_ratio_optical(int ratio);
+    void zoom_ratio_digital(int ratio);
+    void zoom_in_out(int ratio_optical, int ratio_digital);
+    void autoFocusControl(int autoFocus);
+    void videoModeNext(int videoMode);
+    void focusPosition(int val);
+    bool focusNearLimit(int focusLimit);
+    void titleText(std::string str);
+    void titleDisplay(int val);
+    void statusDisplay(int val);
+    void backLightCompensation(int val);
+    bool noiseReduction(int val);
+    void pictureEffect(int val);
+    void infraredCutFilter(int val);
+    void infraredCutFilterAuto(int val);
 
-    bool zoom_in_out(seneka_srv::zoom::Request &req,
+    bool zoom_in_outService(seneka_srv::zoom::Request &req,
                      seneka_srv::zoom::Response &res);
-    bool focusControl(seneka_srv::focusAuto::Request &req,
+    bool focusControlService(seneka_srv::focusAuto::Request &req,
                       seneka_srv::focusAuto::Response &res);
-    bool videoModeNext(seneka_srv::videoMode::Request &req,
+    bool videoModeNextService(seneka_srv::videoMode::Request &req,
                        seneka_srv::videoMode::Response &res);
-    bool focusPosition(seneka_srv::focus::Request &req,
+    bool focusPositionService(seneka_srv::focus::Request &req,
                        seneka_srv::focus::Response &res);
-    bool focusNearLimit(seneka_srv::focusNearLimit::Request &req,
+    bool focusNearLimitService(seneka_srv::focusNearLimit::Request &req,
                         seneka_srv::focusNearLimit::Response &res);
-    bool infraredCutFilterAuto(seneka_srv::infraredCutFilterAuto::Request &req,
+    bool infraredCutFilterAutoService(seneka_srv::infraredCutFilterAuto::Request &req,
                                seneka_srv::infraredCutFilterAuto::Response &res);
-    bool infraredCutFilter(seneka_srv::infraredCutFilter::Request &req,
+    bool infraredCutFilterService(seneka_srv::infraredCutFilter::Request &req,
                            seneka_srv::infraredCutFilter::Response &res);
-    bool pictureEffect(seneka_srv::pictureEffect::Request &req,
+    bool pictureEffectService(seneka_srv::pictureEffect::Request &req,
                        seneka_srv::pictureEffect::Response &res);
-    bool noiseReduction(seneka_srv::noiseReduction::Request &req,
+    bool noiseReductionService(seneka_srv::noiseReduction::Request &req,
                        seneka_srv::noiseReduction::Response &res);
-    bool backLightCompensation(seneka_srv::backLightCompensation::Request &req,
+    bool backLightCompensationService(seneka_srv::backLightCompensation::Request &req,
                             seneka_srv::backLightCompensation::Response &res);
-    bool statusDisplay(seneka_srv::statusDisplay::Request &req,
+    bool statusDisplayService(seneka_srv::statusDisplay::Request &req,
                        seneka_srv::statusDisplay::Response &res);
-    bool titleDisplay(seneka_srv::titleDisplay::Request &req,
+    bool titleDisplayService(seneka_srv::titleDisplay::Request &req,
                        seneka_srv::titleDisplay::Response &res);
-    bool titleText(seneka_srv::titleText::Request &req,
+    bool titleTextService(seneka_srv::titleText::Request &req,
                        seneka_srv::titleText::Response &res);
 
-    std::string camera_ip_address;
+    std::string camera_ip_address_param;
+    std::string titleText_param;
+    int zoom_ratio_optical_param;
+    int zoom_ratio_digital_param;
+    int videoModeNext_param;
+    int focusPosition_param;
+    int autoFocus_param;
+    int focusLimit_param;
+    int titleDisplay_param;
+    int statusDisplay_param;
+    int backLightCompensation_param;
+    int noiseReduction_param;
+    int pictureEffect_param;
+    int infraredCutFilter_param;
+    int infraredCutFilterAuto_param;
+
     ros::NodeHandle nh,  pnh_;
     ros::ServiceServer zoom_service_, focus_service_,videoModeNext_service_,
     focusPosition_servie_, focusNearLimit_service_, infraredCutFilterAuto_service,
