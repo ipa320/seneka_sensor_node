@@ -79,6 +79,7 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh){
     lSize = 0;
     width_, height_ = 0;
     pnh_ = ros::NodeHandle("~");
+
     // Get device parameters need to control streaming
     lDeviceParams = lDevice.GetGenParameters();
 
@@ -146,49 +147,64 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh){
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial autoFocus parameter.");
     pnh_.param("autoFocus", autoFocus_param, 3);
 
+    // read parameter: videoModeNexts
     if(!pnh_.hasParam("videoModeNext"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial videoModeNext parameter.");
     pnh_.param("videoModeNext", videoModeNext_param, 11);
 
+    // read parameter: focusPosition
     if(!pnh_.hasParam("focusPosition"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial focusPosition parameter.");
     pnh_.param("focusPosition", focusPosition_param, 53248);
 
+    // read parameter: focusNearLimit
     if(!pnh_.hasParam("focusNearLimit"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial focusNearLimit parameter.");
     pnh_.param("focusNearLimit", focusLimit_param, 0);
 
+    // read parameter: titleText
     if(!pnh_.hasParam("titleText"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial titleText parameter.");
     pnh_.param("titleText", titleText_param, std::string(" "));
 
+    // read parameter: titleDisplay
     if(!pnh_.hasParam("titleDisplay"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial titleDisplay parameter.");
     pnh_.param("titleDisplay", titleDisplay_param, 0);
 
+    // read parameter: statusDisplay
     if(!pnh_.hasParam("statusDisplay"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial statusDisplay parameter.");
     pnh_.param("statusDisplay", statusDisplay_param, 0);
 
+    // read parameter: backLightCompensation
     if(!pnh_.hasParam("backLightCompensation"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial backLightCompensation parameter.");
     pnh_.param("backLightCompensation", backLightCompensation_param, 0);
 
+    // read parameter: noiseReduction
     if(!pnh_.hasParam("noiseReduction"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial noiseReduction parameter.");
     pnh_.param("noiseReduction", noiseReduction_param, 3);
 
+    // read parameter: pictureEffect
     if(!pnh_.hasParam("pictureEffect"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial pictureEffect parameter.");
     pnh_.param("pictureEffect", pictureEffect_param, 0);
 
+    // read parameter: infraredCutFilter
     if(!pnh_.hasParam("infraredCutFilter"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial infraredCutFilter parameter.");
     pnh_.param("infraredCutFilter", infraredCutFilter_param, 0);
 
+    // read parameter: infraredCutFilterAuto
     if(!pnh_.hasParam("infraredCutFilterAuto"))
         ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial infraredCutFilterAuto parameter.");
     pnh_.param("infraredCutFilterAuto",infraredCutFilterAuto_param, 0);
+
+
+
+
 
 
     //connect with the camera device
@@ -230,39 +246,48 @@ void Sony_Camera_Node::connectCamera(){
     printf( "\n" );
 }
 
-//Default configuration by setting parameter
+//Default configuration by setting parameter to the sony_camera.yaml file
 void Sony_Camera_Node::configCamera(){
 
     this->zoom_in_out(zoom_ratio_optical_param, zoom_ratio_digital_param);
     this->autoFocusControl(autoFocus_param);
     this->videoModeNext(videoModeNext_param);
-    this->focusPosition(focusPosition_param);
-    this->focusNearLimit(focusLimit_param);
     this->titleText(titleText_param);
     this->titleDisplay(titleDisplay_param);
     this->statusDisplay(statusDisplay_param);
     this->backLightCompensation(backLightCompensation_param);
     this->noiseReduction(noiseReduction_param);
-    this-> pictureEffect(pictureEffect_param);
+    this->pictureEffect(pictureEffect_param);
     this->infraredCutFilter(infraredCutFilter_param);
     this->infraredCutFilterAuto(infraredCutFilterAuto_param);
+
+
+    //focusPosition can be set only while the camera's FocusAuto is set to other than Continuos(=3), basically set to off(=0)
+    //lDeviceParams->GetEnumValue("FocusAuto",focus_auto);
+    if(autoFocus_param == 0){
+         this->focusPosition(focusPosition_param);
+    }
+    //focusNearLimit can be set only while the camera's FocusAuto is set to Continuos(=3)
+    if(autoFocus_param == 3){
+        this->focusNearLimit(focusLimit_param);
+    }
 
 }
 
 
 void Sony_Camera_Node::startStreaming(){
 
+    //Camera's ip address
     PvString address = camera_ip_address_param.c_str();
 
-    //PvString address("192.168.0.1");
-    // Negotiate streaming packet size
+    //Negotiate streaming packet size
     lDevice.NegotiatePacketSize();
 
-    // Open stream - have the PvDevice do it for us
+    //Open stream - have the PvDevice do it for us
     printf( "\n3.Opening stream to device\n" );
     lStream.Open( address );
 
-    // Reading payload size from device
+    //Reading payload size from device
     lPayloadSize = dynamic_cast<PvGenInteger *>( lDeviceParams->Get( "PayloadSize" ) );
     lPayloadSize->GetValue( lSize );
 
@@ -784,8 +809,8 @@ bool Sony_Camera_Node::focusPositionService(seneka_srv::focus::Request &req,
         if(req.focus_position >= 4096 && req.focus_position <= 61440){
 
             lDeviceParams->SetIntegerValue("Focus",req.focus_position);
-            lDeviceParams->ExecuteCommand("CAM_Focus");
-
+            //lDeviceParams->ExecuteCommand("CAM_Focus");
+             lDeviceParams->ExecuteCommand("CAM_FocusPosInq");
             res.success = true;
         }
         else{
@@ -793,7 +818,7 @@ bool Sony_Camera_Node::focusPositionService(seneka_srv::focus::Request &req,
             res.success = false;
         }
     }else{
-        ROS_WARN("\nFocus position cannot be change, while the camera is in continuous AutoFocus mode.\n");
+        ROS_WARN("\nFocus position cannot be change, while the camera's FocusAuto is set to Continuous\n");
         res.success = false;
     }
     return true;
@@ -806,16 +831,17 @@ void Sony_Camera_Node::focusPosition(int val){
     if (focus_auto == 0){
 
         //min:4096 Max: 61440
-        if( val >= 4096 && val <= 61440){
+        if(  4096 <= val && val <= 61440){
 
             lDeviceParams->SetIntegerValue("Focus",val);
             lDeviceParams->ExecuteCommand("CAM_Focus");
+            lDeviceParams->ExecuteCommand("CAM_FocusPosInq");
         }
         else{
             ROS_WARN("\nFocus position must be in-between 4096 and 61440.\n");
         }
     }else{
-        ROS_WARN("\nFocus position cannot be change, while the camera is in continuous AutoFocus mode.\n");
+        ROS_WARN("\nFocus position cannot be change, while the camera's FocusAuto is set to Continuous.\n");
     }
 }
 
@@ -932,7 +958,7 @@ bool Sony_Camera_Node::focusNearLimit(int focusLimit){
         return true;
     }
     else{
-        ROS_WARN("\nFocusNearLimit is only valid while the camera is in continuous AutoFocus mode.\n");
+        ROS_WARN("\nFocusNearLimit is only valid while the camera's  FocusAuto is set to Continuous.\n");
         return false;
     }
 
