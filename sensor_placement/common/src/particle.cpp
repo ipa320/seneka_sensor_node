@@ -338,6 +338,7 @@ void particle::initializeSensorsOnPerimeter()
   size_t successor = 0;
   double t = 0;
   double alpha = 0;
+  unsigned int cell_in_vector_coordinates = 0;
   geometry_msgs::Pose newPose;
   geometry_msgs::Pose2D new_pose2D;
   geometry_msgs::Vector3 vec_sensor_dir;
@@ -360,21 +361,16 @@ void particle::initializeSensorsOnPerimeter()
   {
     if(i < area_of_interest_.polygon.points.size())
     {
-      // calculating new_pose2D at corners of the polygon
-      new_pose2D.x = area_of_interest_.polygon.points.at(i).x;
-      new_pose2D.y = area_of_interest_.polygon.points.at(i).y;
-      vec_sensor_dir.x = polygon_center.x - new_pose2D.x;
-      vec_sensor_dir.y = polygon_center.y - new_pose2D.y;
-      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
-      if(vec_sensor_dir.y < 0)    {alpha = -alpha;}
-      new_pose2D.theta = tf::getYaw(tf::createQuaternionMsgFromYaw(alpha));
+      cell_in_vector_coordinates = worldToMapY(area_of_interest_.polygon.points.at(i).y, map_) * map_.info.width + worldToMapX(area_of_interest_.polygon.points.at(i).x, map_);
     }
 
-    if(i < area_of_interest_.polygon.points.size() && (pointInPolygon(new_pose2D, forbidden_poly_.polygon) == -1) )
+    if(i < area_of_interest_.polygon.points.size() && (!targets_with_info_.at(cell_in_vector_coordinates).forbidden) && 
+      (!targets_with_info_.at(cell_in_vector_coordinates).occupied) && (targets_with_info_.at(cell_in_vector_coordinates).map_data > -1) )
     {
       // set new sensor pose as one of the corners of the area of interest if not in forbidden area
-      newPose.position.x = area_of_interest_.polygon.points.at(i).x;
-      newPose.position.y = area_of_interest_.polygon.points.at(i).y;
+      // only set new position if the cell is not occupied and not unknoown, otherwise skip this corner
+      newPose.position.x = mapToWorldX(worldToMapX(area_of_interest_.polygon.points.at(i).x, map_), map_);
+      newPose.position.y = mapToWorldY(worldToMapY(area_of_interest_.polygon.points.at(i).y, map_), map_);
       newPose.position.z = 0;
 
       vec_sensor_dir.x = polygon_center.x - newPose.position.x;
@@ -430,11 +426,9 @@ void particle::initializeSensorsOnPerimeter()
         // get quaternion message for desired sensor facing direction
         newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
 
-        new_pose2D.x = newPose.position.x;
-        new_pose2D.y = newPose.position.y;
-        new_pose2D.theta = tf::getYaw(newPose.orientation);
+        cell_in_vector_coordinates = worldToMapY(newPose.position.y, map_) * map_.info.width + worldToMapX(newPose.position.x, map_);
 
-        if (pointInPolygon(new_pose2D, forbidden_poly_.polygon) == -1)
+        if( !targets_with_info_.at(cell_in_vector_coordinates).forbidden)
         {
           //found a point which is not in the forbidden area
           sensors_.at(i).setSensorPose(newPose);
@@ -806,7 +800,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
     for(unsigned int cell=0; cell < sensors_.at(sensor_index).getLookupTable().at(ray).size(); cell++)
     {
       //absolute x and y map coordinates of the current cell
-      x = worldToMapX(sensor_pose.position.x, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).x;        
+      x = worldToMapX(sensor_pose.position.x, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).x;
       y = worldToMapY(sensor_pose.position.y, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).y;
 
       int cell_in_vector_coordinates = y * map_.info.width + x;

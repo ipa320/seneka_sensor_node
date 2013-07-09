@@ -106,10 +106,38 @@ namespace seneka_utilities
 
   unsigned int worldToMapX(double world_x, const nav_msgs::OccupancyGrid & map)
   {
-    return floor((world_x - map.info.origin.position.x + EPSILON) / map.info.resolution);
+    unsigned int result = std::max((unsigned int) 0 , std::min(map.info.width, (unsigned int) floor((world_x - map.info.origin.position.x + EPSILON) / map.info.resolution)));
+
+    if(fabs(mapToWorldX(result, map) - map.info.width * map.info.resolution) < EPSILON)
+    {
+      return result-1;
+    }
+    else
+    {
+      return result;
+    }
   }
 
   unsigned int worldToMapY(double world_y, const nav_msgs::OccupancyGrid & map)
+  {
+    unsigned int result = std::max((unsigned int) 0 , std::min(map.info.height, (unsigned int) floor((world_y - map.info.origin.position.y + EPSILON) / map.info.resolution)));
+
+    if(fabs(mapToWorldY(result, map) - map.info.height * map.info.resolution) < EPSILON)
+    {
+      return result-1;
+    }
+    else
+    {
+      return result;
+    }
+  }
+
+  unsigned int worldToMapUnboundedX(double world_x, const nav_msgs::OccupancyGrid & map)
+  {
+    return floor((world_x - map.info.origin.position.x + EPSILON) / map.info.resolution);
+  }
+
+  unsigned int worldToMapUnboundedY(double world_y, const nav_msgs::OccupancyGrid & map)
   {
     return floor((world_y - map.info.origin.position.y + EPSILON) / map.info.resolution);
   }
@@ -683,7 +711,6 @@ namespace seneka_utilities
   unsigned int rayOfAngle(double angle, unsigned int number_of_rays)
   {
     double angle_per_ray = 2*PI / number_of_rays;
-
 
     int ray_of_angle = round(angle / angle_per_ray);
     if(ray_of_angle == number_of_rays)

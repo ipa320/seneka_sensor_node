@@ -74,6 +74,8 @@ namespace seneka_utilities
     geometry_msgs::Point32 world_pos;
     // holds the info if the given cell is occupied
     bool occupied;
+    // holds the info if the given cell is occupied, free or unknown
+    int8_t map_data;
     // holds the info if the given cell is a potential target, i.e. the position is inside
     // the area of interest (-1 == outside, 0 == on perimeter, 1 == inside)
     int8_t potential_target;
@@ -119,6 +121,8 @@ namespace seneka_utilities
   double mapToWorldY(int map_y, const nav_msgs::OccupancyGrid & map);
   unsigned int worldToMapX(double world_x, const nav_msgs::OccupancyGrid & map);
   unsigned int worldToMapY(double world_y, const nav_msgs::OccupancyGrid & map);
+  unsigned int worldToMapUnboundedX(double world_x, const nav_msgs::OccupancyGrid & map);
+  unsigned int worldToMapUnboundedY(double world_y, const nav_msgs::OccupancyGrid & map);
   geometry_msgs::Point32 mapToWorld2D(unsigned int map_x, unsigned int map_y,
                                       const nav_msgs::OccupancyGrid & map);
   void worldToMap2D(const geometry_msgs::Point32 &p,
