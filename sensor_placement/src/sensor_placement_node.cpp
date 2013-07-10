@@ -260,6 +260,7 @@ bool sensor_placement_node::getTargets()
           dummy_target_info.covered = false;
           dummy_target_info.multiple_covered = false;
           dummy_target_info.potential_target = -1;
+          dummy_target_info.map_data = map_.data.at( j * map_.info.width + i);
 
           // the given position lies withhin the polygon
           if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
