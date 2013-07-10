@@ -108,7 +108,7 @@ namespace seneka_utilities
   {
     unsigned int result = std::max((unsigned int) 0 , std::min(map.info.width, (unsigned int) floor((world_x - map.info.origin.position.x + EPSILON) / map.info.resolution)));
 
-    if(fabs(mapToWorldX(result, map) - map.info.width * map.info.resolution) < EPSILON)
+    if(fabs(mapToWorldX(result, map) - (map.info.origin.position.x + map.info.width * map.info.resolution)) < EPSILON)
     {
       return result-1;
     }
@@ -122,7 +122,7 @@ namespace seneka_utilities
   {
     unsigned int result = std::max((unsigned int) 0 , std::min(map.info.height, (unsigned int) floor((world_y - map.info.origin.position.y + EPSILON) / map.info.resolution)));
 
-    if(fabs(mapToWorldY(result, map) - map.info.height * map.info.resolution) < EPSILON)
+    if(fabs(mapToWorldY(result, map) - (map.info.origin.position.y + map.info.height * map.info.resolution)) < EPSILON)
     {
       return result-1;
     }

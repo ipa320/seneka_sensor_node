@@ -340,7 +340,6 @@ void particle::initializeSensorsOnPerimeter()
   double alpha = 0;
   unsigned int cell_in_vector_coordinates = 0;
   geometry_msgs::Pose newPose;
-  geometry_msgs::Pose2D new_pose2D;
   geometry_msgs::Vector3 vec_sensor_dir;
 
   // get bounding box of area of interest
@@ -389,9 +388,6 @@ void particle::initializeSensorsOnPerimeter()
       // set new sensor pose
       sensors_.at(i).setSensorPose(newPose);
 
-      // update the target information
-      updateTargetsInfoRaytracing(i);
-
     }
     else
     {
@@ -407,10 +403,10 @@ void particle::initializeSensorsOnPerimeter()
         t = randomNumber(0,1);
 
         // get random Pose on perimeter of the area of interest specified by a polygon
-        newPose.position.x = area_of_interest_.polygon.points.at(edge_ind).x
-                              + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x);
-        newPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y
-                              + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y);
+        newPose.position.x = mapToWorldX(worldToMapX(area_of_interest_.polygon.points.at(edge_ind).x
+                              + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x), map_), map_);
+        newPose.position.y = mapToWorldY(worldToMapY(area_of_interest_.polygon.points.at(edge_ind).y
+                              + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y), map_), map_);
         newPose.position.z = 0;
 
         vec_sensor_dir.x = polygon_center.x - newPose.position.x;
@@ -440,10 +436,9 @@ void particle::initializeSensorsOnPerimeter()
          pose_accepted=false;
         }
       }while(!pose_accepted); //keep looking until a point is found which is outside the forbidden area
-
-      // update the target information
-      updateTargetsInfoRaytracing(i);
     }
+    // update the target information
+    updateTargetsInfoRaytracing(i);
   }
   // calculate new coverage
   calcCoverage();
