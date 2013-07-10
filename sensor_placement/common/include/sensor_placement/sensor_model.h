@@ -161,6 +161,9 @@ public:
   // function to get the lookup table
   virtual const std::vector< std::vector<geometry_msgs::Point32> >& getLookupTable() = 0;
 
+  // function to get the index of the lookup table for the corresponding angle 
+  virtual int rayOfAngle(double angle) = 0;
+
   // ************************* help functions *************************
 
   // draws a visualization of the respective sensor model
@@ -235,6 +238,9 @@ public:
 
   // function to get the lookup table
   const std::vector< std::vector<geometry_msgs::Point32> >& getLookupTable();
+
+  // function to get the index of the lookup table for the corresponding angle
+  int rayOfAngle(double angle);
 
   // returns the visualization markers of the respective sensor model
   visualization_msgs::MarkerArray getVisualizationMarkersOld(unsigned int id);

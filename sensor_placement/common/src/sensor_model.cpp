@@ -251,6 +251,35 @@ const std::vector< std::vector<geometry_msgs::Point32> >& FOV_2D_model::getLooku
   return lookup_table_;
 }
 
+// function to get the index of the lookup table for the corresponding angle
+int FOV_2D_model::rayOfAngle(double angle)
+{
+  double error = 3*PI;
+  int best_ray = 0;
+
+  //go through all rays
+  for(int ray=0; ray < lookup_table_.size(); ray++)
+  {
+    //angle of the current ray
+    double ray_angle = atan2(lookup_table_.at(ray).back().y, lookup_table_.at(ray).back().x);
+
+    //if ray is in the lower half add 2*PI to stay in between 0 and 2*PI
+    if(lookup_table_.at(ray).back().y < 0)
+    {
+      ray_angle += 2*PI;
+    }
+
+    //if current ray is closer to the angle
+    if(std::abs(ray_angle - angle) < error)
+    {
+      best_ray = ray;
+      error = std::abs(ray_angle - angle);
+    }
+  }
+
+  return best_ray;
+}
+
 // returns the visualization markers of the respective sensor model
 // old version
 visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkersOld(unsigned int id)
@@ -349,7 +378,7 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
 
     triangle.pose = dummy_pose;
 
-    triangle.id = 1;
+    triangle.id = 0;
     triangle.type = visualization_msgs::Marker::TRIANGLE_LIST;
     triangle.scale.x = 1.0;
     triangle.scale.y = 1.0;
@@ -382,7 +411,7 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
 
     border.pose = sensor_pose_;
 
-    border.id = 0;
+    border.id = 1;
     border.type = visualization_msgs::Marker::LINE_STRIP;
     border.scale.x = 0.05;
     border.color.a = 1.0;
@@ -422,7 +451,7 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
 
     ray_line.pose = dummy_pose;
 
-    ray_line.id = 0;
+    ray_line.id = 2;
     ray_line.type = visualization_msgs::Marker::LINE_LIST;
     ray_line.scale.x = 0.01;
     ray_line.color.a = 1.0;
@@ -430,7 +459,7 @@ visualization_msgs::MarkerArray FOV_2D_model::getVisualizationMarkers(unsigned i
     ray_line.color.g = 1.0;
     ray_line.color.b = 0.0;
 
-    for(unsigned int i = 1; i < end_of_rays_.size(); i++)
+    for(unsigned int i = 0; i < end_of_rays_.size(); i++)
     {
       ray_line.points.push_back(origin);
       ray_line.points.push_back(end_of_rays_.at(i));

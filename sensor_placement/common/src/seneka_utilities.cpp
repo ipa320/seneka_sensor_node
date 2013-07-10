@@ -48,7 +48,9 @@
  * If not, see <http://www.gnu.org/licenses/>.
  *
  ****************************************************************/
-
+#include <ros/ros.h>
+#include <tf/tf.h>
+#include <ros/console.h>
 #include <seneka_utilities.h>
 
 namespace seneka_utilities
@@ -483,7 +485,6 @@ namespace seneka_utilities
   /* --------- raytracing -------------- */
   /* ----------------------------------- */
 
-  //NEW NEW NEW
   //function to raytrace between two cells/positions
   //returns a vector of the relative positions of cells the ray passes through
   std::vector<geometry_msgs::Point32> raytraceLine(int end_cell_x, int end_cell_y, int start_cell_x, int start_cell_y)
@@ -558,7 +559,6 @@ namespace seneka_utilities
     return ray_points;
   }
 
-  //NEW NEW NEW
   //function to raytrace a circle
   //returns a vector of the relative positions of cells the ray passes through
   std::vector<geometry_msgs::Point32> raytraceCircle(unsigned int radius_in_cells)
@@ -616,7 +616,6 @@ namespace seneka_utilities
     return circle_cells;
   }
 
-  //NEW NEW NEW
   //helper function for raytraceCircle to add cell postion and its 7 mirrors to the vectors
   void addCircleCells(std::vector< std::vector<geometry_msgs::Point32> >& octants, int x, int y)
   {
@@ -654,7 +653,6 @@ namespace seneka_utilities
     } 
   }
 
-  //NEW NEW NEW
   //function to create a lookup table of all cells inside a circle
   //returns a 2D vector with all rays necessary for all cells inside a circle
   //each ray is a vector of cells
@@ -676,20 +674,6 @@ namespace seneka_utilities
     }
 
     return lookup_table_complete_circle;
-  }
-
-  //NEW NEW NEW
-  //function to get the index for the lookup table of the corresponding angle 
-  unsigned int rayOfAngle(double angle, unsigned int number_of_rays)
-  {
-    double angle_per_ray = 2*PI / number_of_rays;
-
-
-    int ray_of_angle = round(angle / angle_per_ray);
-    if(ray_of_angle == number_of_rays)
-      ray_of_angle = 0;
-
-    return ray_of_angle;
   }
 
 } // end namespace

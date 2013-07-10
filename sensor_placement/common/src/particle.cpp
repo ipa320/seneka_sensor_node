@@ -771,20 +771,20 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
   double orientation = tf::getYaw(sensor_pose.orientation);
 
   //get angles of sensor and keep them between 0 and 2*PI
-  double angle1 = orientation - (open_ang.front() / 2);
-  if(angle1 >= 2*PI)
-    angle1 -= 2*PI;
+  double angle1 = orientation - (open_ang.front() / 2.0);
+  if(angle1 >= 2.0*PI)
+    angle1 -= 2.0*PI;
   if(angle1 < 0)
-    angle1 += 2*PI;
+    angle1 += 2.0*PI;
 
-  double angle2 = orientation + (open_ang.front() / 2);
-  if(angle2 >= 2*PI)
-    angle2 -= 2*PI;
+  double angle2 = orientation + (open_ang.front() / 2.0);
+  if(angle2 >= 2.0*PI)
+    angle2 -= 2.0*PI;
   if(angle2 < 0)
-    angle2 += 2*PI;
+    angle2 += 2.0*PI;
 
-  unsigned int ray_start = rayOfAngle(angle1, max_number_of_rays);
-  unsigned int ray_end = rayOfAngle(angle2, max_number_of_rays);
+  unsigned int ray_start = sensors_.at(sensor_index).rayOfAngle(angle1);
+  unsigned int ray_end = sensors_.at(sensor_index).rayOfAngle(angle2);
 
   unsigned int number_of_rays_to_check;
 
@@ -805,13 +805,18 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
     ray_end_point.y = 0;
 
     int x, y;
+    int cell;
+    int lookup_table_x, lookup_table_y;
 
     //go through ray
-    for(unsigned int cell=0; cell < sensors_.at(sensor_index).getLookupTable().at(ray).size(); cell++)
+    for(cell=0; cell < sensors_.at(sensor_index).getLookupTable().at(ray).size(); cell++)
     {
+      lookup_table_x = sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).x;
+      lookup_table_y = sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).y;
+
       //absolute x and y map coordinates of the current cell
-      x = worldToMapX(sensor_pose.position.x, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).x;        
-      y = worldToMapY(sensor_pose.position.y, map_) + sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).y;
+      x = worldToMapX(sensor_pose.position.x, map_) + lookup_table_x;        
+      y = worldToMapY(sensor_pose.position.y, map_) + lookup_table_y;
 
       int cell_in_vector_coordinates = y * map_.info.width + x;
 
@@ -824,29 +829,6 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
           //cell a potential target and not occupied
           if((targets_with_info_.at(cell_in_vector_coordinates).potential_target == 1) && (targets_with_info_.at(cell_in_vector_coordinates).occupied == false))
           {
-            //update endpoint
-            if(x <= sensor_pose.position.x)
-              //point is left of sensor
-            {
-              ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x;
-            }
-            else
-              //cell is right of sensor
-            {
-              ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x + map_.info.resolution; //add one cell for visualization
-            }
-
-            if(y <= sensor_pose.position.y)
-              //cell is below sensor
-            {
-              ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y;
-            }
-            else
-              //cell is over sensor
-            {
-              ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y + map_.info.resolution; //add one cell for visualization
-            }
-
             //target covered
             targets_with_info_.at(cell_in_vector_coordinates).covered_by_sensor.at(sensor_index) = true;
 
@@ -879,30 +861,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
           //cell on perimeter and not occupied -> continue with the next cell on the ray (no coverage)
           if(targets_with_info_.at(cell_in_vector_coordinates).occupied == false)
           {
-            //update endpoint
-            if(x <= sensor_pose.position.x)
-              //point is left of sensor
-            {
-              ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x;
-            }
-            else
-              //cell is right of sensor
-            {
-              ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x + map_.info.resolution; //add one cell for visualization
-            }
-
-            if(y <= sensor_pose.position.y)
-              //cell is below sensor
-            {
-              ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y;
-            }
-            else
-              //cell is over sensor
-            {
-              ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y + map_.info.resolution; //add one cell for visualization
-            }
-
-            //continure with next cell without (no coverage)
+            //continue with next cell without (no coverage)
             continue;
           }
           else
@@ -917,6 +876,40 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
       {
         break;
       }
+    }
+
+    //skipped some part of the ray -> get coordinates of the last non-occupied cell
+    if(cell != sensors_.at(sensor_index).getLookupTable().at(ray).size()-1)
+    {
+      lookup_table_x = sensors_.at(sensor_index).getLookupTable().at(ray).at(cell-1).x;
+      lookup_table_y = sensors_.at(sensor_index).getLookupTable().at(ray).at(cell-1).y;
+    }
+
+    //absolute x and y map coordinates of the last non-occupied cell
+    x = worldToMapX(sensor_pose.position.x, map_) + lookup_table_x;        
+    y = worldToMapY(sensor_pose.position.y, map_) + lookup_table_y;
+
+    //update endpoint
+    if(lookup_table_x <= 0)
+      //point is left of sensor
+    {
+      ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x;
+    }
+    else
+      //cell is right of sensor
+    {
+      ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x + map_.info.resolution; //add one cell for visualization
+    }
+
+    if(lookup_table_y <= 0)
+      //cell is below sensor
+    {
+      ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y;
+    }
+    else
+      //cell is over sensor
+    {
+      ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y + map_.info.resolution; //add one cell for visualization
     }
 
     //add endpoint to the vector of endpoints
