@@ -184,8 +184,6 @@ namespace seneka_utilities
   //lookuptable[2][3] is the relativ position of the third cell in the second ray
   std::vector< std::vector<geometry_msgs::Point32> > createLookupTableCircle(unsigned int radius_in_cells);
 
-  //function to get the index for the lookup table of the corresponding angle 
-  unsigned int rayOfAngle(double angle, unsigned int number_of_rays);
 }; // end namespace
 
 #endif
