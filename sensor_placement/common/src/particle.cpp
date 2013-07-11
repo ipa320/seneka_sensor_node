@@ -198,11 +198,29 @@ void particle::setSensorNum(int num_of_sensors)
 
 }
 
-// function that sets the member variable targets_with_info_
-void particle::setTargetsWithInfo(const std::vector<target_info> &targets_with_info, int target_num)
+// function to set the fix information for all targets
+void particle::setTargetsWithInfoFix(const std::vector<target_info_fix> &targets_with_info_fix, int target_num)
 {
-  targets_with_info_ = targets_with_info;
+  targets_with_info_fix_ = targets_with_info_fix;
   target_num_ = target_num;
+}
+
+// function to set the variable information for all targets
+void particle::setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var)
+{
+  targets_with_info_var_ = targets_with_info_var;
+  covered_targets_num_ = 0;
+  multiple_coverage_ = 0;
+}
+
+// function to reset the variable information for all targets
+void particle::resetTargetsWithInfoVar()
+{
+  for(int i=0; i<targets_with_info_var_.size(); i++)
+  {
+    targets_with_info_var_.at(i).reset();
+  }
+
   covered_targets_num_ = 0;
   multiple_coverage_ = 0;
 }
@@ -363,8 +381,8 @@ void particle::initializeSensorsOnPerimeter()
       cell_in_vector_coordinates = worldToMapY(area_of_interest_.polygon.points.at(i).y, map_) * map_.info.width + worldToMapX(area_of_interest_.polygon.points.at(i).x, map_);
     }
 
-    if(i < area_of_interest_.polygon.points.size() && (!targets_with_info_.at(cell_in_vector_coordinates).forbidden) && 
-      (!targets_with_info_.at(cell_in_vector_coordinates).occupied) && (targets_with_info_.at(cell_in_vector_coordinates).map_data > -1) )
+    if(i < area_of_interest_.polygon.points.size() && (!targets_with_info_fix_.at(cell_in_vector_coordinates).forbidden) &&
+      (!targets_with_info_fix_.at(cell_in_vector_coordinates).occupied) && (targets_with_info_fix_.at(cell_in_vector_coordinates).map_data > -1) )
     {
       // set new sensor pose as one of the corners of the area of interest if not in forbidden area
       // only set new position if the cell is not occupied and not unknoown, otherwise skip this corner
@@ -424,7 +442,7 @@ void particle::initializeSensorsOnPerimeter()
 
         cell_in_vector_coordinates = worldToMapY(newPose.position.y, map_) * map_.info.width + worldToMapX(newPose.position.x, map_);
 
-        if( !targets_with_info_.at(cell_in_vector_coordinates).forbidden)
+        if( !targets_with_info_fix_.at(cell_in_vector_coordinates).forbidden)
         {
           //found a point which is not in the forbidden area
           sensors_.at(i).setSensorPose(newPose);
@@ -585,8 +603,8 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
       target_ind = randomFreeTarget();
 
       // update sensor position
-      new_pose.position.x = targets_with_info_.at(target_ind).world_pos.x;
-      new_pose.position.y = targets_with_info_.at(target_ind).world_pos.y;
+      new_pose.position.x = targets_with_info_fix_.at(target_ind).world_pos.x;
+      new_pose.position.y = targets_with_info_fix_.at(target_ind).world_pos.y;
       new_pose.position.z = 0;
 
       // desired sensor facing direction is the center of the area of interest
@@ -713,32 +731,32 @@ void particle::updateTargetsInfo(size_t sensor_index)
     {
 
       // now check every potential target in the sensors' bounding box
-      if(targets_with_info_.at(y * map_.info.width + x).potential_target == 1)
+      if(targets_with_info_fix_.at(y * map_.info.width + x).potential_target == 1)
       {
         // now we found a target
-        if(!targets_with_info_.at(y * map_.info.width + x).occupied)
+        if(!targets_with_info_fix_.at(y * map_.info.width + x).occupied)
         {
           // now we found a non-occupied target, so check the coverage
-          if(checkCoverage(sensors_.at(sensor_index), targets_with_info_.at(y * map_.info.width + x).world_pos))
+          if(checkCoverage(sensors_.at(sensor_index), targets_with_info_fix_.at(y * map_.info.width + x).world_pos))
           {
             // now we found a non-occupied target covered by the given sensor
-            targets_with_info_.at(y * map_.info.width + x).covered_by_sensor.at(sensor_index) = true;
+            targets_with_info_var_.at(y * map_.info.width + x).covered_by_sensor.at(sensor_index) = true;
 
-            if(!targets_with_info_.at(y * map_.info.width + x).covered)
+            if(!targets_with_info_var_.at(y * map_.info.width + x).covered)
             {
               // now the given target is covered by at least one sensor
-              targets_with_info_.at(y * map_.info.width + x).covered = true;
+              targets_with_info_var_.at(y * map_.info.width + x).covered = true;
               // increment the covered targets counter only if the given target is not covered by another sensor yet
               covered_targets_num_++;
 
             }
             else
             {
-              if(!targets_with_info_.at(y * map_.info.width + x).multiple_covered)
+              if(!targets_with_info_var_.at(y * map_.info.width + x).multiple_covered)
                 multiple_coverage_++;
 
               // now the given target is covered by multiple sensors
-              targets_with_info_.at(y * map_.info.width + x).multiple_covered = true;
+              targets_with_info_var_.at(y * map_.info.width + x).multiple_covered = true;
             }
           }
         }
@@ -810,30 +828,30 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
       int cell_in_vector_coordinates = y * map_.info.width + x;
 
       //cell coordinates are valid (not outside of the area of interest)
-      if((y >= 0) && (x >= 0) && (y < map_.info.height) && (x < map_.info.width) && (cell_in_vector_coordinates < targets_with_info_.size()))
+      if((y >= 0) && (x >= 0) && (y < map_.info.height) && (x < map_.info.width) && (cell_in_vector_coordinates < targets_with_info_fix_.size()))
       {
         //cell not on the perimeter
-        if(targets_with_info_.at(cell_in_vector_coordinates).potential_target != 0)
+        if(targets_with_info_fix_.at(cell_in_vector_coordinates).potential_target != 0)
         {
           //cell a potential target and not occupied
-          if((targets_with_info_.at(cell_in_vector_coordinates).potential_target == 1) && (targets_with_info_.at(cell_in_vector_coordinates).occupied == false))
+          if((targets_with_info_fix_.at(cell_in_vector_coordinates).potential_target == 1) && (targets_with_info_fix_.at(cell_in_vector_coordinates).occupied == false))
           {
             //target covered
-            targets_with_info_.at(cell_in_vector_coordinates).covered_by_sensor.at(sensor_index) = true;
+            targets_with_info_var_.at(cell_in_vector_coordinates).covered_by_sensor.at(sensor_index) = true;
 
-            if(targets_with_info_.at(cell_in_vector_coordinates).covered == false)
+            if(targets_with_info_var_.at(cell_in_vector_coordinates).covered == false)
             {
               // now the given target is covered by at least one sensor
-              targets_with_info_.at(cell_in_vector_coordinates).covered = true;
+              targets_with_info_var_.at(cell_in_vector_coordinates).covered = true;
               // increment the covered targets counter only if the given target is not covered by another sensor yet
               covered_targets_num_++;
             }
             else
             {
-              if(targets_with_info_.at(cell_in_vector_coordinates).multiple_covered == false)
+              if(targets_with_info_var_.at(cell_in_vector_coordinates).multiple_covered == false)
               {
                 // now the given target is covered by multiple sensors
-                targets_with_info_.at(cell_in_vector_coordinates).multiple_covered = true;
+                targets_with_info_var_.at(cell_in_vector_coordinates).multiple_covered = true;
               }            
               multiple_coverage_++;
             }
@@ -848,7 +866,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
         else
         {
           //cell on perimeter and not occupied -> continue with the next cell on the ray (no coverage)
-          if(targets_with_info_.at(cell_in_vector_coordinates).occupied == false)
+          if(targets_with_info_fix_.at(cell_in_vector_coordinates).occupied == false)
           {
             //continue with next cell without (no coverage)
             continue;
@@ -1014,14 +1032,14 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
       pose_x_index = worldToMapX(new_pose_candidate.position.x, map_);
       pose_y_index = worldToMapY(new_pose_candidate.position.y, map_);
 
-      if(pose_y_index * map_.info.width + pose_x_index >= targets_with_info_.size())
-      {
+      if(pose_y_index * map_.info.width + pose_x_index >= targets_with_info_fix_.size())
+      { 
         // indices are out of bounds
         result = false;
       }
       else
       {
-        if(targets_with_info_.at(pose_y_index * map_.info.width + pose_x_index).occupied)
+        if(targets_with_info_fix_.at(pose_y_index * map_.info.width + pose_x_index).occupied)
         {
           // the pose candidate is within the area of interest
           // but the desired position is occupied
@@ -1067,16 +1085,16 @@ unsigned int particle::findFarthestUncoveredTarget(size_t sensor_index)
   geometry_msgs::Pose sensor_pose = sensors_.at(sensor_index).getSensorPose();
   geometry_msgs::Vector3 vec_sensor_target, vec_sensor_dir;
 
-  for(size_t i = 0; i < targets_with_info_.size(); i++)
+  for(size_t i = 0; i < targets_with_info_fix_.size(); i++)
   {
-    if( (!targets_with_info_.at(i).covered) && (targets_with_info_.at(i).potential_target == 1) && (!targets_with_info_.at(i).forbidden) )
+    if( (!targets_with_info_var_.at(i).covered) && (targets_with_info_fix_.at(i).potential_target == 1) && (!targets_with_info_fix_.at(i).forbidden) )
     {
       // we found an uncovered target which is not forbidden, check if this is further away from the sensor than the current maximum
 
       // calculate vector between sensor and target
-      vec_sensor_target.x = targets_with_info_.at(i).world_pos.x - sensor_pose.position.x;
-      vec_sensor_target.y = targets_with_info_.at(i).world_pos.y - sensor_pose.position.y;
-      vec_sensor_target.z = 0;
+      vec_sensor_target.x = targets_with_info_fix_.at(i).world_pos.x - sensor_pose.position.x;
+      vec_sensor_target.y = targets_with_info_fix_.at(i).world_pos.y - sensor_pose.position.y;
+      vec_sensor_target.z = 0; 
 
       actual_distance = vecNorm(vec_sensor_target);
 

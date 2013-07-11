@@ -143,8 +143,9 @@ private:
   // number of targets for PSO
   int target_num_;
 
-  // target vector (also holds occupation and coverage information)
-  vector<target_info> targets_with_info_;
+  // target vectors (also holds occupation and coverage information)
+  vector<target_info_fix> targets_with_info_fix_; //fix information
+  vector<target_info_var> targets_with_info_var_; //variable information
 
   // PSO parameter constants
   double PSO_param_1_;

@@ -194,10 +194,11 @@ bool sensor_placement_node::getTargets()
   {
     // only if we received a map, we can get targets
 
-    // initialize a dummy target_info object
-    target_info dummy_target_info;
-    targets_with_info_.assign(map_.info.width * map_.info.height, dummy_target_info);
-    dummy_target_info.covered_by_sensor.assign(sensor_num_, false);
+    target_info_fix dummy_target_info_fix;
+    targets_with_info_fix_.assign(map_.info.width * map_.info.height, dummy_target_info_fix);
+    target_info_var dummy_target_info_var;
+    targets_with_info_var_.assign(map_.info.width * map_.info.height, dummy_target_info_var);
+    dummy_target_info_var.covered_by_sensor.assign(sensor_num_, false);
 
     if(AoI_received_ == false)
     {
@@ -212,15 +213,20 @@ bool sensor_placement_node::getTargets()
           world_Coord.y = mapToWorldY(j, map_);
           world_Coord.theta = 0;
 
-          dummy_target_info.world_pos.x = mapToWorldX(i, map_);
-          dummy_target_info.world_pos.y = mapToWorldY(j, map_);
-          dummy_target_info.world_pos.z = 0;
+          //fix information
+          dummy_target_info_fix.world_pos.x = mapToWorldX(i, map_);
+          dummy_target_info_fix.world_pos.y = mapToWorldY(j, map_);
+          dummy_target_info_fix.world_pos.z = 0;
 
-          dummy_target_info.forbidden = false;    //all targets are allowed unless found in forbidden area
-          dummy_target_info.occupied = true;
-          dummy_target_info.covered = false;
-          dummy_target_info.multiple_covered = false;
-          dummy_target_info.potential_target = -1;
+          dummy_target_info_fix.forbidden = false;    //all targets are allowed unless found in forbidden area
+          dummy_target_info_fix.occupied = true;
+          dummy_target_info_fix.potential_target = -1;
+
+          //variable information
+          dummy_target_info_var.covered = false;
+          dummy_target_info_var.multiple_covered = false;
+          
+
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
@@ -228,10 +234,12 @@ bool sensor_placement_node::getTargets()
                pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
             {
               // the given position is on the forbidden area
-              dummy_target_info.forbidden = true;
+              dummy_target_info_fix.forbidden = true;
             }
-            dummy_target_info.occupied = false;
-            dummy_target_info.potential_target = 1;
+
+            dummy_target_info_fix.occupied = false;
+            dummy_target_info_fix.potential_target = 1;
+
             target_num_++;
           }
         }
@@ -251,16 +259,20 @@ bool sensor_placement_node::getTargets()
           world_Coord.y = mapToWorldY(j, map_);
           world_Coord.theta = 0;
 
-          dummy_target_info.world_pos.x = mapToWorldX(i, map_);
-          dummy_target_info.world_pos.y = mapToWorldY(j, map_);
-          dummy_target_info.world_pos.z = 0;
+          //fix information
+          dummy_target_info_fix.world_pos.x = mapToWorldX(i, map_);
+          dummy_target_info_fix.world_pos.y = mapToWorldY(j, map_);
+          dummy_target_info_fix.world_pos.z = 0;
 
-          dummy_target_info.forbidden = false;    //all targets are allowed unless found in forbidden area
-          dummy_target_info.occupied = true;
-          dummy_target_info.covered = false;
-          dummy_target_info.multiple_covered = false;
-          dummy_target_info.potential_target = -1;
-          dummy_target_info.map_data = map_.data.at( j * map_.info.width + i);
+          dummy_target_info_fix.forbidden = false;    //all targets are allowed unless found in forbidden area
+          dummy_target_info_fix.occupied = true;
+          dummy_target_info_fix.potential_target = -1;
+          dummy_target_info_fix.map_data = map_.data.at( j * map_.info.width + i);
+
+          //variable information
+          dummy_target_info_var.covered = false;
+          dummy_target_info_var.multiple_covered = false;
+
 
           // the given position lies withhin the polygon
           if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
@@ -269,14 +281,16 @@ bool sensor_placement_node::getTargets()
                pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
             {
               // the given position is on the forbidden area
-              dummy_target_info.forbidden = true;
+              dummy_target_info_fix.forbidden = true;
             }
-            dummy_target_info.potential_target = 1;
+
+            dummy_target_info_fix.potential_target = 1;
 
             if(map_.data.at( j * map_.info.width + i) == 0)
             {
               target_num_++;
-              dummy_target_info.occupied = false;
+
+              dummy_target_info_fix.occupied = false;
             }
           }
           // the given position lies on the perimeter
@@ -286,17 +300,19 @@ bool sensor_placement_node::getTargets()
                pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
             {
               // the given position is on the forbidden area
-              dummy_target_info.forbidden = true;
+              dummy_target_info_fix.forbidden = true;
             }
-            dummy_target_info.potential_target = 0;
+
+            dummy_target_info_fix.potential_target = 0;
 
             if(map_.data.at( j * map_.info.width + i) == 0)
             {
-              dummy_target_info.occupied = false;
+              dummy_target_info_fix.occupied = false;
             }
           }
           // save the target information
-          targets_with_info_.at(j * map_.info.width + i) = dummy_target_info;
+          targets_with_info_var_.at(j * map_.info.width + i) = dummy_target_info_var;
+          targets_with_info_fix_.at(j * map_.info.width + i) = dummy_target_info_fix;
         }
       }
       result = true;
@@ -320,11 +336,11 @@ void sensor_placement_node::initializePSO()
   dummy_particle.setForbiddenArea(forbidden_area_);
   dummy_particle.setOpenAngles(open_angles_);
   dummy_particle.setRange(sensor_range_);
-  dummy_particle.setTargetsWithInfo(targets_with_info_, target_num_);
 
-  ROS_INFO_STREAM("creating lookup tables for dummy particle..");
+  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
+  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+
   dummy_particle.setLookupTable(sensor_range_);
-  ROS_INFO_STREAM("lookup tables created.");
 
   // initialize particle swarm with given number of particles containing given number of sensors
   particle_swarm_.assign(particle_num_,dummy_particle);
@@ -363,6 +379,10 @@ void sensor_placement_node::initializePSO()
 // function for the actual particle-swarm-optimization
 void sensor_placement_node::PSOptimize()
 {
+  //clock_t t_start;
+  //clock_t t_end;
+  //double  t_diff;
+
   // PSO-iterator
   int iter = 0;
   std::vector<geometry_msgs::Pose> global_pose;
@@ -376,10 +396,18 @@ void sensor_placement_node::PSOptimize()
     // update each particle in vector
     for(size_t i=0; i < particle_swarm_.size(); i++)
     {
-      // reset targets_with_info_ for each particle before the update step
-      particle_swarm_.at(i).setTargetsWithInfo(targets_with_info_, target_num_);
+      //t_start = clock();
+      particle_swarm_.at(i).resetTargetsWithInfoVar();
+      //t_end = clock();
+      //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+      //ROS_INFO( "reset: %10.10f \n", t_diff);
+
       // now we're ready to update the particle
+      //t_start = clock();
       particle_swarm_.at(i).updateParticle(global_pose, PSO_param_1_, PSO_param_2_, PSO_param_3_);
+      //t_end = clock();
+      //t_diff = (double)(t_end - t_start) / (double)CLOCKS_PER_SEC;
+      //ROS_INFO( "updateParticle: %10.10f \n", t_diff);
     }
     // after the update step we're looking for a new global best solution
     getGlobalBest();
@@ -469,7 +497,8 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   if(targets_saved_)
   {
     ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
-    ROS_INFO_STREAM("Saved " << targets_with_info_.size() << " targets with info in std-vector");
+
+    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
   }
 
 
@@ -494,7 +523,10 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 
   ROS_INFO("Clean up everything");
   particle_swarm_.clear();
-  targets_with_info_.clear();
+
+  targets_with_info_fix_.clear();
+  targets_with_info_var_.clear();
+
   target_num_ = 0;
   best_cov_ = 0;
   best_particle_index_ = 0;
@@ -551,8 +583,11 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   if(targets_saved_)
   {
     ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
-    ROS_INFO_STREAM("Saved " << targets_with_info_.size() << " targets with info in std-vector");
+
+    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
+
   }
+
   // initialize pointer to dummy sensor_model
   FOV_2D_model dummy_2D_model;
   dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
@@ -570,7 +605,9 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   dummy_particle.setForbiddenArea(forbidden_area_);
   dummy_particle.setOpenAngles(open_angles_);
   dummy_particle.setRange(5);
-  dummy_particle.setTargetsWithInfo(targets_with_info_, target_num_);
+
+  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
 
   ROS_INFO_STREAM("creating lookup tables for dummy particle..");
   dummy_particle.setLookupTable(5);

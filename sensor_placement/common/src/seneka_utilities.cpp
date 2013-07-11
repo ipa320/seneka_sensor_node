@@ -54,6 +54,19 @@
 namespace seneka_utilities
 {
   /* ----------------------------------- */
+  /* ------ STRUCT FUNCTIONS ----------- */
+  /* ----------------------------------- */
+
+  // function to reset the changeable information about the target
+  void target_info_var::reset()
+  {
+    covered = false;
+    multiple_covered = false;
+    
+    std::fill(covered_by_sensor.begin(), covered_by_sensor.end(), false);
+  }
+
+  /* ----------------------------------- */
   /* -------------- MATH --------------- */
   /* ----------------------------------- */
   // function to gerenate random numbers in given interval
