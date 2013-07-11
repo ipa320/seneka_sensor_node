@@ -495,7 +495,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
 
   bool force_orientation_acceptance = false;
 
-  int target_ind = -1;
+  unsigned int target_ind = -1;
 
   geometry_msgs::Twist initial_vel;
   geometry_msgs::Pose actual_pose;
@@ -581,8 +581,8 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
     new_pose.orientation = tf::createQuaternionMsgFromYaw(signum(new_angle) * std::min(fabs(new_angle), PI));
     if(!newPositionAccepted(new_pose))
     {
-      // find uncovered target far away from initial sensor position
-      target_ind = findFarthestUncoveredTarget(i);
+      // find a random uncovered and non occupied target not forbidden
+      target_ind = randomFreeTarget();
 
       // update sensor position
       new_pose.position.x = targets_with_info_.at(target_ind).world_pos.x;
@@ -1058,7 +1058,7 @@ bool particle::newOrientationAccepted(size_t sensor_index, geometry_msgs::Pose n
 
 // helper function to find an uncovered target far away from a given sensor position
 // the return value is the index of that uncovered target
-int particle::findFarthestUncoveredTarget(size_t sensor_index)
+unsigned int particle::findFarthestUncoveredTarget(size_t sensor_index)
 {
   // initialize workspace
   int result = -1;
@@ -1088,6 +1088,30 @@ int particle::findFarthestUncoveredTarget(size_t sensor_index)
     }
   }
   return result;
+}
+
+// helper function to find a random uncovered and non occupied target 
+// the return value is the index of that uncovered target
+unsigned int particle::randomFreeTarget()
+{
+  // initialize workspace
+  unsigned int x = randomNumber(0, map_.info.width - 1);
+  unsigned int y = randomNumber(0, map_.info.height - 1);
+  unsigned int cell_in_vector_coordinates = y * map_.info.width + x;
+
+  while(targets_with_info_.at(cell_in_vector_coordinates).occupied 
+    || targets_with_info_.at(cell_in_vector_coordinates).forbidden 
+    || targets_with_info_.at(cell_in_vector_coordinates).covered
+    || targets_with_info_.at(cell_in_vector_coordinates).map_data < 0 )
+  {
+    // the random cell was not accepted so check another
+    x = randomNumber(0, map_.info.width - 1);
+    y = randomNumber(0, map_.info.height - 1);
+    cell_in_vector_coordinates = y * map_.info.width + x;    
+  }
+
+  return cell_in_vector_coordinates;
+
 }
 
 // helper function to check, if the sensor is facing outside the area of interest
