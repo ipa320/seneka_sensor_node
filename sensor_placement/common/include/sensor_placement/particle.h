@@ -92,7 +92,8 @@ private:
   std::vector< FOV_2D_model > pers_best_;
 
   // target vectors
-  std::vector<target_info> targets_with_info_;
+  std::vector<target_info_fix> targets_with_info_fix_;
+  std::vector<target_info_var> targets_with_info_var_;
 
   // number of sensors
   int sensor_num_;
@@ -168,8 +169,14 @@ public:
   // function that sets the member variable sensor_num_ and reserves capacity for vector sensors_
   void setSensorNum(int num_of_sensors);
 
-  // function that sets the member variable targets_with_info_
-  void setTargetsWithInfo(const std::vector<target_info> &targets_with_inf, int target_num);
+  // function to set the fix information for all targets
+  void setTargetsWithInfoFix(const std::vector<target_info_fix> &targets_with_info_fix, int target_num);
+
+  // function to set the variable information for all targets
+  void setTargetsWithInfoVar(const std::vector<target_info_var> &targets_with_info_var);
+
+  // function to reset the variable information for all targets
+  void resetTargetsWithInfoVar();
 
   // function that sets the map
   void setMap(const nav_msgs::OccupancyGrid & new_map);
