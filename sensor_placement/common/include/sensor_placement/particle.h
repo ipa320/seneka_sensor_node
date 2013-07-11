@@ -228,7 +228,11 @@ public:
 
   // helper function to find an uncovered target far away from a given sensor position
   // the return value is the index of that uncovered target
-  int findFarthestUncoveredTarget(size_t sensor_index);
+  unsigned int findFarthestUncoveredTarget(size_t sensor_index);
+
+  // helper function to find a random uncovered and non occupied target not forbidden
+  // the return value is the index of that uncovered target
+  unsigned int randomFreeTarget();
 
   // helper function to check, if the sensor is facing outside the area of interest
   bool sensorBeamIntersectsPerimeter(size_t sensor_index, geometry_msgs::Pose new_pose_candidate);
