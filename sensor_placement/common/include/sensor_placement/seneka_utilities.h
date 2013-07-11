@@ -68,7 +68,9 @@ namespace seneka_utilities
   /* ----------------------------------- */
   /* ------------- structs ------------- */
   /* ----------------------------------- */
-  struct target_info
+
+  //information about the target which do not change
+  struct target_info_fix
   {
     // holds the position of the target/cell in world coordinates
     geometry_msgs::Point32 world_pos;
@@ -79,14 +81,22 @@ namespace seneka_utilities
     // holds the info if the given cell is a potential target, i.e. the position is inside
     // the area of interest (-1 == outside, 0 == on perimeter, 1 == inside)
     int8_t potential_target;
+    // holds if the target lies within the forbidden area --
+    bool forbidden;
+  };
+
+  //information about the target which change and need to be reset
+  struct target_info_var
+  {
     // holds the coverage info for the given target by sensors
     std::vector<bool> covered_by_sensor;
     // holds if the target is covered by at least one sensor
     bool covered;
     // holds if the target is covered by multiple sensors
     bool multiple_covered;
-    // holds if the target lies within the forbidden area --
-    bool forbidden;
+
+    // function to reset the changeable information about the target
+    void reset();
   };
 
 
