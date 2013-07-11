@@ -1117,10 +1117,10 @@ unsigned int particle::randomFreeTarget()
   unsigned int y = randomNumber(0, map_.info.height - 1);
   unsigned int cell_in_vector_coordinates = y * map_.info.width + x;
 
-  while(targets_with_info_.at(cell_in_vector_coordinates).occupied 
-    || targets_with_info_.at(cell_in_vector_coordinates).forbidden 
-    || targets_with_info_.at(cell_in_vector_coordinates).covered
-    || targets_with_info_.at(cell_in_vector_coordinates).map_data < 0 )
+  while(targets_with_info_fix_.at(cell_in_vector_coordinates).occupied 
+    || targets_with_info_fix_.at(cell_in_vector_coordinates).forbidden 
+    || targets_with_info_var_.at(cell_in_vector_coordinates).covered
+    || targets_with_info_fix_.at(cell_in_vector_coordinates).map_data < 0 )
   {
     // the random cell was not accepted so check another
     x = randomNumber(0, map_.info.width - 1);
