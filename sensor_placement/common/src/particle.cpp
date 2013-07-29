@@ -322,7 +322,7 @@ void particle::placeSensorsRandomlyOnPerimeter()
       rand_pose2D.y = randomPose.position.y;
       rand_pose2D.theta = tf::getYaw(randomPose.orientation);
 
-      if (pointInPolygon(rand_pose2D, forbidden_poly_.polygon) == -1)
+      if (pointInPolygon(rand_pose2D, forbidden_poly_.polygon) <= 0)
       {
         //found a point which is not in the forbidden area
         sensors_.at(i).setSensorPose(randomPose);
@@ -378,7 +378,9 @@ void particle::initializeSensorsOnPerimeter()
   {
     if(i < area_of_interest_.polygon.points.size())
     {
-      cell_in_vector_coordinates = worldToMapY(area_of_interest_.polygon.points.at(i).y, map_) * map_.info.width + worldToMapX(area_of_interest_.polygon.points.at(i).x, map_);
+      cell_in_vector_coordinates = 
+        worldToMapY(area_of_interest_.polygon.points.at(i).y, map_) * map_.info.width
+        + worldToMapX(area_of_interest_.polygon.points.at(i).x, map_);
     }
 
     if(i < area_of_interest_.polygon.points.size() && (!targets_with_info_fix_.at(cell_in_vector_coordinates).forbidden) &&
@@ -451,7 +453,7 @@ void particle::initializeSensorsOnPerimeter()
         else
         {
           //given point lies in forbidden area
-         pose_accepted=false;
+          pose_accepted=false;
         }
       }while(!pose_accepted); //keep looking until a point is found which is outside the forbidden area
     }
@@ -1018,7 +1020,7 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
   dummy_pose2D.y = new_pose_candidate.position.y;
   dummy_pose2D.theta = tf::getYaw(new_pose_candidate.orientation);
   
-  if(pointInPolygon(dummy_pose2D, area_of_interest_.polygon) == -1)
+  if(pointInPolygon(dummy_pose2D, area_of_interest_.polygon) == 0)
   {
     // the pose candidate is not within the area of interest
     result = false;
@@ -1026,7 +1028,7 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
   else
   {
     // checking if pose candidate is within the forbidden area or not
-    if (pointInPolygon(dummy_pose2D, forbidden_poly_.polygon) == -1)
+    if (pointInPolygon(dummy_pose2D, forbidden_poly_.polygon) <= 0)
     {
       // the pose candidate is not within the forbidden area, so we can continue
       pose_x_index = worldToMapX(new_pose_candidate.position.x, map_);

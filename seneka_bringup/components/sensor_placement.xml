@@ -2,7 +2,7 @@
 <launch>
 
   <!-- start sensor_placement -->
-  <node name="sensor_placement" pkg="sensor_placement" type="sensor_placement_node" respawn="true" output="screen" >
+  <node name="sensor_placement" pkg="sensor_placement" type="sensor_placement_node" respawn="false" output="screen" >
     <rosparam file="$(find seneka_config)/config/sensor_placement.yaml" command="load"/>
     <!-- input -->
     <remap from="in_AoI_poly" to="/AoI_polygon"/>
