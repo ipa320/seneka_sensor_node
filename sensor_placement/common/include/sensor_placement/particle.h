@@ -92,7 +92,7 @@ private:
   std::vector< FOV_2D_model > pers_best_;
 
   // target vectors
-  std::vector<target_info_fix> targets_with_info_fix_;
+  const std::vector<target_info_fix> * pTargets_with_info_fix_;
   std::vector<target_info_var> targets_with_info_var_;
 
   // number of sensors
@@ -112,20 +112,14 @@ private:
   int multiple_coverage_;
   int pers_best_multiple_coverage_;
 
-  // coverage matrix in row-major order (sensors in rows, target in columns)
-  std::vector<int> coverage_matrix_;
-
-  // the i-th entry holds the number of sensors covering the target with index i
-  std::vector<int> num_sensors_cover_target_;
-
   // actual area of interest to be covered by the sensor nodes
-  geometry_msgs::PolygonStamped area_of_interest_;
+  const geometry_msgs::PolygonStamped * pArea_of_interest_;
 
   // forbidden area for the placement of sensors
-  geometry_msgs::PolygonStamped forbidden_poly_;
+  const geometry_msgs::PolygonStamped * pForbidden_poly_;
 
   // actual map
-  nav_msgs::OccupancyGrid map_;
+  const nav_msgs::OccupancyGrid * pMap_;
 
 public:
 
@@ -194,8 +188,7 @@ public:
   void setRange(double new_range);
 
   //function to create and set a lookup table for raytracing for each sensor in the particle
-  void setLookupTable(double range);
-
+  void setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table);
   // ************************ update functions ************************
 
   // function to place the sensors randomly on the perimeter

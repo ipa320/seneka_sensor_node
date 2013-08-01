@@ -99,7 +99,7 @@ protected:
   std::vector<double> open_angles_;
 
   //lookup table for raytracing
-  std::vector< std::vector<geometry_msgs::Point32> > lookup_table_;
+  const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table_;
 
   //vector of end points of the rays for visualization;
   std::vector<geometry_msgs::Point> end_of_rays_;
@@ -135,7 +135,7 @@ public:
   virtual void setRange(double new_range) = 0;
 
   // function to set the lookup table
-  virtual void setLookupTable(std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table) = 0;
+  virtual void setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table) = 0;
 
   virtual void addRayEndPoint(geometry_msgs::Point new_end_point) = 0;
 
@@ -159,7 +159,7 @@ public:
   virtual double getRange() = 0;
 
   // function to get the lookup table
-  virtual const std::vector< std::vector<geometry_msgs::Point32> >& getLookupTable() = 0;
+  virtual const std::vector< std::vector<geometry_msgs::Point32> > * getLookupTable() = 0;
 
   // function to get the index of the lookup table for the corresponding angle 
   virtual int rayOfAngle(double angle) = 0;
@@ -211,7 +211,7 @@ public:
   void setRange(double new_range);
 
   // function to set the lookup table
-  void setLookupTable(std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table);
+  void setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table);
 
   // function to set a point as last visible cell of a ray for visualization purposes
   void addRayEndPoint(geometry_msgs::Point new_end_point);
@@ -237,7 +237,7 @@ public:
   double getRange();
 
   // function to get the lookup table
-  const std::vector< std::vector<geometry_msgs::Point32> >& getLookupTable();
+  const std::vector< std::vector<geometry_msgs::Point32> > * getLookupTable();
 
   // function to get the index of the lookup table for the corresponding angle
   int rayOfAngle(double angle);

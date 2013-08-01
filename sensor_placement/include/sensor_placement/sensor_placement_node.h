@@ -120,6 +120,9 @@ private:
   // maximal allowed angular velocity for each sensor in particles
   double max_ang_vel_;
 
+  // Lookup-Table for sensor raytracing.
+  std::vector< std::vector<geometry_msgs::Point32> > lookup_table_;
+
   // number of particles for PSO
   int particle_num_;
 

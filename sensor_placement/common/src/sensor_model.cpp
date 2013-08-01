@@ -198,9 +198,12 @@ void FOV_2D_model::setRange(double new_range)
 }
 
 // function to set the lookup table
-void FOV_2D_model::setLookupTable(std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table)
+void FOV_2D_model::setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table)
 {
-  lookup_table_ = new_lookup_table;
+  if(pLookup_table != NULL)
+    pLookup_table_ = pLookup_table;
+  else
+    ROS_ERROR("LookupTable not set correctly for Sensor Model");
 }
 
 // function to set a point as last visible cell of a ray for visualization purposes
@@ -246,9 +249,9 @@ double FOV_2D_model::getRange()
 }
 
 // function to get the lookup table
-const std::vector< std::vector<geometry_msgs::Point32> >& FOV_2D_model::getLookupTable()
+const std::vector< std::vector<geometry_msgs::Point32> > * FOV_2D_model::getLookupTable()
 {
-  return lookup_table_;
+  return pLookup_table_;
 }
 
 // function to get the index of the lookup table for the corresponding angle
@@ -258,13 +261,13 @@ int FOV_2D_model::rayOfAngle(double angle)
   int best_ray = 0;
 
   //go through all rays
-  for(int ray=0; ray < lookup_table_.size(); ray++)
+  for(int ray=0; ray < pLookup_table_->size(); ray++)
   {
     //angle of the current ray
-    double ray_angle = atan2(lookup_table_.at(ray).back().y, lookup_table_.at(ray).back().x);
+    double ray_angle = atan2(pLookup_table_->at(ray).back().y, pLookup_table_->at(ray).back().x);
 
     //if ray is in the lower half add 2*PI to stay in between 0 and 2*PI
-    if(lookup_table_.at(ray).back().y < 0)
+    if(pLookup_table_->at(ray).back().y < 0)
     {
       ray_angle += 2*PI;
     }

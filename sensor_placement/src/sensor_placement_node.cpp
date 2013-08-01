@@ -335,11 +335,10 @@ void sensor_placement_node::initializePSO()
   dummy_particle.setRange(sensor_range_);
   dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
   dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
-  dummy_particle.setLookupTable(sensor_range_);
+  dummy_particle.setLookupTable(& lookup_table_);
 
   // initialize particle swarm with given number of particles containing given number of sensors
   particle_swarm_.assign(particle_num_,dummy_particle);
-
   // initialize the global best solution
   global_best_ = dummy_particle;
 
@@ -348,18 +347,14 @@ void sensor_placement_node::initializePSO()
   // initialize sensors randomly on perimeter for each particle with random velocities
   if(AoI_received_)
   {
-
     for(size_t i = 0; i < particle_swarm_.size(); i++)
     {
       // initialize sensor poses randomly on perimeter
       particle_swarm_.at(i).initializeSensorsOnPerimeter();
-
       // initialize sensor velocities randomly
       particle_swarm_.at(i).initializeRandomSensorVelocities();
-
       // get calculated coverage
       actual_coverage = particle_swarm_.at(i).getActualCoverage();
-
       // check if the actual coverage is a new global best
       if(actual_coverage > best_cov_)
       {
@@ -452,7 +447,6 @@ void sensor_placement_node::getGlobalBest()
 // callback function for the start PSO service
 bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-
   // call static_map-service from map_server to get the actual map  
   sc_get_map_.waitForExistence();
 
@@ -486,7 +480,13 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   }
 
   if(map_received_)
+  {
     ROS_INFO("Received a map");
+
+    // now create the lookup table based on the range of the sensor and the resolution of the map
+    int radius_in_cells = floor(sensor_range_ / map_.info.resolution);
+    lookup_table_ = createLookupTableCircle(radius_in_cells);
+  }
 
   ROS_INFO("getting targets from specified map and area of interest!");
 
@@ -573,7 +573,13 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   }
 
   if(map_received_)
-  ROS_INFO("Received a map");
+  {
+    ROS_INFO("Received a map");
+
+    // now create the lookup table based on the range of the sensor and the resolution of the map
+    int radius_in_cells = floor(5 / map_.info.resolution);
+    lookup_table_ = createLookupTableCircle(radius_in_cells);
+  }
 
   ROS_INFO("getting targets from specified map and area of interest!");
 
@@ -608,7 +614,7 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
 
   ROS_INFO_STREAM("creating lookup tables for dummy particle..");
-  dummy_particle.setLookupTable(5);
+  dummy_particle.setLookupTable(& lookup_table_);
   ROS_INFO_STREAM("lookup tables created.");
 
 
