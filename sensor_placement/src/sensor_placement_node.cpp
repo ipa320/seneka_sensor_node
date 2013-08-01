@@ -201,7 +201,6 @@ bool sensor_placement_node::getTargets()
 
     if(AoI_received_ == false)
     {
-      // if no polygon was specified, we consider the non-occupied grid cells as targets
       for(unsigned int i = 0; i < map_.info.width; i++)
       {
         for(unsigned int j = 0; j < map_.info.height; j++)
@@ -467,6 +466,9 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
     else
     {
       map_ = srv_map.response.map;
+
+      // if no AoI was specified, we consider the whole map to be the AoI
+      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
     }
     
     // publish map
@@ -561,6 +563,8 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
     }
     else
     {
+      // if no AoI was specified, we consider the whole map to be the AoI
+      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
       map_ = srv_map.response.map;
       map_pub_.publish(map_);
       map_meta_pub_.publish(map_.info);
