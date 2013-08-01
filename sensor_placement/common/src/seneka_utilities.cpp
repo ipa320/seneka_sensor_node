@@ -208,12 +208,17 @@ namespace seneka_utilities
   /* ----------------------------------- */
   /* --------- geometric stuff --------- */
   /* ----------------------------------- */
-  // function to check if a given point is inside (return 1), outside (return -1) 
-  // or on an edge (return 0) of a given polygon
+  // function to check if a given point is inside (return 2), outside (return 0) 
+  // or on an edge (return 1) of a given polygon
+  // If no polygon is given, it returns -1 
   int pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon polygon)
   {
+    // check if we received a polygon
+    if (polygon.points.size() == 0)
+      return -1;
+
     // initialize workspace variables
-    int result = -1;
+    int result = 0;
     bool ignore = false;
     size_t start_index = 0;
     bool start_index_set = false;
@@ -239,7 +244,7 @@ namespace seneka_utilities
       if(pointOn1DSegementPose(point, poly_point_1, poly_point_2, 0))
       {
         // point lies on the edge of the polygon
-        return 0;
+        return 1;
       }
       else
       {
@@ -327,13 +332,13 @@ namespace seneka_utilities
       }
       // increment loop counters
       loop_counter++;
-      loop_counter_mod = loop_counter % polygon.points.size();    
+      loop_counter_mod = loop_counter % polygon.points.size();
     }
 
     if(intersect_count % 2 == 0)
-      result = -1;
+      result = 0;
     else
-      result = 1;
+      result = 2;
 
     return result;
   }

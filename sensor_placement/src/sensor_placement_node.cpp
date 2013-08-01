@@ -94,7 +94,7 @@ sensor_placement_node::sensor_placement_node()
 
   // initialize other variables
   map_received_ = false;
-  AoI_received_ = true;
+  AoI_received_ = false;
   targets_saved_ = false;
 
 }
@@ -193,7 +193,6 @@ bool sensor_placement_node::getTargets()
   if(map_received_ == true)
   {
     // only if we received a map, we can get targets
-
     target_info_fix dummy_target_info_fix;
     targets_with_info_fix_.assign(map_.info.width * map_.info.height, dummy_target_info_fix);
     target_info_var dummy_target_info_var;
@@ -202,7 +201,6 @@ bool sensor_placement_node::getTargets()
 
     if(AoI_received_ == false)
     {
-      // if no polygon was specified, we consider the non-occupied grid cells as targets
       for(unsigned int i = 0; i < map_.info.width; i++)
       {
         for(unsigned int j = 0; j < map_.info.height; j++)
@@ -226,12 +224,9 @@ bool sensor_placement_node::getTargets()
           dummy_target_info_var.covered = false;
           dummy_target_info_var.multiple_covered = false;
           
-
-
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
-            if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 1 || 
-               pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+            if(pointInPolygon(world_Coord, forbidden_area_.polygon) >= 1)
             {
               // the given position is on the forbidden area
               dummy_target_info_fix.forbidden = true;
@@ -260,8 +255,8 @@ bool sensor_placement_node::getTargets()
           world_Coord.theta = 0;
 
           //fix information
-          dummy_target_info_fix.world_pos.x = mapToWorldX(i, map_);
-          dummy_target_info_fix.world_pos.y = mapToWorldY(j, map_);
+          dummy_target_info_fix.world_pos.x = world_Coord.x;
+          dummy_target_info_fix.world_pos.y = world_Coord.y;
           dummy_target_info_fix.world_pos.z = 0;
 
           dummy_target_info_fix.forbidden = false;    //all targets are allowed unless found in forbidden area
@@ -273,12 +268,10 @@ bool sensor_placement_node::getTargets()
           dummy_target_info_var.covered = false;
           dummy_target_info_var.multiple_covered = false;
 
-
           // the given position lies withhin the polygon
-          if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
+          if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 2)
           {
-            if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 1 || 
-               pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+            if(pointInPolygon(world_Coord, forbidden_area_.polygon) >= 1)
             {
               // the given position is on the forbidden area
               dummy_target_info_fix.forbidden = true;
@@ -294,10 +287,9 @@ bool sensor_placement_node::getTargets()
             }
           }
           // the given position lies on the perimeter
-          if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 0)
+          else if( pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
           {
-            if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 1 || 
-               pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+            if(pointInPolygon(world_Coord, forbidden_area_.polygon) >= 1)
             {
               // the given position is on the forbidden area
               dummy_target_info_fix.forbidden = true;
@@ -318,6 +310,10 @@ bool sensor_placement_node::getTargets()
       result = true;
     }
   }
+  else
+  {
+    ROS_WARN("No map received! Not able to propose sensor positions.");
+  }
   return result;
 }
 
@@ -336,15 +332,12 @@ void sensor_placement_node::initializePSO()
   dummy_particle.setForbiddenArea(forbidden_area_);
   dummy_particle.setOpenAngles(open_angles_);
   dummy_particle.setRange(sensor_range_);
-
   dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
   dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
-
-  dummy_particle.setLookupTable(sensor_range_);
+  dummy_particle.setLookupTable(& lookup_table_);
 
   // initialize particle swarm with given number of particles containing given number of sensors
   particle_swarm_.assign(particle_num_,dummy_particle);
-
   // initialize the global best solution
   global_best_ = dummy_particle;
 
@@ -354,7 +347,7 @@ void sensor_placement_node::initializePSO()
   if(AoI_received_)
   {
     for(size_t i = 0; i < particle_swarm_.size(); i++)
-    {     
+    {
       // initialize sensor poses randomly on perimeter
       particle_swarm_.at(i).initializeSensorsOnPerimeter();
       // initialize sensor velocities randomly
@@ -453,7 +446,6 @@ void sensor_placement_node::getGlobalBest()
 // callback function for the start PSO service
 bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-
   // call static_map-service from map_server to get the actual map  
   sc_get_map_.waitForExistence();
 
@@ -462,26 +454,27 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   if(sc_get_map_.call(srv_map))
   {
     ROS_INFO("Map service called successfully");
+    map_received_ = true;
 
     if(AoI_received_)
     {
       // get bounding box of area of interest
       geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
       // cropMap to boundingBox
-      cropMap(bound_box, srv_map.response.map, map_);
-      // publish cropped map
-      map_.header.stamp = ros::Time::now();
-      map_pub_.publish(map_);
-      map_meta_pub_.publish(map_.info);
-      map_received_ = true;
+      cropMap(bound_box, srv_map.response.map, map_); 
     }
     else
     {
       map_ = srv_map.response.map;
-      map_pub_.publish(map_);
-      map_meta_pub_.publish(map_.info);
-      map_received_ = true;
+
+      // if no AoI was specified, we consider the whole map to be the AoI
+      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
     }
+    
+    // publish map
+    map_.header.stamp = ros::Time::now();
+    map_pub_.publish(map_);
+    map_meta_pub_.publish(map_.info);
   }
   else
   {
@@ -489,11 +482,18 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   }
 
   if(map_received_)
-  ROS_INFO("Received a map");
+  {
+    ROS_INFO("Received a map");
+
+    // now create the lookup table based on the range of the sensor and the resolution of the map
+    int radius_in_cells = floor(sensor_range_ / map_.info.resolution);
+    lookup_table_ = createLookupTableCircle(radius_in_cells);
+  }
 
   ROS_INFO("getting targets from specified map and area of interest!");
 
   targets_saved_ = getTargets();
+
   if(targets_saved_)
   {
     ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
@@ -563,6 +563,8 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
     }
     else
     {
+      // if no AoI was specified, we consider the whole map to be the AoI
+      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
       map_ = srv_map.response.map;
       map_pub_.publish(map_);
       map_meta_pub_.publish(map_.info);
@@ -575,7 +577,13 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   }
 
   if(map_received_)
-  ROS_INFO("Received a map");
+  {
+    ROS_INFO("Received a map");
+
+    // now create the lookup table based on the range of the sensor and the resolution of the map
+    int radius_in_cells = floor(5 / map_.info.resolution);
+    lookup_table_ = createLookupTableCircle(radius_in_cells);
+  }
 
   ROS_INFO("getting targets from specified map and area of interest!");
 
@@ -610,7 +618,7 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
 
   ROS_INFO_STREAM("creating lookup tables for dummy particle..");
-  dummy_particle.setLookupTable(5);
+  dummy_particle.setLookupTable(& lookup_table_);
   ROS_INFO_STREAM("lookup tables created.");
 
 
