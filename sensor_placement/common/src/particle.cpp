@@ -95,9 +95,6 @@ particle::particle(int num_of_sensors, int num_of_targets, FOV_2D_model sensor_m
   multiple_coverage_ = 0;
   pers_best_multiple_coverage_ = 0;
 
-  // initialize coverage matrix
-  coverage_matrix_.assign(sensor_num_*target_num_, 0);
-
   // initialize sensor vector with as many entries as specified by sensors_num_
   sensors_.assign(sensor_num_, sensor_model);
 }
@@ -199,10 +196,12 @@ void particle::setSensorNum(int num_of_sensors)
 }
 
 // function to set the fix information for all targets
-void particle::setTargetsWithInfoFix(const std::vector<target_info_fix> &targets_with_info_fix, int target_num)
+void particle::setTargetsWithInfoFix(const std::vector<target_info_fix> & targets_with_info_fix, int target_num)
 {
-  targets_with_info_fix_ = targets_with_info_fix;
+  pTargets_with_info_fix_ = &targets_with_info_fix;
   target_num_ = target_num;
+  if (pTargets_with_info_fix_ == NULL)
+    ROS_ERROR("targets_with_info_fix not set correctly");
 }
 
 // function to set the variable information for all targets
@@ -228,19 +227,27 @@ void particle::resetTargetsWithInfoVar()
 // function that set the map
 void particle::setMap(const nav_msgs::OccupancyGrid & new_map)
 {
-  map_ = new_map;
+  pMap_ = &new_map;
+  if (pMap_ == NULL)
+    ROS_ERROR("Map was not set correctly.");
 }
 
 // function that sets the area of interest
 void particle::setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly)
 {
-  area_of_interest_ = new_poly;
+  pArea_of_interest_ = & new_poly;
+  if (pArea_of_interest_ == NULL)
+    ROS_ERROR("AoI was not set correctly.");
+
 }
 
 // function that sets forbidden area
 void particle::setForbiddenArea(const geometry_msgs::PolygonStamped & new_forbidden_area)
 {
- forbidden_poly_ = new_forbidden_area;
+  pForbidden_poly_ = & new_forbidden_area;
+  if (pForbidden_poly_ == NULL)
+    ROS_ERROR("Forbidden Area was not set correctly.");
+
 }
 
 // function that sets the opening angles for each sensor in the particle
@@ -273,15 +280,17 @@ void particle::setRange(double new_range)
 }
 
 //function to create and set a lookup table for raytracing for each sensor in the particle
-void particle::setLookupTable(double range)
+void particle::setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table)
 {
-  int radius_in_cells = floor(range / map_.info.resolution);
-  std::vector< std::vector<geometry_msgs::Point32> > new_lookup_table = createLookupTableCircle(radius_in_cells);
-
-  for(size_t i = 0; i < sensors_.size(); i++)
+  if (pLookup_table != NULL)
   {
-    sensors_.at(i).setLookupTable(new_lookup_table);
+    for(size_t i = 0; i < sensors_.size(); i++)
+    {
+      sensors_.at(i).setLookupTable(pLookup_table);
+    }
   }
+  else
+    ROS_ERROR("LookupTable not set corretly");
 }
 
 // function to place the sensors randomly on the perimeter
@@ -301,19 +310,19 @@ void particle::placeSensorsRandomlyOnPerimeter()
     {
       // loop until a random position is found which is NOT in the forbidden area
       // get index of a random edge of the area of interest specified by a polygon
-      edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size() -1);
+      edge_ind = (int) randomNumber(0, pArea_of_interest_->polygon.points.size() -1);
       successor = 0;
 
-      if(edge_ind < (area_of_interest_.polygon.points.size() - 1))
+      if(edge_ind < (pArea_of_interest_->polygon.points.size() - 1))
         successor = edge_ind++;
 
       t = randomNumber(0,1);
 
       // get random Pose on perimeter of the area of interest specified by a polygon
-      randomPose.position.x = area_of_interest_.polygon.points.at(edge_ind).x
-                            + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x);
-      randomPose.position.y = area_of_interest_.polygon.points.at(edge_ind).y
-                            + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y);
+      randomPose.position.x = pArea_of_interest_->polygon.points.at(edge_ind).x
+                            + t * (pArea_of_interest_->polygon.points.at(successor).x - pArea_of_interest_->polygon.points.at(edge_ind).x);
+      randomPose.position.y = pArea_of_interest_->polygon.points.at(edge_ind).y
+                            + t * (pArea_of_interest_->polygon.points.at(successor).y - pArea_of_interest_->polygon.points.at(edge_ind).y);
       randomPose.position.z = 0;
 
       randomPose.orientation = tf::createQuaternionMsgFromYaw(randomNumber(-PI,PI));
@@ -322,7 +331,7 @@ void particle::placeSensorsRandomlyOnPerimeter()
       rand_pose2D.y = randomPose.position.y;
       rand_pose2D.theta = tf::getYaw(randomPose.orientation);
 
-      if (pointInPolygon(rand_pose2D, forbidden_poly_.polygon) == -1)
+      if (pointInPolygon(rand_pose2D, pForbidden_poly_->polygon) <= 0)
       {
         //found a point which is not in the forbidden area
         sensors_.at(i).setSensorPose(randomPose);
@@ -361,7 +370,7 @@ void particle::initializeSensorsOnPerimeter()
   geometry_msgs::Vector3 vec_sensor_dir;
 
   // get bounding box of area of interest
-  geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, map_);
+  geometry_msgs::Polygon bound_box = getBoundingBox2D(pArea_of_interest_->polygon, *pMap_);
   double x_min = bound_box.points.at(0).x;
   double y_min = bound_box.points.at(0).y;
 
@@ -376,18 +385,22 @@ void particle::initializeSensorsOnPerimeter()
 
   for(size_t i = 0; i < sensors_.size(); i++)
   {
-    if(i < area_of_interest_.polygon.points.size())
+    if(i < pArea_of_interest_->polygon.points.size())
     {
-      cell_in_vector_coordinates = worldToMapY(area_of_interest_.polygon.points.at(i).y, map_) * map_.info.width + worldToMapX(area_of_interest_.polygon.points.at(i).x, map_);
+      cell_in_vector_coordinates = 
+        worldToMapY(pArea_of_interest_->polygon.points.at(i).y, *pMap_) * pMap_->info.width
+        + worldToMapX(pArea_of_interest_->polygon.points.at(i).x, *pMap_);
     }
 
-    if(i < area_of_interest_.polygon.points.size() && (!targets_with_info_fix_.at(cell_in_vector_coordinates).forbidden) &&
-      (!targets_with_info_fix_.at(cell_in_vector_coordinates).occupied) && (targets_with_info_fix_.at(cell_in_vector_coordinates).map_data > -1) )
+    if(i < pArea_of_interest_->polygon.points.size() && 
+       (!pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden) &&
+       (!pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied) &&
+       (pTargets_with_info_fix_->at(cell_in_vector_coordinates).map_data > -1) )
     {
       // set new sensor pose as one of the corners of the area of interest if not in forbidden area
       // only set new position if the cell is not occupied and not unknoown, otherwise skip this corner
-      newPose.position.x = mapToWorldX(worldToMapX(area_of_interest_.polygon.points.at(i).x, map_), map_);
-      newPose.position.y = mapToWorldY(worldToMapY(area_of_interest_.polygon.points.at(i).y, map_), map_);
+      newPose.position.x = mapToWorldX(worldToMapX(pArea_of_interest_->polygon.points.at(i).x, *pMap_), *pMap_);
+      newPose.position.y = mapToWorldY(worldToMapY(pArea_of_interest_->polygon.points.at(i).y, *pMap_), *pMap_);
       newPose.position.z = 0;
 
       vec_sensor_dir.x = polygon_center.x - newPose.position.x;
@@ -412,19 +425,19 @@ void particle::initializeSensorsOnPerimeter()
       do
       {
         // get index of a random edge of the area of interest specified by a polygon
-        edge_ind = (int) randomNumber(0, area_of_interest_.polygon.points.size());
+        edge_ind = (int) randomNumber(0, pArea_of_interest_->polygon.points.size());
         successor = 0;
 
-        if(edge_ind < (area_of_interest_.polygon.points.size() - 1))
+        if(edge_ind < (pArea_of_interest_->polygon.points.size() - 1))
           successor = edge_ind++;
 
         t = randomNumber(0,1);
 
         // get random Pose on perimeter of the area of interest specified by a polygon
-        newPose.position.x = mapToWorldX(worldToMapX(area_of_interest_.polygon.points.at(edge_ind).x
-                              + t * (area_of_interest_.polygon.points.at(successor).x - area_of_interest_.polygon.points.at(edge_ind).x), map_), map_);
-        newPose.position.y = mapToWorldY(worldToMapY(area_of_interest_.polygon.points.at(edge_ind).y
-                              + t * (area_of_interest_.polygon.points.at(successor).y - area_of_interest_.polygon.points.at(edge_ind).y), map_), map_);
+        newPose.position.x = mapToWorldX(worldToMapX(pArea_of_interest_->polygon.points.at(edge_ind).x
+                              + t * (pArea_of_interest_->polygon.points.at(successor).x - pArea_of_interest_->polygon.points.at(edge_ind).x), *pMap_), *pMap_);
+        newPose.position.y = mapToWorldY(worldToMapY(pArea_of_interest_->polygon.points.at(edge_ind).y
+                              + t * (pArea_of_interest_->polygon.points.at(successor).y - pArea_of_interest_->polygon.points.at(edge_ind).y), *pMap_), *pMap_);
         newPose.position.z = 0;
 
         vec_sensor_dir.x = polygon_center.x - newPose.position.x;
@@ -440,9 +453,9 @@ void particle::initializeSensorsOnPerimeter()
         // get quaternion message for desired sensor facing direction
         newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
 
-        cell_in_vector_coordinates = worldToMapY(newPose.position.y, map_) * map_.info.width + worldToMapX(newPose.position.x, map_);
+        cell_in_vector_coordinates = worldToMapY(newPose.position.y, *pMap_) * pMap_->info.width + worldToMapX(newPose.position.x, *pMap_);
 
-        if( !targets_with_info_fix_.at(cell_in_vector_coordinates).forbidden)
+        if( !pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden)
         {
           //found a point which is not in the forbidden area
           sensors_.at(i).setSensorPose(newPose);
@@ -451,7 +464,7 @@ void particle::initializeSensorsOnPerimeter()
         else
         {
           //given point lies in forbidden area
-         pose_accepted=false;
+          pose_accepted=false;
         }
       }while(!pose_accepted); //keep looking until a point is found which is outside the forbidden area
     }
@@ -524,7 +537,7 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
   geometry_msgs::Vector3 vec_sensor_dir;
 
   // get bounding box of area of interest
-  geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, map_);
+  geometry_msgs::Polygon bound_box = getBoundingBox2D(pArea_of_interest_->polygon, *pMap_);
   double x_min = bound_box.points.at(0).x;
   double y_min = bound_box.points.at(0).y;
 
@@ -603,8 +616,8 @@ void particle::updateParticle(std::vector<geometry_msgs::Pose> global_best, doub
       target_ind = randomFreeTarget();
 
       // update sensor position
-      new_pose.position.x = targets_with_info_fix_.at(target_ind).world_pos.x;
-      new_pose.position.y = targets_with_info_fix_.at(target_ind).world_pos.y;
+      new_pose.position.x = pTargets_with_info_fix_->at(target_ind).world_pos.x;
+      new_pose.position.y = pTargets_with_info_fix_->at(target_ind).world_pos.y;
       new_pose.position.z = 0;
 
       // desired sensor facing direction is the center of the area of interest
@@ -662,10 +675,10 @@ void particle::updateTargetsInfo(size_t sensor_index)
 
   double help_angle = 0;
 
-  double x_min = mapToWorldX(0, map_);
-  double x_max = mapToWorldX(map_.info.width, map_);
-  double y_min = mapToWorldY(0, map_);
-  double y_max = mapToWorldY(map_.info.height, map_);
+  double x_min = mapToWorldX(0, *pMap_);
+  double x_max = mapToWorldX(pMap_->info.width, *pMap_);
+  double y_min = mapToWorldY(0, *pMap_);
+  double y_max = mapToWorldY(pMap_->info.height, *pMap_);
 
   // initialize index variables
   uint32_t top_index; 
@@ -717,13 +730,13 @@ void particle::updateTargetsInfo(size_t sensor_index)
   sensor_kite.points.push_back(p);
 
   // get bounding box around the sensors' FOV
-  geometry_msgs::Polygon bounding_box = getBoundingBox2D(sensor_kite, map_);
+  geometry_msgs::Polygon bounding_box = getBoundingBox2D(sensor_kite, *pMap_);
 
   // go through bounding box and update only the targets_with_info within
 
   // first point of polygon contains x_min and y_min, 3rd contains x_max and y_max
-  worldToMap2D(bounding_box.points.at(0), map_, left_index, top_index);
-  worldToMap2D(bounding_box.points.at(2), map_, right_index, bottom_index);
+  worldToMap2D(bounding_box.points.at(0), *pMap_, left_index, top_index);
+  worldToMap2D(bounding_box.points.at(2), *pMap_, right_index, bottom_index);
 
   for(uint32_t y = top_index; y < bottom_index; y++ )
   {
@@ -731,32 +744,31 @@ void particle::updateTargetsInfo(size_t sensor_index)
     {
 
       // now check every potential target in the sensors' bounding box
-      if(targets_with_info_fix_.at(y * map_.info.width + x).potential_target == 1)
+      if(pTargets_with_info_fix_->at(y * pMap_->info.width + x).potential_target == 1)
       {
         // now we found a target
-        if(!targets_with_info_fix_.at(y * map_.info.width + x).occupied)
+        if(!pTargets_with_info_fix_->at(y * pMap_->info.width + x).occupied)
         {
           // now we found a non-occupied target, so check the coverage
-          if(checkCoverage(sensors_.at(sensor_index), targets_with_info_fix_.at(y * map_.info.width + x).world_pos))
+          if(checkCoverage(sensors_.at(sensor_index), pTargets_with_info_fix_->at(y * pMap_->info.width + x).world_pos))
           {
             // now we found a non-occupied target covered by the given sensor
-            targets_with_info_var_.at(y * map_.info.width + x).covered_by_sensor.at(sensor_index) = true;
+            targets_with_info_var_.at(y * pMap_->info.width + x).covered_by_sensor.at(sensor_index) = true;
 
-            if(!targets_with_info_var_.at(y * map_.info.width + x).covered)
+            if(!targets_with_info_var_.at(y * pMap_->info.width + x).covered)
             {
               // now the given target is covered by at least one sensor
-              targets_with_info_var_.at(y * map_.info.width + x).covered = true;
+              targets_with_info_var_.at(y * pMap_->info.width + x).covered = true;
               // increment the covered targets counter only if the given target is not covered by another sensor yet
               covered_targets_num_++;
-
             }
             else
             {
-              if(!targets_with_info_var_.at(y * map_.info.width + x).multiple_covered)
+              if(!targets_with_info_var_.at(y * pMap_->info.width + x).multiple_covered)
                 multiple_coverage_++;
 
               // now the given target is covered by multiple sensors
-              targets_with_info_var_.at(y * map_.info.width + x).multiple_covered = true;
+              targets_with_info_var_.at(y * pMap_->info.width + x).multiple_covered = true;
             }
           }
         }
@@ -771,7 +783,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
   //clear vector of ray end points
   sensors_.at(sensor_index).clearRayEndPoints();
 
-  unsigned int max_number_of_rays = sensors_.at(sensor_index).getLookupTable().size();
+  unsigned int max_number_of_rays = sensors_.at(sensor_index).getLookupTable()->size();
   geometry_msgs::Pose sensor_pose = sensors_.at(sensor_index).getSensorPose();
 
   std::vector<double> open_ang = sensors_.at(sensor_index).getOpenAngles();
@@ -781,13 +793,13 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
   double angle1 = orientation - (open_ang.front() / 2.0);
   if(angle1 >= 2.0*PI)
     angle1 -= 2.0*PI;
-  if(angle1 < 0)
+  else if(angle1 < 0)
     angle1 += 2.0*PI;
 
   double angle2 = orientation + (open_ang.front() / 2.0);
   if(angle2 >= 2.0*PI)
     angle2 -= 2.0*PI;
-  if(angle2 < 0)
+  else if(angle2 < 0)
     angle2 += 2.0*PI;
 
   unsigned int ray_start = sensors_.at(sensor_index).rayOfAngle(angle1);
@@ -816,25 +828,26 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
     int lookup_table_x, lookup_table_y;
 
     //go through ray
-    for(cell=0; cell < sensors_.at(sensor_index).getLookupTable().at(ray).size(); cell++)
+    for(cell=0; cell < sensors_.at(sensor_index).getLookupTable()->at(ray).size(); cell++)
     {
-      lookup_table_x = sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).x;
-      lookup_table_y = sensors_.at(sensor_index).getLookupTable().at(ray).at(cell).y;
+      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell).x;
+      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell).y;
 
       //absolute x and y map coordinates of the current cell
-      x = worldToMapX(sensor_pose.position.x, map_) + lookup_table_x;        
-      y = worldToMapY(sensor_pose.position.y, map_) + lookup_table_y;
+      x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;        
+      y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
 
-      int cell_in_vector_coordinates = y * map_.info.width + x;
+      int cell_in_vector_coordinates = y * pMap_->info.width + x;
 
       //cell coordinates are valid (not outside of the area of interest)
-      if((y >= 0) && (x >= 0) && (y < map_.info.height) && (x < map_.info.width) && (cell_in_vector_coordinates < targets_with_info_fix_.size()))
+      if((y >= 0) && (x >= 0) && (y < pMap_->info.height) && (x < pMap_->info.width) && (cell_in_vector_coordinates < pTargets_with_info_fix_->size()))
       {
         //cell not on the perimeter
-        if(targets_with_info_fix_.at(cell_in_vector_coordinates).potential_target != 0)
+        if(pTargets_with_info_fix_->at(cell_in_vector_coordinates).potential_target != 0)
         {
           //cell a potential target and not occupied
-          if((targets_with_info_fix_.at(cell_in_vector_coordinates).potential_target == 1) && (targets_with_info_fix_.at(cell_in_vector_coordinates).occupied == false))
+          if((pTargets_with_info_fix_->at(cell_in_vector_coordinates).potential_target == 1) &&
+             (pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied == false))
           {
             //target covered
             targets_with_info_var_.at(cell_in_vector_coordinates).covered_by_sensor.at(sensor_index) = true;
@@ -866,7 +879,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
         else
         {
           //cell on perimeter and not occupied -> continue with the next cell on the ray (no coverage)
-          if(targets_with_info_fix_.at(cell_in_vector_coordinates).occupied == false)
+          if(pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied == false)
           {
             //continue with next cell without (no coverage)
             continue;
@@ -886,37 +899,37 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
     }
 
     //skipped some part of the ray -> get coordinates of the last non-occupied cell
-    if((cell != sensors_.at(sensor_index).getLookupTable().at(ray).size()-1) && (cell != 0))
+    if((cell != sensors_.at(sensor_index).getLookupTable()->at(ray).size()-1) && (cell != 0))
     {
-      lookup_table_x = sensors_.at(sensor_index).getLookupTable().at(ray).at(std::max(0,cell-1)).x;
-      lookup_table_y = sensors_.at(sensor_index).getLookupTable().at(ray).at(std::max(0,cell-1)).y; 
+      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).x;
+      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).y; 
     }
 
     //absolute x and y map coordinates of the last non-occupied cell
-    x = worldToMapX(sensor_pose.position.x, map_) + lookup_table_x;        
-    y = worldToMapY(sensor_pose.position.y, map_) + lookup_table_y;
+    x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;        
+    y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
 
     //update endpoint
     if(lookup_table_x <= 0)
       //point is left of sensor
     {
-      ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x;
+      ray_end_point.x = mapToWorldX(x, *pMap_) - sensor_pose.position.x;
     }
     else
       //cell is right of sensor
     {
-      ray_end_point.x = mapToWorldX(x, map_) - sensor_pose.position.x + map_.info.resolution; //add one cell for visualization
+      ray_end_point.x = mapToWorldX(x, *pMap_) - sensor_pose.position.x + pMap_->info.resolution; //add one cell for visualization
     }
 
     if(lookup_table_y <= 0)
       //cell is below sensor
     {
-      ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y;
+      ray_end_point.y = mapToWorldY(y, *pMap_) - sensor_pose.position.y;
     }
     else
       //cell is over sensor
     {
-      ray_end_point.y = mapToWorldY(y, map_) - sensor_pose.position.y + map_.info.resolution; //add one cell for visualization
+      ray_end_point.y = mapToWorldY(y, *pMap_) - sensor_pose.position.y + pMap_->info.resolution; //add one cell for visualization
     }
 
     //add endpoint to the vector of endpoints
@@ -1018,7 +1031,7 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
   dummy_pose2D.y = new_pose_candidate.position.y;
   dummy_pose2D.theta = tf::getYaw(new_pose_candidate.orientation);
   
-  if(pointInPolygon(dummy_pose2D, area_of_interest_.polygon) == -1)
+  if(pointInPolygon(dummy_pose2D, pArea_of_interest_->polygon) == 0)
   {
     // the pose candidate is not within the area of interest
     result = false;
@@ -1026,20 +1039,20 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
   else
   {
     // checking if pose candidate is within the forbidden area or not
-    if (pointInPolygon(dummy_pose2D, forbidden_poly_.polygon) == -1)
+    if (pointInPolygon(dummy_pose2D, pForbidden_poly_->polygon) <= 0)
     {
       // the pose candidate is not within the forbidden area, so we can continue
-      pose_x_index = worldToMapX(new_pose_candidate.position.x, map_);
-      pose_y_index = worldToMapY(new_pose_candidate.position.y, map_);
+      pose_x_index = worldToMapX(new_pose_candidate.position.x, *pMap_);
+      pose_y_index = worldToMapY(new_pose_candidate.position.y, *pMap_);
 
-      if(pose_y_index * map_.info.width + pose_x_index >= targets_with_info_fix_.size())
+      if(pose_y_index * pMap_->info.width + pose_x_index >= pTargets_with_info_fix_->size())
       { 
         // indices are out of bounds
         result = false;
       }
       else
       {
-        if(targets_with_info_fix_.at(pose_y_index * map_.info.width + pose_x_index).occupied)
+        if(pTargets_with_info_fix_->at(pose_y_index * pMap_->info.width + pose_x_index).occupied)
         {
           // the pose candidate is within the area of interest
           // but the desired position is occupied
@@ -1085,15 +1098,17 @@ unsigned int particle::findFarthestUncoveredTarget(size_t sensor_index)
   geometry_msgs::Pose sensor_pose = sensors_.at(sensor_index).getSensorPose();
   geometry_msgs::Vector3 vec_sensor_target, vec_sensor_dir;
 
-  for(size_t i = 0; i < targets_with_info_fix_.size(); i++)
+  for(size_t i = 0; i < pTargets_with_info_fix_->size(); i++)
   {
-    if( (!targets_with_info_var_.at(i).covered) && (targets_with_info_fix_.at(i).potential_target == 1) && (!targets_with_info_fix_.at(i).forbidden) )
+    if( (!targets_with_info_var_.at(i).covered) && 
+        (pTargets_with_info_fix_->at(i).potential_target == 1) && 
+        (!pTargets_with_info_fix_->at(i).forbidden) )
     {
       // we found an uncovered target which is not forbidden, check if this is further away from the sensor than the current maximum
 
       // calculate vector between sensor and target
-      vec_sensor_target.x = targets_with_info_fix_.at(i).world_pos.x - sensor_pose.position.x;
-      vec_sensor_target.y = targets_with_info_fix_.at(i).world_pos.y - sensor_pose.position.y;
+      vec_sensor_target.x = pTargets_with_info_fix_->at(i).world_pos.x - sensor_pose.position.x;
+      vec_sensor_target.y = pTargets_with_info_fix_->at(i).world_pos.y - sensor_pose.position.y;
       vec_sensor_target.z = 0; 
 
       actual_distance = vecNorm(vec_sensor_target);
@@ -1113,19 +1128,19 @@ unsigned int particle::findFarthestUncoveredTarget(size_t sensor_index)
 unsigned int particle::randomFreeTarget()
 {
   // initialize workspace
-  unsigned int x = randomNumber(0, map_.info.width - 1);
-  unsigned int y = randomNumber(0, map_.info.height - 1);
-  unsigned int cell_in_vector_coordinates = y * map_.info.width + x;
+  unsigned int x = randomNumber(0, pMap_->info.width - 1);
+  unsigned int y = randomNumber(0, pMap_->info.height - 1);
+  unsigned int cell_in_vector_coordinates = y * pMap_->info.width + x;
 
-  while(targets_with_info_fix_.at(cell_in_vector_coordinates).occupied 
-    || targets_with_info_fix_.at(cell_in_vector_coordinates).forbidden 
+  while(pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied 
+    || pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden 
     || targets_with_info_var_.at(cell_in_vector_coordinates).covered
-    || targets_with_info_fix_.at(cell_in_vector_coordinates).map_data < 0 )
+    || pTargets_with_info_fix_->at(cell_in_vector_coordinates).map_data < 0 )
   {
     // the random cell was not accepted so check another
-    x = randomNumber(0, map_.info.width - 1);
-    y = randomNumber(0, map_.info.height - 1);
-    cell_in_vector_coordinates = y * map_.info.width + x;    
+    x = randomNumber(0, pMap_->info.width - 1);
+    y = randomNumber(0, pMap_->info.height - 1);
+    cell_in_vector_coordinates = y * pMap_->info.width + x;    
   }
 
   return cell_in_vector_coordinates;
@@ -1137,7 +1152,7 @@ bool particle::sensorBeamIntersectsPerimeter(size_t sensor_index, geometry_msgs:
 {
   // intialize workspace
   bool result = false;
-  size_t poly_size = area_of_interest_.polygon.points.size();
+  size_t poly_size = pArea_of_interest_->polygon.points.size();
   size_t loop_index = 0;
 
   geometry_msgs::Point32 poly_point_1 = geometry_msgs::Point32();
@@ -1159,13 +1174,13 @@ bool particle::sensorBeamIntersectsPerimeter(size_t sensor_index, geometry_msgs:
     // check each edge of the perimeter
     if(loop_index + 1 < poly_size)
     {
-      poly_point_1 = area_of_interest_.polygon.points.at(loop_index);
-      poly_point_2 = area_of_interest_.polygon.points.at(loop_index+1);
+      poly_point_1 = pArea_of_interest_->polygon.points.at(loop_index);
+      poly_point_2 = pArea_of_interest_->polygon.points.at(loop_index+1);
     }
     else
     {
-      poly_point_1 = area_of_interest_.polygon.points.at(loop_index);
-      poly_point_2 = area_of_interest_.polygon.points.at(0);
+      poly_point_1 = pArea_of_interest_->polygon.points.at(loop_index);
+      poly_point_2 = pArea_of_interest_->polygon.points.at(0);
     }
     if(v1 == 0)
       t = intersectionCalculation(v2,v1,poly_point_2.y - poly_point_1.y, poly_point_2.x - poly_point_1.x, poly_point_1.y - new_pose_candidate.position.y, poly_point_1.x - new_pose_candidate.position.x);
