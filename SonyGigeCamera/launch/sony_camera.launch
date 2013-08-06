@@ -1,0 +1,6 @@
+<?xml version="1.0"?>
+<launch>
+<!--- start SonyGigeCamera node -->
+<include file="$(find SonyGigeCamera)/launch/sony_camera.xml" />
+
+</launch>
