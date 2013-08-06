@@ -231,15 +231,17 @@ void Sony_Camera_Node::connectCamera(){
     PvString address = camera_ip_address_param.c_str();
 
 
-    printf( "\n1. Connecting to the device SonyHD Camera..." );
+    printf( "\n1. Connecting to the device SonyHD Camera... \n" );
     PvResult lResult1 = lDevice.Connect( address, PvAccessControl );
-    if(lResult1 != 0)
+    while(lResult1 != 0)
     {
-        printf( "\n  Failed to connect to device \n" );
-        //return 0;
-    }else {
-        printf( "\n2. Successfully connected to %s\n", address.GetAscii() );
+        printf( "\n  Failed to connect to device!" );
+        printf( "\n  Waiting for device to come up!");
+        ros::Duration(2.0).sleep();
+        lResult1 = lDevice.Connect( address, PvAccessControl );
     }
+    
+    printf( "\n2. Successfully connected to %s\n", address.GetAscii() );
     printf( "\n" );
 }
 
