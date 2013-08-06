@@ -2,8 +2,8 @@
 <launch>
 
   <!-- start  -->
-  <node name="SonyGigeCamera" pkg="SonyGigeCamera" type="SonyGigeCamera" respawn="true" output="screen" >
-    <rosparam file="$(find SonyGigeCamera)/config/sony_camera.yaml" command="load"/>
+  <node name="seneka_sony_camera" pkg="seneka_sony_camera" type="seneka_sony_camera" respawn="false" output="screen" >
+    <rosparam file="$(find seneka_sony_camera)/config/sony_camera.yaml" command="load"/>
   </node>
 
 </launch>

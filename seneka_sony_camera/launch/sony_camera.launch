@@ -1,6 +1,7 @@
 <?xml version="1.0"?>
 <launch>
-<!--- start SonyGigeCamera node -->
-<include file="$(find SonyGigeCamera)/launch/sony_camera.xml" />
+
+  <!--- start seneka_sony_camera node -->
+  <include file="$(find seneka_sony_camera)/launch/sony_camera.xml" />
 
 </launch>

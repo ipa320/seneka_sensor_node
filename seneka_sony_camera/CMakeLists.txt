@@ -30,16 +30,11 @@ rosbuild_gensrv()
 #target_link_libraries(example ${PROJECT_NAME})
 add_definitions(-D_UNIX_)
 
-
-
-
-include_directories(/opt/pleora/ebus_sdk/include /opt/ros/fuerte/include ${PROJECT_SOURCE_DIR}/src /opt/ros/fuerte/stacks/image_common/image_transport)
+include_directories(/opt/pleora/ebus_sdk/include)
 LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib)
 LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib/genicam/bin/Linux64_x64)
 
-
-
-rosbuild_add_executable(SonyGigeCamera src/sony_camera_node.cpp)
+rosbuild_add_executable(seneka_sony_camera src/sony_camera_node.cpp)
 
 
 set(EBUS_LIB
@@ -71,4 +66,4 @@ set(GENICAM_LIB
 
 
 
-target_link_libraries(SonyGigeCamera  ${EBUS_LIB} ${GENICAM_LIB})
+target_link_libraries(seneka_sony_camera  ${EBUS_LIB} ${GENICAM_LIB})

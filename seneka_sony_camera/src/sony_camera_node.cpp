@@ -15,7 +15,7 @@
 *
 * ROS stack name: seneka
 *
-* ROS package name: SonyGigeCamera
+* ROS package name: seneka_sony_camera
 *
 *
 * Author: Rajib Banik
@@ -130,80 +130,77 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh){
 
     // read parameter: camera_ip_address
     if(!pnh_.hasParam("camera_ip_address"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial ip_address parameter.");
+        ROS_WARN("Using default value for for initial ip_address parameter [\"192.168.0.1\"].");
     pnh_.param("camera_ip_address", camera_ip_address_param, std::string("192.168.0.1"));
 
     // read parameter: zooming
     if(!pnh_.hasParam("zoom_ratio_optical"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial zoom_ratio_optical parameter.");
+        ROS_WARN("Using default value for for initial zoom_ratio_optical parameter [1].");
     pnh_.param("zoom_ratio_optical", zoom_ratio_optical_param, 1);
 
     if(!pnh_.hasParam("zoom_ratio_digital"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial zoom_ratio_digital parameter.");
+        ROS_WARN("Using default value for for initial zoom_ratio_digital parameter [1].");
     pnh_.param("zoom_ratio_digital", zoom_ratio_digital_param, 1);
 
     // read parameter: auto Focus
     if(!pnh_.hasParam("autoFocus"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial autoFocus parameter.");
+        ROS_WARN("Using default value for for initial autoFocus parameter [3].");
     pnh_.param("autoFocus", autoFocus_param, 3);
 
     // read parameter: videoModeNexts
     if(!pnh_.hasParam("videoModeNext"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial videoModeNext parameter.");
+        ROS_WARN("Using default value for for initial videoModeNext parameter [11].");
     pnh_.param("videoModeNext", videoModeNext_param, 11);
 
     // read parameter: focusPosition
     if(!pnh_.hasParam("focusPosition"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial focusPosition parameter.");
+        ROS_WARN("Using default value for for initial focusPosition parameter [53248].");
     pnh_.param("focusPosition", focusPosition_param, 53248);
 
     // read parameter: focusNearLimit
     if(!pnh_.hasParam("focusNearLimit"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial focusNearLimit parameter.");
+        ROS_WARN("Using default value for for initial focusNearLimit parameter [0].");
     pnh_.param("focusNearLimit", focusLimit_param, 0);
 
     // read parameter: titleText
     if(!pnh_.hasParam("titleText"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial titleText parameter.");
-    pnh_.param("titleText", titleText_param, std::string(" "));
+        ROS_WARN("Using default value for for initial titleText parameter [""].");
+    pnh_.param("titleText", titleText_param, std::string(""));
 
     // read parameter: titleDisplay
     if(!pnh_.hasParam("titleDisplay"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial titleDisplay parameter.");
+        ROS_WARN("Using default value for for initial titleDisplay parameter [0].");
     pnh_.param("titleDisplay", titleDisplay_param, 0);
 
     // read parameter: statusDisplay
     if(!pnh_.hasParam("statusDisplay"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial statusDisplay parameter.");
+        ROS_WARN("Using default value for for initial statusDisplay parameter [0].");
     pnh_.param("statusDisplay", statusDisplay_param, 0);
 
     // read parameter: backLightCompensation
     if(!pnh_.hasParam("backLightCompensation"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial backLightCompensation parameter.");
+        ROS_WARN("Using default value for for initial backLightCompensation parameter [0].");
     pnh_.param("backLightCompensation", backLightCompensation_param, 0);
 
     // read parameter: noiseReduction
     if(!pnh_.hasParam("noiseReduction"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial noiseReduction parameter.");
+        ROS_WARN("Using default value for for initial noiseReduction parameter [3].");
     pnh_.param("noiseReduction", noiseReduction_param, 3);
 
     // read parameter: pictureEffect
     if(!pnh_.hasParam("pictureEffect"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial pictureEffect parameter.");
+        ROS_WARN("Using default value for for initial pictureEffect parameter [0].");
     pnh_.param("pictureEffect", pictureEffect_param, 0);
 
     // read parameter: infraredCutFilter
     if(!pnh_.hasParam("infraredCutFilter"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial infraredCutFilter parameter.");
+        ROS_WARN("Using default value for for initial infraredCutFilter parameter [0].");
     pnh_.param("infraredCutFilter", infraredCutFilter_param, 0);
 
     // read parameter: infraredCutFilterAuto
     if(!pnh_.hasParam("infraredCutFilterAuto"))
-        ROS_WARN("Checking default location (/SonyGigeCamera/config) for initial infraredCutFilterAuto parameter.");
+        ROS_WARN("Using default value for for initial infraredCutFilterAuto parameter [0].");
     pnh_.param("infraredCutFilterAuto",infraredCutFilterAuto_param, 0);
-
-
-
 
 
 
@@ -1220,7 +1217,7 @@ void Sony_Camera_Node::titleText(std::string str1){
 int main(int argc, char** argv){
 
     // initialize ROS, specify name of node
-    ros::init(argc,argv,"SonyGigeCamera");
+    ros::init(argc,argv,"seneka_sony_camera");
 
     Sony_Camera_Node SonyCameraNode;
 

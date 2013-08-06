@@ -15,7 +15,7 @@
 *
 * ROS stack name: seneka
 *
-* ROS package name: SonyGigeCamera
+* ROS package name: seneka_sony_camera
 *
 *
 * Author: Rajib Banik
