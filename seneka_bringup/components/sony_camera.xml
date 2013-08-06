@@ -1,0 +1,9 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- start  -->
+  <node name="seneka_sony_camera" pkg="seneka_sony_camera" type="seneka_sony_camera" respawn="false" output="screen" >
+    <rosparam file="$(find seneka_config)/config/sony_camera.yaml" command="load"/>
+  </node>
+
+</launch>
