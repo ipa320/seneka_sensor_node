@@ -77,7 +77,8 @@ using namespace std;
 Sony_Camera_Node::Sony_Camera_Node():it(nh){
 
     lSize = 0;
-    width_, height_ = 0;
+    width_ = 0;
+    height_ = 0;
     pnh_ = ros::NodeHandle("~");
 
     // Get device parameters need to control streaming
