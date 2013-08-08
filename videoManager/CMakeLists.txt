@@ -52,7 +52,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
   INCLUDE_DIRS src
-#  LIBRARIES dummy_pkg
+
  CATKIN_DEPENDS
   std_msgs
   std_srvs
@@ -111,7 +111,7 @@ target_link_libraries(vTester
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
 ## Mark executables and/or libraries for installation
- install(TARGETS videoManager videoManager
+ install(TARGETS videoManager vTester
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
