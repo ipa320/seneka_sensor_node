@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(videoManager)
+project(seneka_video_manager)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -51,8 +51,8 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS src
-
+# INCLUDE_DIRS
+# LIBRARIES
  CATKIN_DEPENDS
   std_msgs
   std_srvs
@@ -74,29 +74,26 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  src
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
-include_directories(${OpenCV_INCLUDE_DIRS})
-
-include_directories(${Boost_INCLUDE_DIRS})
-
 ## Declare a cpp executable
-add_executable(videoManager src/videoManager.cpp)
-add_executable(vTester src/vTester.cpp)
+add_executable(video_manager_node src/videoManager.cpp)
+add_executable(video_tester src/vTester.cpp)
 
-add_dependencies(videoManager ${PROJECT_NAME}_gencpp)
-add_dependencies(vTester ${PROJECT_NAME}_gencpp)
+add_dependencies(video_manager_node ${PROJECT_NAME}_gencpp)
+add_dependencies(video_tester ${PROJECT_NAME}_gencpp)
 
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(videoManager
+target_link_libraries(video_manager_node
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${Boost_LIBRARIES}
 )
-target_link_libraries(vTester
+target_link_libraries(video_tester
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${Boost_LIBRARIES}
@@ -111,7 +108,7 @@ target_link_libraries(vTester
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 
 ## Mark executables and/or libraries for installation
- install(TARGETS videoManager vTester
+ install(TARGETS video_manager_node video_tester
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

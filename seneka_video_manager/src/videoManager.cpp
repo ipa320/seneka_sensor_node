@@ -14,7 +14,7 @@
  * \note
  *   ROS stack name: SENEKA
  * \note
- *   ROS package name: VideoManager
+ *   ROS package name: seneka_video_manager
  *
  * \author
  *   Author: Johannes Goth (cmm-jg)
@@ -70,9 +70,9 @@
 #include <time.h>
 #include "frameManager.h"
 #include "frameManager.cpp"
-#include "videoManager/getVideo.h"
-#include "videoManager/getSnapShots.h"
-#include "videoManager/getLiveStream.h"
+#include "seneka_video_manager/getVideo.h"
+#include "seneka_video_manager/getSnapShots.h"
+#include "seneka_video_manager/getLiveStream.h"
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -84,7 +84,7 @@ void processFrameCallback(const sensor_msgs::Image& img)
 	fManager->processFrame(img);
 }
 
-bool getLiveStreamCallback(videoManager::getLiveStream::Request &req, videoManager::getLiveStream::Response &res){
+bool getLiveStreamCallback(seneka_video_manager::getLiveStream::Request &req, seneka_video_manager::getLiveStream::Response &res){
 
 	ROS_INFO("Remote getLiveStream call ...");
 
@@ -102,7 +102,7 @@ bool getLiveStreamCallback(videoManager::getLiveStream::Request &req, videoManag
 	}
 }
 
-bool getSnapShotCallback(videoManager::getSnapShots::Request &req, videoManager::getSnapShots::Response &res){
+bool getSnapShotCallback(seneka_video_manager::getSnapShots::Request &req, seneka_video_manager::getSnapShots::Response &res){
 
 	ROS_INFO("Remote getSnapShots call ...");
 
@@ -119,7 +119,7 @@ bool getSnapShotCallback(videoManager::getSnapShots::Request &req, videoManager:
 	}
 }
 
-bool getVideoCallback(videoManager::getVideo::Request &req, videoManager::getVideo::Response &res){
+bool getVideoCallback(seneka_video_manager::getVideo::Request &req, seneka_video_manager::getVideo::Response &res){
 
 	ROS_INFO("Remote getVideo call ...");
 

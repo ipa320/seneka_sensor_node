@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>videoManager</name>
+  <name>seneka_video_manager</name>
   <version>0.0.0</version>
-  <description>The videoManager package</description>
+  <description>The seneka_video_manager package</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <!-- Example:  -->

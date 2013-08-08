@@ -14,7 +14,7 @@
  * \note
  *   ROS stack name: SENEKA
  * \note
- *   ROS package name: VideoManager
+ *   ROS package name: seneka_video_manager
  *
  * \author
  *   Author: Johannes Goth (cmm-jg)
@@ -58,18 +58,18 @@
  ****************************************************************/
 
 #include "ros/ros.h"
-#include "videoManager/getVideo.h"
-#include "videoManager/getSnapShots.h"
-#include "videoManager/getLiveStream.h"
+#include "seneka_video_manager/getVideo.h"
+#include "seneka_video_manager/getSnapShots.h"
+#include "seneka_video_manager/getLiveStream.h"
 
 
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "vTester");
 	ros::NodeHandle n;
-	videoManager::getVideo videoService;
-	videoManager::getSnapShots snapShotService;
-	videoManager::getLiveStream liveStreamService;
+	seneka_video_manager::getVideo videoService;
+	seneka_video_manager::getSnapShots snapShotService;
+	seneka_video_manager::getLiveStream liveStreamService;
 	ros::ServiceClient client;
 
 	int mode = 0;
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 	switch(mode){
 	case 1:
 		ROS_INFO("MODE VideoOnDemand");
-		client = n.serviceClient<videoManager::getVideo>("seneka/VIDEO_MANAGER/getVideo");
+		client = n.serviceClient<seneka_video_manager::getVideo>("seneka/VIDEO_MANAGER/getVideo");
 		ROS_INFO("Connecting to VIDEO_MANAGER ...");
 		// set request to 1 -> will create a video
 		videoService.request.createVideo = 1;
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 		break;
 	case 2:
 		ROS_INFO("MODE SnapShot");
-		client = n.serviceClient<videoManager::getSnapShots>("seneka/VIDEO_MANAGER/getSnapShots");
+		client = n.serviceClient<seneka_video_manager::getSnapShots>("seneka/VIDEO_MANAGER/getSnapShots");
 		ROS_INFO("Connecting to VIDEO_MANAGER ...");
 		// value 1 starts / value -1 stops service
 		snapShotService.request.start = true;
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 		break;
 	case 3:
 		ROS_INFO("MODE LiveStream");
-		client = n.serviceClient<videoManager::getLiveStream>("seneka/VIDEO_MANAGER/getLiveStream");
+		client = n.serviceClient<seneka_video_manager::getLiveStream>("seneka/VIDEO_MANAGER/getLiveStream");
 		ROS_INFO("Connecting to VIDEO_MANAGER ...");
 		liveStreamService.request.start = true;
 		client.call(liveStreamService);
