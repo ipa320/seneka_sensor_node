@@ -14,7 +14,7 @@
  * \note
  *   ROS stack name: SENEKA
  * \note
- *   ROS package name: termoVideoManager
+ *   ROS package name: seneka_termo_video_manager
  *
  * \author
  *   Author: Johannes Goth (cmm-jg)
@@ -58,18 +58,18 @@
  ****************************************************************/
 
 #include "ros/ros.h"
-#include "termoVideoManager/getVideo.h"
-#include "termoVideoManager/getSnapShots.h"
-#include "termoVideoManager/getLiveStream.h"
+#include "seneka_termo_video_manager/getVideo.h"
+#include "seneka_termo_video_manager/getSnapShots.h"
+#include "seneka_termo_video_manager/getLiveStream.h"
 
 
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "vTester");
 	ros::NodeHandle n;
-	termoVideoManager::getVideo videoService;
-	termoVideoManager::getSnapShots snapShotService;
-	termoVideoManager::getLiveStream liveStreamService;
+	seneka_termo_video_manager::getVideo videoService;
+	seneka_termo_video_manager::getSnapShots snapShotService;
+	seneka_termo_video_manager::getLiveStream liveStreamService;
 	ros::ServiceClient client;
 
 	int mode = 0;
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 	switch(mode){
 	case 1:
 		ROS_INFO("MODE VideoOnDemand");
-		client = n.serviceClient<termoVideoManager::getVideo>("seneka/TERMO_VIDEO_MANAGER/getVideo");
+		client = n.serviceClient<seneka_termo_video_manager::getVideo>("seneka/TERMO_VIDEO_MANAGER/getVideo");
 		ROS_INFO("Connecting to TERMO_VIDEO_MANAGER ...");
 		// set request to 1 -> will create a video
 		videoService.request.createVideo = 1;
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 		break;
 	case 2:
 		ROS_INFO("MODE SnapShot");
-		client = n.serviceClient<termoVideoManager::getSnapShots>("seneka/TERMO_VIDEO_MANAGER/getSnapShots");
+		client = n.serviceClient<seneka_termo_video_manager::getSnapShots>("seneka/TERMO_VIDEO_MANAGER/getSnapShots");
 		ROS_INFO("Connecting to TERMO_VIDEO_MANAGER ...");
 		// value 1 starts / value -1 stops service
 		snapShotService.request.start = true;
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 		break;
 	case 3:
 		ROS_INFO("MODE LiveStream");
-		client = n.serviceClient<termoVideoManager::getLiveStream>("seneka/TERMO_VIDEO_MANAGER/getLiveStream");
+		client = n.serviceClient<seneka_termo_video_manager::getLiveStream>("seneka/TERMO_VIDEO_MANAGER/getLiveStream");
 		ROS_INFO("Connecting to TERMO_VIDEO_MANAGER ...");
 		liveStreamService.request.start = true;
 		client.call(liveStreamService);

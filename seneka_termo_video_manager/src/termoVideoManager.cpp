@@ -14,7 +14,7 @@
  * \note
  *   ROS stack name: SENEKA
  * \note
- *   ROS package name: termoVideoManager
+ *   ROS package name: seneka_termo_video_manager
  *
  * \author
  *   Author: Johannes Goth (cmm-jg)
@@ -70,9 +70,9 @@
 #include <time.h>
 #include "frameManager.h"
 #include "frameManager.cpp"
-#include "termoVideoManager/getVideo.h"
-#include "termoVideoManager/getSnapShots.h"
-#include "termoVideoManager/getLiveStream.h"
+#include "seneka_termo_video_manager/getVideo.h"
+#include "seneka_termo_video_manager/getSnapShots.h"
+#include "seneka_termo_video_manager/getLiveStream.h"
 
 namespace enc = sensor_msgs::image_encodings;
 
@@ -84,7 +84,7 @@ void processFrameCallback(const sensor_msgs::Image& img)
 	fManager->processFrame(img);
 }
 
-bool getLiveStreamCallback(termoVideoManager::getLiveStream::Request &req, termoVideoManager::getLiveStream::Response &res){
+bool getLiveStreamCallback(seneka_termo_video_manager::getLiveStream::Request &req, seneka_termo_video_manager::getLiveStream::Response &res){
 
 	ROS_INFO("Remote getLiveStream call ...");
 
@@ -101,7 +101,7 @@ bool getLiveStreamCallback(termoVideoManager::getLiveStream::Request &req, termo
 	}
 }
 
-bool getSnapShotCallback(termoVideoManager::getSnapShots::Request &req, termoVideoManager::getSnapShots::Response &res){
+bool getSnapShotCallback(seneka_termo_video_manager::getSnapShots::Request &req, seneka_termo_video_manager::getSnapShots::Response &res){
 
 	ROS_INFO("Remote getSnapShots call ...");
 
@@ -118,7 +118,7 @@ bool getSnapShotCallback(termoVideoManager::getSnapShots::Request &req, termoVid
 	}
 }
 
-bool getVideoCallback(termoVideoManager::getVideo::Request &req, termoVideoManager::getVideo::Response &res){
+bool getVideoCallback(seneka_termo_video_manager::getVideo::Request &req, seneka_termo_video_manager::getVideo::Response &res){
 
 	ROS_INFO("Remote getVideo call ...");
 

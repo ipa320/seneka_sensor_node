@@ -14,7 +14,7 @@
  * \note
  *   ROS stack name: SENEKA
  * \note
- *   ROS package name: termoVideoManager
+ *   ROS package name: seneka_termo_video_manager
  *
  * \author
  *   Author: Johannes Goth (cmm-jg)

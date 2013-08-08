@@ -14,7 +14,7 @@
  * \note
  *   ROS stack name: SENEKA
  * \note
- *   ROS package name: termoVideoManager
+ *   ROS package name: seneka_termo_video_manager
  *
  * \author
  *   Author: Johannes Goth (cmm-jg)
@@ -24,7 +24,7 @@
  * \date Date of creation: 21.02.2013
  *
  * \brief
- *   videoRecorder.cpp
+ *   videoRecorder.h
  *
  *****************************************************************
  *
@@ -57,48 +57,36 @@
  *
  ****************************************************************/
 
-#include "videoRecorder.h"
+#ifndef VIDEORECORDER_H_
+#define VIDEORECORDER_H_
 
-VideoRecorder::VideoRecorder(){
-	codec = CV_FOURCC('D','I','V','X');
-	//codec = CV_FOURCC('X','2','6','4');
-	fps = 10;
-	frameWidth = 0;
-	frameHeight = 0;
-}
+// ROS includes
+#include "ros/ros.h"
 
-VideoRecorder::VideoRecorder(u_int fps, int codec){
-	this->codec = codec;
-	this->fps = fps;
-	frameWidth = 0;
-	frameHeight = 0;
-}
+class VideoRecorder {
+public:
 
-VideoRecorder::~VideoRecorder(){}
+	// public member functions
+	VideoRecorder();
+	VideoRecorder(u_int fps, int codec);
+	virtual ~VideoRecorder();
+	void createVideo(std::string vf, int frameWidth, int frameHeight);
+	void addFrame(cv::Mat frame);
+	void releaseVideo();
 
-void VideoRecorder::openVideo(){
-	if(!videoWriter.isOpened()){
-		videoWriter.open(videoFileName, codec, fps, videoSize, 1);
-	}
-	else{
-		ROS_WARN("Video is still open ...!");
-	}
-}
+private:
 
-void VideoRecorder::createVideo(std::string vf, int frameWidth, int frameHeight){
-	videoFileName = vf;
-	videoSize.height = frameHeight;		// cv::mat obj.rows
-	videoSize.width = frameWidth;		// cv::mat obj.cols
-	openVideo();
-}
+	// private member functions
+	void openVideo();
 
-void VideoRecorder::addFrame(cv::Mat frame){
-	if(videoWriter.isOpened() == true)
-		videoWriter.write(frame);
-	else
-		ROS_WARN("Video file is closed ...");
-}
+	// private attributes and references
+	int codec;
+	u_int fps;					// frame per second
+	u_int frameWidth;
+	u_int frameHeight;
+	cv::VideoWriter videoWriter;
+	std::string videoFileName;
+	CvSize videoSize;
+};
 
-void VideoRecorder::releaseVideo(){
-	videoWriter.release();
-}
+#endif /* VIDEORECORDERH_ */

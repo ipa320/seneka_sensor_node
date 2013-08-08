@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(termoVideoManager)
+project(seneka_termo_video_manager)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -56,8 +56,8 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
- INCLUDE_DIRS src
-
+# INCLUDE_DIRS 
+# LIBRARIES
  CATKIN_DEPENDS
    std_msgs
    sensor_msgs
@@ -79,26 +79,21 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
-  src
   ${catkin_INCLUDE_DIRS}
+  ${OpenCV_INCLUDE_DIRS}
+  ${Boost_INCLUDE_DIRS}
 )
 
-include_directories(${OpenCV_INCLUDE_DIRS})
-
-include_directories(${Boost_INCLUDE_DIRS})
-
 ## Declare a cpp executable
-add_executable(termoVideoManager src/termoVideoManager.cpp)
-add_executable(termovTester src/vTester.cpp)
+add_executable(termo_video_manager src/termoVideoManager.cpp)
+add_executable(termo_video_tester src/vTester.cpp)
 
 ## Add cmake target dependencies of the executable/library
-add_dependencies(termoVideoManager ${PROJECT_NAME}_gencpp optris_drivers)
-add_dependencies(termovTester ${PROJECT_NAME}_gencpp optris_drivers)
-
-#LINK_DIRECTORIES(${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION})
+add_dependencies(termo_video_manager ${PROJECT_NAME}_gencpp optris_drivers)
+add_dependencies(termo_video_tester ${PROJECT_NAME}_gencpp optris_drivers)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(termoVideoManager
+target_link_libraries(termo_video_manager
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${Boost_LIBRARIES}
@@ -106,7 +101,7 @@ target_link_libraries(termoVideoManager
   ${CATKIN_DEVEL_PREFIX}/${CATKIN_GLOBAL_LIB_DESTINATION}/libImageProcessing.a
   udev
 )
-target_link_libraries(termovTester
+target_link_libraries(termo_video_tester
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
   ${Boost_LIBRARIES}
@@ -120,7 +115,7 @@ target_link_libraries(termovTester
 #############
 
 ## Mark executables and/or libraries for installation
-install(TARGETS termoVideoManager termovTester
+install(TARGETS termo_video_manager termo_video_tester
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
