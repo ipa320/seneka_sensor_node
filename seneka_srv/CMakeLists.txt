@@ -34,10 +34,10 @@ add_service_files(
 )
 
 ## Generate added messages and services with any dependencies listed here
-# generate_messages(
-#   DEPENDENCIES
-#   std_msgs  # Or other packages containing msgs
-# )
+ generate_messages(
+   DEPENDENCIES
+   std_msgs  # Or other packages containing msgs
+ )
 
 ###################################
 ## catkin specific configuration ##
@@ -51,5 +51,6 @@ add_service_files(
 catkin_package(
   CATKIN_DEPENDS
     roscpp
+    message_runtime
 )
 

@@ -6,6 +6,7 @@ project(videoManager)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   std_msgs
+  std_srvs
   sensor_msgs
   rospy
   cv_bridge
@@ -33,6 +34,12 @@ add_service_files(
     getSnapShots.srv
     getVideo.srv
 )
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+  std_msgs  # Or other packages containing msgs
+  std_srvs
+)
 
 ###################################
 ## catkin specific configuration ##
@@ -48,6 +55,7 @@ catkin_package(
 #  LIBRARIES dummy_pkg
  CATKIN_DEPENDS
   std_msgs
+  std_srvs
   sensor_msgs
   rospy
   cv_bridge
@@ -77,6 +85,10 @@ include_directories(${Boost_INCLUDE_DIRS})
 ## Declare a cpp executable
 add_executable(videoManager src/videoManager.cpp)
 add_executable(vTester src/vTester.cpp)
+
+add_dependencies(videoManager ${PROJECT_NAME}_gencpp)
+add_dependencies(vTester ${PROJECT_NAME}_gencpp)
+
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(videoManager
