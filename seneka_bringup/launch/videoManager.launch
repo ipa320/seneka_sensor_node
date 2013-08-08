@@ -1,0 +1,16 @@
+<launch>
+<group ns="seneka">
+  <node name="VIDEO_MANAGER" pkg="videoManager" type="videoManager">
+    	<param name="inputTopic"	    type="string" value="/optris/thermal_image_view"/>
+	<param name="framesPerVideo"        type="int"    value="200"/>
+	<param name="framesPerCache"        type="int"    value="100"/>
+	<param name="framesPerBinary"       type="int"    value="100"/>
+	<param name="videoFrameRate"        type="int"    value="10"/>
+	<param name="outputFolder"          type="string" value="/tmp/"/>
+	<param name="showFrame"		    type="bool"   value="true"/>
+
+	
+      
+  </node>
+</group>
+</launch>
