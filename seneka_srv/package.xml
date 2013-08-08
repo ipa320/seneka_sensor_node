@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<package>
+  <name>seneka_srv</name>
+  <version>0.0.0</version>
+  <description>The seneka_srv package holds services for the seneka project at Fraunhofer IPA.</description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag --> 
+  <maintainer email="Matthias.Gruhler@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
+  <maintainer email="Florian.Mirus@ipa.fraunhofer.de">Florian Mirus</maintainer>
+
+  <license>LGPL</license>
+  
+  <author email="Rajib.Banik@ipa.fraunhofer.de">Rajib Banik</author>
+  
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <build_depend>roscpp</build_depend>
+  <run_depend>roscpp</run_depend>
+
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+  </export>
+</package>
