@@ -7,9 +7,6 @@ project(seneka_windsensor)
 find_package(catkin REQUIRED
   roscpp
   std_msgs
-#  sensor_msgs
-#  diagnostic_msgs
-#  tf  
   message_generation
 )
 
@@ -29,8 +26,6 @@ add_message_files(
 generate_messages(
   DEPENDENCIES
     std_msgs
-#    sensor_msgs
-#    diagnostic_msgs
 )
 
 ###################################
@@ -47,6 +42,7 @@ catkin_package(
     common/include
   CATKIN_DEPENDS
     roscpp
+    std_msgs
     message_runtime
 )
 
@@ -62,8 +58,7 @@ include_directories(common/include)
 add_executable(seneka_windsensor ros/src/seneka_windsensor.cpp common/src/windsensor.cpp common/src/SerialIO.cpp)
 
 ## Add cmake target dependencies of the executable/library
-## as an example, message headers may need to be generated before nodes
-# add_dependencies(dummy_pkg_node dummy_pkg_generate_messages_cpp)
+add_dependencies(seneka_windsensor ${PROJECT_NAME}_gencpp)
 
 ## Specify libraries to link a library or executable target against
 target_link_libraries(seneka_windsensor
@@ -71,7 +66,7 @@ target_link_libraries(seneka_windsensor
 )
 
 ## Mark executables and/or libraries for installation
-install(TARGETS seneka_windsensor seneka_windsensor
+install(TARGETS seneka_windsensor
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
