@@ -14,7 +14,7 @@
  * \note
  *   ROS stack name: SENEKA
  * \note
- *   ROS package name: VideoManager
+ *   ROS package name: seneka_video_manager
  *
  * \author
  *   Author: Johannes Goth (cmm-jg)
