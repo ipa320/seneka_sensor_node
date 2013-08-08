@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<package>
+  <name>seneka_sony_camera</name>
+  <version>0.0.1</version>
+  <description>
+    seneka_sony_camera holds drivers for the Sony Block Camera FCB EH 6300 used within the seneka project on our sensor nodes.
+    Note that this node requires you to have an iPort Pro GigE Vision interface with the respective eBus SDK provided py Pleora.
+  </description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag -->
+  <maintainer email="Matthias.Gruhler@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <license>LGPL</license>
+
+  <!-- Author tags are optional, mutiple are allowed, one per tag -->
+  <!-- Authors do not have to be maintianers, but could be -->
+  <author email="Rajib.Banik@ipa.fraunhofer.de">Rajib Banik</author>
+  <author email="Matthias.Gruhler@ipa.fraunhofer.de">Matthias Gruhler</author>
+
+  <!-- buildtool dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <!-- build dependencies -->
+  <build_depend>roscpp</build_depend>
+  <!--build_depend>std_msgs</build_depend-->
+  <!--build_depend>geometry_msgs</build_depend-->
+  <build_depend>sensor_msgs</build_depend>
+  <!--build_depend>kdl</build_depend-->
+  <!--build_depend>roslib</build_depend-->
+  <build_depend>image_transport</build_depend>
+  <build_depend>OpenCV</build_depend>
+  <build_depend>cv_bridge</build_depend>
+  <build_depend>seneka_srv</build_depend>
+  
+  <!-- run dependencies -->
+  <run_depend>roscpp</run_depend>
+  <!--run_depend>std_msgs</run_depend-->
+  <!--run_depend>geometry_msgs</run_depend-->
+  <run_depend>sensor_msgs</run_depend>
+  <!--run_depend>kdl</run_depend-->
+  <!--run_depend>roslib</run_depend-->
+  <run_depend>image_transport</run_depend>
+  <run_depend>OpenCV</run_depend>
+  <run_depend>cv_bridge</run_depend>
+  <run_depend>seneka_srv</run_depend>
+  
+</package>
+

@@ -1,42 +1,59 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(seneka_sony_camera)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+## Find catkin macros and libraries
+find_package(catkin REQUIRED COMPONENTS
+  roscpp
+  sensor_msgs
+  image_transport
+  cv_bridge
+  seneka_srv
+)
 
-rosbuild_init()
+#find_package(Boost REQUIRED thread)
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
+find_package(OpenCV REQUIRED)
 
-#uncomment if you have defined messages
-#rosbuild_genmsg()
-#uncomment if you have defined services
-rosbuild_gensrv()
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if you package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+catkin_package(
+  INCLUDE_DIRS
+    include
+#  LIBRARIES dummy_pkg
+  CATKIN_DEPENDS
+    roscpp
+    sensor_msgs
+    image_transport
+    cv_bridge
+    seneka_srv
+#  DEPENDS system_lib
+)
 
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
+###########
+## Build ##
+###########
+
 add_definitions(-D_UNIX_)
 
-include_directories(/opt/pleora/ebus_sdk/include)
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
+include_directories(
+  include
+  /opt/pleora/ebus_sdk/include
+)
+
+# find Pleora Libraries
 LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib)
 LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib/genicam/bin/Linux64_x64)
 
-rosbuild_add_executable(seneka_sony_camera src/sony_camera_node.cpp)
-
-
+# set library collections for easier linking
 set(EBUS_LIB
         PvBase
         PvDevice
@@ -64,6 +81,17 @@ set(GENICAM_LIB
         MathParser_gcc40_v2_2
 )
 
+## Declare a cpp executable
+add_executable(seneka_sony_camera src/sony_camera_node.cpp)
 
+## make sure to have the correct order for building
+add_dependencies(seneka_sony_camera seneka_srv_gencpp)
 
-target_link_libraries(seneka_sony_camera  ${EBUS_LIB} ${GENICAM_LIB})
+## Specify libraries to link a library or executable target against
+target_link_libraries(seneka_sony_camera 
+  ${catkin_LIBRARIES}
+  ${Boost_LIBRARIES}
+  ${EBUS_LIB}
+  ${GENICAM_LIB}
+)
+
