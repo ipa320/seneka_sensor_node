@@ -1,38 +1,78 @@
-cmake_minimum_required(VERSION 2.4.6)
-include($ENV{ROS_ROOT}/core/rosbuild/rosbuild.cmake)
+cmake_minimum_required(VERSION 2.8.3)
+project(seneka_windsensor)
 
-# Set the build type.  Options are:
-#  Coverage       : w/ debug symbols, w/o optimization, w/ code-coverage
-#  Debug          : w/ debug symbols, w/o optimization
-#  Release        : w/o debug symbols, w/ optimization
-#  RelWithDebInfo : w/ debug symbols, w/ optimization
-#  MinSizeRel     : w/o debug symbols, w/ optimization, stripped binaries
-#set(ROS_BUILD_TYPE RelWithDebInfo)
+## Find catkin macros and libraries
+## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
+## is used, also find other catkin packages
+find_package(catkin REQUIRED
+  roscpp
+  std_msgs
+#  sensor_msgs
+#  diagnostic_msgs
+#  tf  
+  message_generation
+)
 
-rosbuild_init()
-# Put this line before the executable or library:
-#rosbuild_add_boost_directories()
+#######################################
+## Declare ROS messages and services ##
+#######################################
 
-#set the default path for built executables to the "bin" directory
-set(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/ros/bin)
-#set the default path for built libraries to the "lib" directory
-set(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/ros/lib)
+## Generate messages in the 'msg' folder
+add_message_files(
+  DIRECTORY
+    msg
+  FILES
+    WindData.msg
+)
 
-#uncomment if you have defined messages
-rosbuild_genmsg()
-#uncomment if you have defined services
-#rosbuild_gensrv()
+## Generate added messages and services with any dependencies listed here
+generate_messages(
+  DEPENDENCIES
+    std_msgs
+#    sensor_msgs
+#    diagnostic_msgs
+)
 
-#common commands for building c++ executables and libraries
-#rosbuild_add_library(${PROJECT_NAME} src/example.cpp)
-#target_link_libraries(${PROJECT_NAME} another_library)
-#rosbuild_add_boost_directories()
-#rosbuild_link_boost(${PROJECT_NAME} thread)
-#rosbuild_add_executable(example examples/example.cpp)
-#target_link_libraries(example ${PROJECT_NAME})
+###################################
+## catkin specific configuration ##
+###################################
+## The catkin_package macro generates cmake config files for your package
+## Declare things to be passed to dependent projects
+## INCLUDE_DIRS: uncomment this if you package contains header files
+## LIBRARIES: libraries you create in this project that dependent projects also need
+## CATKIN_DEPENDS: catkin_packages dependent projects also need
+## DEPENDS: system dependencies of this project that dependent projects also need
+catkin_package(
+  INCLUDE_DIRS
+    common/include
+  CATKIN_DEPENDS
+    roscpp
+    message_runtime
+)
 
-# add include search paths
-INCLUDE_DIRECTORIES(${PROJECT_SOURCE_DIR}/common/include)
-rosbuild_add_executable(${PROJECT_NAME} ros/src/${PROJECT_NAME}.cpp common/src/windsensor.cpp common/src/SerialIO.cpp)
-#rosbuild_add_executable(seneka_windsensor ros/src/seneka_windsensor.cpp)
+###########
+## Build ##
+###########
 
+## Specify additional locations of header files
+## Your package locations should be listed before other locations
+include_directories(common/include)
+
+## Declare a cpp executable
+add_executable(seneka_windsensor ros/src/seneka_windsensor.cpp common/src/windsensor.cpp common/src/SerialIO.cpp)
+
+## Add cmake target dependencies of the executable/library
+## as an example, message headers may need to be generated before nodes
+# add_dependencies(dummy_pkg_node dummy_pkg_generate_messages_cpp)
+
+## Specify libraries to link a library or executable target against
+target_link_libraries(seneka_windsensor
+   ${catkin_LIBRARIES}
+)
+
+## Mark executables and/or libraries for installation
+install(TARGETS seneka_windsensor seneka_windsensor
+  ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+  RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
