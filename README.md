@@ -19,11 +19,13 @@ This will check out the `optris_drivers` package from the repo specified in the 
 
 ### Building the `seneka_sony_camera node`
 The `seneka_sony_camera` node requires the eBus SDK which is provided by Pleora (http://www.pleora.com/our-products/ebus-sdk).
-Thus, the package is not automatically built using the ROS build system.
+Thus, the package is not automatically built using the ROS build system, as a specific cmake command steps out of the build process for this package.
 
-If you want to build it, you need to install the eBus SDK, `source set_puregev_env` in `/opt/pleora/ebus_sdk/bin` and build it by hand.
+If you want to build it, you need to install the eBus SDK and `source set_puregev_env` in `/opt/pleora/ebus_sdk/bin`.
+This sets the required environment variables for building. Those environment variables are also needed for running the node later on.
+
 However, this driver is only required for the sensor nodes or for testing the sony_camera.
-Thus, you do not need to do this for developing code other than that.
+Thus, you do not need to have the SDK for developing code other than that related to this package.
 
 ### Now you're good to go
 If everything has been set up correctly, the SENEKA stack should now be built.
