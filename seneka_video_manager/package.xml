@@ -34,11 +34,4 @@
   <run_depend>image_transport</run_depend>
   <run_depend>message_runtime</run_depend>
   <run_depend>OpenCV</run_depend>
-  
-
-
-  <!-- The export tag contains other, unspecified, tags -->
-  <export>
-    
-  </export>
 </package>

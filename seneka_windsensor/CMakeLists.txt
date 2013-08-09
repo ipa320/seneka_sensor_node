@@ -52,7 +52,10 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(common/include)
+include_directories(
+  common/include
+  ${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a cpp executable
 add_executable(seneka_windsensor ros/src/seneka_windsensor.cpp common/src/windsensor.cpp common/src/SerialIO.cpp)

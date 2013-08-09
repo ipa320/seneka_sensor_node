@@ -13,7 +13,6 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   visualization_msgs
   tf
-  tf_conversions
   std_srvs
 )
 
@@ -22,14 +21,27 @@ catkin_package(
     include
     common/include
 #  LIBRARIES seneka
-#  CATKIN_DEPENDS other_catkin_pkg
+  CATKIN_DEPENDS
+    roslib
+    roscpp
+    rosconsole
+    std_msgs
+    nav_msgs
+    geometry_msgs
+    visualization_msgs
+    tf
+    std_srvs
 #  DEPENDS system_lib
 )
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-include_directories(include/sensor_placement common/include/sensor_placement ${catkin_INCLUDE_DIRS} )
+include_directories(
+  include/sensor_placement
+  common/include/sensor_placement
+  ${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a cpp executable
 # add_executable(seneka_node src/seneka_node.cpp)

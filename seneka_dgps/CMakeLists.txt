@@ -8,7 +8,6 @@ find_package(catkin REQUIRED
   roscpp
   sensor_msgs
   diagnostic_msgs
-  tf
 )
 
 ###################################
@@ -23,7 +22,10 @@ find_package(catkin REQUIRED
 catkin_package(
   INCLUDE_DIRS 
     common/include
-#  CATKIN_DEPENDS 
+  CATKIN_DEPENDS
+    roscpp
+    sensor_msgs
+    diagnostic_msgs
 )
 
 ###########
@@ -32,7 +34,10 @@ catkin_package(
 
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
-include_directories(common/include)
+include_directories(
+  common/include
+  ${catkin_INCLUDE_DIRS}
+)
 
 ## Declare a cpp executable
 add_executable(seneka_dgps ros/src/seneka_dgps.cpp common/src/Dgps.cpp common/src/SerialIO.cpp)
@@ -49,7 +54,7 @@ target_link_libraries(seneka_dgps
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 ## Mark executables and/or libraries for installation
-install(TARGETS seneka_dgps seneka_dgps
+install(TARGETS seneka_dgps
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

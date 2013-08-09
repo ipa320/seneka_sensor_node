@@ -32,9 +32,4 @@
   <run_depend>image_transport</run_depend>
   <run_depend>optris_drivers</run_depend>
 
-
-  <!-- The export tag contains other, unspecified, tags -->
-  <export>
-
-  </export>
 </package>
