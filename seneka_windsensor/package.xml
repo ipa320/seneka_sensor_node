@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<package>
+  <name>seneka_windsensor</name>
+  <version>0.0.1</version>
+  <description>
+    The seneka_windsensor package contains a driver for the windsensor used on the Fraunhofer IPA sensor nodes.
+    It publishes the windspeed and direction measured.
+  </description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag -->
+  <maintainer email="Matthias.Gruhler@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <license>LGPL</license>
+
+  <!-- Author tags are optional, mutiple are allowed, one per tag -->
+  <!-- Authors do not have to be maintianers, but could be -->
+  <author email="Ciby.Matthew@ipa.fraunhofer.de">Ciby Matthew</author> -->
+
+  <!-- buildtool dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <!-- build dependencies -->
+  <build_depend>roscpp</build_depend>
+  <build_depend>std_msgs</build_depend>
+  <build_depend>diagnostic_msgs</build_depend>
+    
+  <!-- runtime dependencies -->
+  <run_depend>roscpp</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>diagnostic_msgs</run_depend>
+  <run_depend>message_runtime</run_depend>
+  
+</package>
+

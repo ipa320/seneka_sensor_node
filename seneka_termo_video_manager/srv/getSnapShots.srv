@@ -1,0 +1,4 @@
+bool start
+int64 interval
+---
+bool notifier
