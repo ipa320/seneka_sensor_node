@@ -59,11 +59,11 @@ sensor_placement_node::sensor_placement_node()
 
   // ros subscribers
 
-  AoI_sub_ = nh_.subscribe("in_AoI_poly", 1, 
+  AoI_sub_ = nh_.subscribe("in_AoI_poly", 1,
                            &sensor_placement_node::AoICB, this);
   forbidden_area_sub_ = nh_.subscribe("in_forbidden_area", 1,
                                       &sensor_placement_node::forbiddenAreaCB, this);
-  
+
   // ros publishers
   nav_path_pub_ = nh_.advertise<nav_msgs::Path>("out_path",1,true);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
@@ -116,7 +116,7 @@ void sensor_placement_node::getParams()
     ROS_WARN("No parameter max_sensor_range on parameter server. Using default [5.0 in m]");
   }
   pnh_.param("max_sensor_range",sensor_range_,5.0);
-  
+
   double open_angle_1, open_angle_2;
 
   if(!pnh_.hasParam("open_angle_1"))
@@ -185,10 +185,15 @@ void sensor_placement_node::getParams()
   pnh_.param("c3",PSO_param_3_,1.49445);
 }
 
+
+
+
 bool sensor_placement_node::getTargets()
 {
   // initialize result
   bool result = false;
+
+  int pool_count;
 
   if(map_received_ == true)
   {
@@ -223,7 +228,7 @@ bool sensor_placement_node::getTargets()
           //variable information
           dummy_target_info_var.covered = false;
           dummy_target_info_var.multiple_covered = false;
-          
+
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
             if(pointInPolygon(world_Coord, forbidden_area_.polygon) >= 1)
@@ -253,6 +258,7 @@ bool sensor_placement_node::getTargets()
           world_Coord.x = mapToWorldX(i, map_);
           world_Coord.y = mapToWorldY(j, map_);
           world_Coord.theta = 0;
+
 
           //fix information
           dummy_target_info_fix.world_pos.x = world_Coord.x;
@@ -294,6 +300,7 @@ bool sensor_placement_node::getTargets()
               // the given position is on the forbidden area
               dummy_target_info_fix.forbidden = true;
             }
+            // -b- CHECK: is point on perimeter of interest for greedy search?
 
             dummy_target_info_fix.potential_target = 0;
 
@@ -315,6 +322,140 @@ bool sensor_placement_node::getTargets()
     ROS_WARN("No map received! Not able to propose sensor positions.");
   }
   return result;
+}
+
+
+
+
+// function to run Greedy Search algorithm
+void greedy_placement_node::runGS()
+{
+  double angle_resolution;
+  double num_of_steps;
+  int max_point_id;
+
+  num_of_steps = ceil(360/angle_resolution);
+
+  // initialize pointer to dummy sensor_model
+  FOV_2D_model dummy_GS_2D_model;
+  dummy_GS_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);   //-b- verify values usage
+
+  // initialize GSparticle
+  GSparticle gs_obj_ = GSparticle(sensor_num_, target_num_, dummy_2D_model);    // -b- target_num ??
+
+  gs_obj_.setMap(map_);
+  gs_obj_.setAreaOfInterest(area_of_interest_);
+  gs_obj_.setForbiddenArea(forbidden_area_);
+  gs_obj_.setOpenAngles(open_angles_);
+  gs_obj_.setRange(sensor_range_);
+//  gs_obj_.setTargetsWithInfoVar(targets_with_info_var_);
+//  gs_obj_.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+  gs_obj_.setLookupTable(& lookup_table_);
+
+  //get targets (GS_point_info for all points of interest for Greedy Search)
+  gs_obj_.getGSTargets();
+
+/*
+  // initialize particle swarm with given number of particles containing given number of sensors
+  particle_swarm_.assign(particle_num_,gs_obj_);
+  // initialize the global best solution
+  global_best_ = gs_obj_;   // -b- ??
+  double actual_coverage = 0;
+*/
+
+
+  // place all sensors initially at an arbitrary position. using first position in the GS_pool_
+  initial_pose.x = mapToWorldX(GS_pool_[0].p.x, map_);
+  initial_pose.y = mapToWorldY(GS_pool_[0].p.y, map_);
+  initial_pose.z = 0;
+  gs_obj_.placeSensorsAtPos(initial_pose);
+
+  // now start placing sensors one by one according to greedy algorithm
+  for(size_t sensor_index = 0; sensor_index < sensors_.size(); sensor_index++)
+  {
+    max_point_id = gs_obj_.getPoolCount();
+
+    // place the current sensor on all points in GS pool one by one and calculate coverge
+    for (int point_id=0; point_id<max_point_id; point_id++)
+    {
+      //first calculate world position of current point id and place sensor at that position
+      new_pose.x = mapToWorldX(GS_pool_[point_id].p.x, map_);
+      new_pose.y = mapToWorldY(GS_pool_[point_id].p.y, map_);
+      new_pose.z = 0;
+
+      for (int alpha=0; alpha<angle_resolution*num_of_steps; alpha=alpha+angle_resolution)
+      {
+        //look around at all angles and save only the max coverage angle
+        new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+        sensors_.at(sensor_index).setSensorPose(newPose);
+        updateGSpointsRaytracing(sensor_index, point_id);
+      }
+    }
+
+    //Get max coverage point
+    max_coverage_pose = gs_obj_.getGlobalMaxCoveragePOSE();    //index of point in the pool that gives maximum coverage
+    //place the sensor at max coverage point
+    sensors_.at(sensor_index).setSensorPose(max_coverage_pose);
+
+
+    //note mark all points that are covered as "covered"
+
+    //calculate total coverage
+
+    //POINTS DELETION
+    GSparticle::delCovPoints;   //NOTE also fix the count of pool points
+
+    //APPROACH: pass into updateGStargetsinfo function that you also want to delete the covered point, (a variable which is always check
+                                                                                                        //and if it is set then deletion is performed)
+    //OR call simple update function with no modifictaion for deletion and just have all targets marked as occupied. call the function after final
+    //placement of sensor and then call a function that deletes all covered targets. and hence the ones that were recently marked, would be deleted
+    //OR may be make a new raytracing function: deleteGSpointsraytracing();
+
+
+    // publish the GSparticle
+    marker_array_pub_.publish(gs_obj_.getVisualizationMarkers());
+
+
+  }
+
+
+
+  }
+
+
+
+
+
+
+
+
+  // initialize sensors randomly on perimeter for each particle with random velocities
+  if(AoI_received_)
+  {
+    for(size_t i = 0; i < particle_swarm_.size(); i++)
+    {
+
+
+
+      // initialize sensor poses randomly on perimeter
+      particle_swarm_.at(i).initializeSensorsOnPerimeter();
+      // initialize sensor velocities randomly
+      particle_swarm_.at(i).initializeRandomSensorVelocities();
+      // get calculated coverage
+      actual_coverage = particle_swarm_.at(i).getActualCoverage();
+      // check if the actual coverage is a new global best
+      if(actual_coverage > best_cov_)
+      {
+        best_cov_ = actual_coverage;
+        global_best_ = particle_swarm_.at(i);
+      }
+    }
+    // after the initialization step we're looking for a new global best solution
+    getGlobalBest();
+
+    // publish the actual global best visualization
+    marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+  }
 }
 
 // function to initialize PSO-Algorithm
@@ -361,13 +502,15 @@ void sensor_placement_node::initializePSO()
         global_best_ = particle_swarm_.at(i);
       }
     }
-    // after the initialization step we're looking for a new global best solution 
+    // after the initialization step we're looking for a new global best solution
     getGlobalBest();
 
     // publish the actual global best visualization
     marker_array_pub_.publish(global_best_.getVisualizationMarkers());
   }
 }
+
+
 
 // function for the actual particle-swarm-optimization
 void sensor_placement_node::PSOptimize()
@@ -446,7 +589,7 @@ void sensor_placement_node::getGlobalBest()
 // callback function for the start PSO service
 bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  // call static_map-service from map_server to get the actual map  
+  // call static_map-service from map_server to get the actual map
   sc_get_map_.waitForExistence();
 
   nav_msgs::GetMap srv_map;
@@ -461,7 +604,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
       // get bounding box of area of interest
       geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
       // cropMap to boundingBox
-      cropMap(bound_box, srv_map.response.map, map_); 
+      cropMap(bound_box, srv_map.response.map, map_);
     }
     else
     {
@@ -470,7 +613,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
       // if no AoI was specified, we consider the whole map to be the AoI
       area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
     }
-    
+
     // publish map
     map_.header.stamp = ros::Time::now();
     map_pub_.publish(map_);
@@ -540,7 +683,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 // callback function for the test service
 bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  // call static_map-service from map_server to get the actual map  
+  // call static_map-service from map_server to get the actual map
   sc_get_map_.waitForExistence();
 
   nav_msgs::GetMap srv_map;

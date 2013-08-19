@@ -74,6 +74,9 @@ particle::particle()
 
   // initialize sensor array with as many entries as specified by sensors_num_
 
+  // initialize pool count for number of points on which Greedy Algorithm will be applied
+  pool_count_=0;
+
 }
 
 // constructor with arguments
@@ -181,6 +184,12 @@ int particle::getMultipleCoverageIndex()
   return multiple_coverage_;
 }
 
+// function to get pool count
+int particle::getPoolCount()
+{
+  return pool_count_;
+}
+
 // function that sets the member varialbe sensor_um_ and reserves capacity for vector sensors_
 void particle::setSensorNum(int num_of_sensors)
 {
@@ -279,7 +288,7 @@ void particle::setRange(double new_range)
   }
 }
 
-//function to create and set a lookup table for raytracing for each sensor in the particle
+// function to create and set a lookup table for raytracing for each sensor in the particle
 void particle::setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table)
 {
   if (pLookup_table != NULL)
@@ -290,7 +299,13 @@ void particle::setLookupTable(const std::vector< std::vector<geometry_msgs::Poin
     }
   }
   else
-    ROS_ERROR("LookupTable not set corretly");
+    ROS_ERROR("LookupTable not set correctly");
+}
+
+// function to set pool count -b- function not needed??
+void particle::setPoolCount(int count)
+{
+  pool_count_=count;
 }
 
 // function to place the sensors randomly on the perimeter
@@ -359,6 +374,58 @@ void particle::placeSensorsRandomlyOnPerimeter()
     pers_best_multiple_coverage_ = multiple_coverage_;
     pers_best_ = sensors_;
   }
+}
+
+// places each sensor at point where maximum coverage is acheived
+void particle::sensorPlacementGS()
+{
+  int max_point_index=0;
+
+  geometry_msgs::Point32 newPose;
+
+  for(size_t i = 0; i < sensors_.size(); i++)
+  {
+
+  max_point_index = getMaxCoverageGSpoint();
+
+  newPose.x = mapToWorldX(GS_pool_[max_point_index].p.x, map_);
+  newPose.y = mapToWorldY(GS_pool_[max_point_index].p.y, map_);
+  newPose.z = 0;
+
+  sensors_.at(i).setSensorPose(newPose);
+
+  deleteGSpoint(max_point_index);
+
+  }
+
+}
+
+// deletes the point at given index from GS_pool
+// NOTE: modifies the arrangement of points - can not rely on points being in a certain order if this function is used
+void particle::deleteGSpoint(int point_index)
+{
+  int last_index = pool_count_;
+  temp GS_point_info;
+
+  //swap given point with the last point in the pool
+  temp = GS_pool_[last_index];
+  GS_pool_[last_index] = GS_pool_[point_index];
+  GS_pool_[point_index] = temp;
+
+  //decrease pool_count_ so that it is not accessed in the next step of GS Sensor placement
+  pool_count_ = pool_count_-1;
+}
+
+// function to increment pool count by 1
+void incPoolCount()
+{
+  pool_count_=pool_count_+1;
+}
+
+// function to decrement pool count by 1
+void decPoolCount()
+{
+  pool_count_=pool_count_-1;
 }
 
 // function to initialize the sensors on the perimeter
@@ -955,6 +1022,26 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
   }
 }
 
+// returns pool_index of point which covers maximum targets. returns -1 on failure
+int particle::getMaxCoverageGSpoint()
+{
+  int current_max=0;
+  int pool_index=-1;
+  int max_count=getPoolCount();
+
+  for (int i=0; i<max_count i++)
+  {
+    if GS_pool_[i].max_targets_covered>current_max
+    {
+      //update current_max
+      current_max=GS_pool_[i].max_targets_covered;
+      pool_index=i;
+    }
+  }
+  return pool_index;
+}
+
+
 // function to calculate the actual and personal best coverage
 void particle::calcCoverage()
 {
@@ -1127,6 +1214,23 @@ unsigned int particle::findFarthestUncoveredTarget(size_t sensor_index)
   }
   return result;
 }
+
+// function to see if the given point is in GSpool or not; returns the pool_index on success and -1 if the point wasn't found
+// NOTE: the bounds are not verified
+int particle::inGSpool (int cell_in_vector_coordinates)
+{
+  int max_count=pool_count_;
+  //checking whether or not cell_in_vector_coordinates is present in Greedy Search pool
+  for (int i=0; i<max_count; i++)
+    {
+      if (GS_pool_[i].coordinates=cell_in_vector_coordinates)
+        //match found
+        return i;
+    }
+  //no match found
+  return -1;
+}
+
 
 // helper function to find a random uncovered and non occupied target
 // the return value is the index of that uncovered target

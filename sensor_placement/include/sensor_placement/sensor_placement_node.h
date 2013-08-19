@@ -68,7 +68,7 @@
 #include <geometry_msgs/Pose2D.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <nav_msgs/Path.h> 
+#include <nav_msgs/Path.h>
 #include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <nav_msgs/GetMap.h>
@@ -79,6 +79,7 @@
 #include <sensor_model.h>
 #include <particle.h>
 #include <seneka_utilities.h>
+#include <GSparticle.h>   //-b-
 
 using namespace std;
 using namespace seneka_utilities;
@@ -149,6 +150,12 @@ private:
   // target vectors (also holds occupation and coverage information)
   vector<target_info_fix> targets_with_info_fix_; //fix information
   vector<target_info_var> targets_with_info_var_; //variable information
+
+  // vector of points (holds coordinates and potential target information
+  vector<point_info> point_info_vec_;
+
+  // pool of points for Greedy placement of sensor (holds coordinates and max coverage information
+  vector<GS_point_info> GS_pool_;
 
   // PSO parameter constants
   double PSO_param_1_;

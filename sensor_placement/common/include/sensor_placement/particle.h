@@ -70,7 +70,7 @@
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/Point.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <nav_msgs/Path.h> 
+#include <nav_msgs/Path.h>
 #include <std_msgs/String.h>
 #include <std_msgs/String.h>
 #include <visualization_msgs/MarkerArray.h>
@@ -121,6 +121,9 @@ private:
   // actual map
   const nav_msgs::OccupancyGrid * pMap_;
 
+  // count representing the number of points in the pool on which Greedy Algorithm is applied
+  unsigned int pool_count_; //-b-
+
 public:
 
   // standard constructor
@@ -158,6 +161,9 @@ public:
   // function to get multiple coverage index
   int getMultipleCoverageIndex();
 
+  // function to get pool count
+  int getPoolCount();
+
   // ************************ setter functions ************************
 
   // function that sets the member variable sensor_num_ and reserves capacity for vector sensors_
@@ -189,6 +195,10 @@ public:
 
   //function to create and set a lookup table for raytracing for each sensor in the particle
   void setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table);
+
+  // function to set pool count
+  void setPoolCount(int count);
+
   // ************************ update functions ************************
 
   // function to place the sensors randomly on the perimeter
@@ -233,6 +243,22 @@ public:
   // helper function to find a random uncovered and non occupied target not forbidden
   // the return value is the index of that uncovered target
   unsigned int randomFreeTarget();
+
+  // function to increment pool count by 1
+  void incPoolCount();
+
+  // function to decrement pool count by 1
+  void decPoolCount();
+
+  // function to see if the given point is in GSpool or not; returns the poolCount on success and -1 if the point wasn't found
+  int inGSpool (int cell_in_vector_coordinates);
+
+  // returns pool_index of point which covers maximum targets. returns -1 on failure
+  int getMaxCoverageGSpoint();
+
+  // deletes the point at given index from GS_pool
+  // NOTE: modifies the arrangement of points - can not rely on points being in a certain order if this function is used
+  void deleteGSpoint(int point_index);
 
   // helper function to check, if the sensor is facing outside the area of interest
   bool sensorBeamIntersectsPerimeter(size_t sensor_index, geometry_msgs::Pose new_pose_candidate);
