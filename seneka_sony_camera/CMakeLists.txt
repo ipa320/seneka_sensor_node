@@ -56,6 +56,7 @@ add_definitions(-D_UNIX_)
 include_directories(
   include
   /opt/pleora/ebus_sdk/include
+  ${catkin_INCLUDE_DIRS}
 )
 
 # find Pleora Libraries
