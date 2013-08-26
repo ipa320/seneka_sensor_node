@@ -74,6 +74,8 @@ sensor_placement_node::sensor_placement_node()
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
   ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
 
+  ss_start_GS_ = nh_.advertiseService("StartGS", &sensor_placement_node::startGSCallback, this); //-b-
+
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
 
@@ -193,8 +195,6 @@ bool sensor_placement_node::getTargets()
   // initialize result
   bool result = false;
 
-  int pool_count;
-
   if(map_received_ == true)
   {
     // only if we received a map, we can get targets
@@ -300,7 +300,6 @@ bool sensor_placement_node::getTargets()
               // the given position is on the forbidden area
               dummy_target_info_fix.forbidden = true;
             }
-            // -b- CHECK: is point on perimeter of interest for greedy search?
 
             dummy_target_info_fix.potential_target = 0;
 
@@ -325,138 +324,6 @@ bool sensor_placement_node::getTargets()
 }
 
 
-
-
-// function to run Greedy Search algorithm
-void greedy_placement_node::runGS()
-{
-  double angle_resolution;
-  double num_of_steps;
-  int max_point_id;
-
-  num_of_steps = ceil(360/angle_resolution);
-
-  // initialize pointer to dummy sensor_model
-  FOV_2D_model dummy_GS_2D_model;
-  dummy_GS_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);   //-b- verify values usage
-
-  // initialize GSparticle
-  GSparticle gs_obj_ = GSparticle(sensor_num_, target_num_, dummy_2D_model);    // -b- target_num ??
-
-  gs_obj_.setMap(map_);
-  gs_obj_.setAreaOfInterest(area_of_interest_);
-  gs_obj_.setForbiddenArea(forbidden_area_);
-  gs_obj_.setOpenAngles(open_angles_);
-  gs_obj_.setRange(sensor_range_);
-//  gs_obj_.setTargetsWithInfoVar(targets_with_info_var_);
-//  gs_obj_.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
-  gs_obj_.setLookupTable(& lookup_table_);
-
-  //get targets (GS_point_info for all points of interest for Greedy Search)
-  gs_obj_.getGSTargets();
-
-/*
-  // initialize particle swarm with given number of particles containing given number of sensors
-  particle_swarm_.assign(particle_num_,gs_obj_);
-  // initialize the global best solution
-  global_best_ = gs_obj_;   // -b- ??
-  double actual_coverage = 0;
-*/
-
-
-  // place all sensors initially at an arbitrary position. using first position in the GS_pool_
-  initial_pose.x = mapToWorldX(GS_pool_[0].p.x, map_);
-  initial_pose.y = mapToWorldY(GS_pool_[0].p.y, map_);
-  initial_pose.z = 0;
-  gs_obj_.placeSensorsAtPos(initial_pose);
-
-  // now start placing sensors one by one according to greedy algorithm
-  for(size_t sensor_index = 0; sensor_index < sensors_.size(); sensor_index++)
-  {
-    max_point_id = gs_obj_.getPoolCount();
-
-    // place the current sensor on all points in GS pool one by one and calculate coverge
-    for (int point_id=0; point_id<max_point_id; point_id++)
-    {
-      //first calculate world position of current point id and place sensor at that position
-      new_pose.x = mapToWorldX(GS_pool_[point_id].p.x, map_);
-      new_pose.y = mapToWorldY(GS_pool_[point_id].p.y, map_);
-      new_pose.z = 0;
-
-      for (int alpha=0; alpha<angle_resolution*num_of_steps; alpha=alpha+angle_resolution)
-      {
-        //look around at all angles and save only the max coverage angle
-        new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
-        sensors_.at(sensor_index).setSensorPose(newPose);
-        updateGSpointsRaytracing(sensor_index, point_id);
-      }
-    }
-
-    //Get max coverage point
-    max_coverage_pose = gs_obj_.getGlobalMaxCoveragePOSE();    //index of point in the pool that gives maximum coverage
-    //place the sensor at max coverage point
-    sensors_.at(sensor_index).setSensorPose(max_coverage_pose);
-
-
-    //note mark all points that are covered as "covered"
-
-    //calculate total coverage
-
-    //POINTS DELETION
-    GSparticle::delCovPoints;   //NOTE also fix the count of pool points
-
-    //APPROACH: pass into updateGStargetsinfo function that you also want to delete the covered point, (a variable which is always check
-                                                                                                        //and if it is set then deletion is performed)
-    //OR call simple update function with no modifictaion for deletion and just have all targets marked as occupied. call the function after final
-    //placement of sensor and then call a function that deletes all covered targets. and hence the ones that were recently marked, would be deleted
-    //OR may be make a new raytracing function: deleteGSpointsraytracing();
-
-
-    // publish the GSparticle
-    marker_array_pub_.publish(gs_obj_.getVisualizationMarkers());
-
-
-  }
-
-
-
-  }
-
-
-
-
-
-
-
-
-  // initialize sensors randomly on perimeter for each particle with random velocities
-  if(AoI_received_)
-  {
-    for(size_t i = 0; i < particle_swarm_.size(); i++)
-    {
-
-
-
-      // initialize sensor poses randomly on perimeter
-      particle_swarm_.at(i).initializeSensorsOnPerimeter();
-      // initialize sensor velocities randomly
-      particle_swarm_.at(i).initializeRandomSensorVelocities();
-      // get calculated coverage
-      actual_coverage = particle_swarm_.at(i).getActualCoverage();
-      // check if the actual coverage is a new global best
-      if(actual_coverage > best_cov_)
-      {
-        best_cov_ = actual_coverage;
-        global_best_ = particle_swarm_.at(i);
-      }
-    }
-    // after the initialization step we're looking for a new global best solution
-    getGlobalBest();
-
-    // publish the actual global best visualization
-    marker_array_pub_.publish(global_best_.getVisualizationMarkers());
-  }
-}
 
 // function to initialize PSO-Algorithm
 void sensor_placement_node::initializePSO()
@@ -679,6 +546,257 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
   return true;
 
 }
+
+//get targets (GS_point_info for all points of interest for Greedy Search)
+bool sensor_placement_node::getGSTargets()
+{
+  // initialize result
+  bool result = false;
+
+  if(map_received_ == true)
+  {
+    // only if we received a map, we can get targets
+    point_info dummy_point_info;
+    point_info_vec_.assign(map_.info.width * map_.info.height, dummy_point_info);
+    // create dummy GS_point_info to save information in the pool
+    GS_point_info dummy_GS_point_info;
+
+    if(AoI_received_ == false)
+    {
+      for(unsigned int i = 0; i < map_.info.width; i++)
+      {
+        for(unsigned int j = 0; j < map_.info.height; j++)
+        {
+          // calculate world coordinates from map coordinates of given target
+          geometry_msgs::Pose2D world_Coord;
+          world_Coord.x = mapToWorldX(i, map_);
+          world_Coord.y = mapToWorldY(j, map_);
+          world_Coord.theta = 0;
+
+          dummy_point_info.p.x = i;
+          dummy_point_info.p.y = j;
+          dummy_point_info.potential_target = 1;    //check -b-
+
+          if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+          {
+            // points outside the forbidden area are of interest for greedy search
+            dummy_GS_point_info.p.x=i;
+            dummy_GS_point_info.p.y=j;
+            dummy_GS_point_info.max_targets_covered=0;
+          }
+
+          target_num_++; //-b-
+
+          // saving information
+          point_info_vec_.at(j * map_.info.width + i) = dummy_point_info;
+          GS_pool_.push_back(dummy_GS_point_info);
+        }
+      }
+      result = true;
+    }
+    else
+    {
+      // if area of interest polygon was specified, we consider the non-occupied grid cells within the polygon as targets
+      for(unsigned int i = 0; i < map_.info.width; i++)
+      {
+        for(unsigned int j = 0; j < map_.info.height; j++)
+        {
+          // calculate world coordinates from map coordinates of given target
+          geometry_msgs::Pose2D world_Coord;
+          world_Coord.x = mapToWorldX(i, map_);
+          world_Coord.y = mapToWorldY(j, map_);
+          world_Coord.theta = 0;
+
+          dummy_point_info.p.x = i;
+          dummy_point_info.p.y = j;
+          dummy_point_info.potential_target = -1;
+
+          // the given position lies withhin the polygon
+          if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 2)
+          {
+            dummy_point_info.potential_target = 1; //mark the point as potential target
+
+            target_num_++; //-b-
+
+            if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+            {
+              // points outside the forbidden area are of interest for greedy search so save coordinates of this point
+              dummy_GS_point_info.p.x=i;
+              dummy_GS_point_info.p.y=j;
+              dummy_GS_point_info.max_targets_covered=0;  //initial value of coverage
+            }
+
+          }
+          // the given position lies on the perimeter
+          else if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
+          {
+            dummy_point_info.potential_target = 0; //mark the point as not a potential target -b-
+
+            if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+            {
+              // points outside the forbidden area are of interest for greedy search so save coordinates of this point
+              dummy_GS_point_info.p.x=i;
+              dummy_GS_point_info.p.y=j;
+              dummy_GS_point_info.max_targets_covered=0;  //initial value of coverage
+            }
+          }
+          // save the point information
+          point_info_vec_.at(j * map_.info.width + i) = dummy_point_info;
+          GS_pool_.push_back(dummy_GS_point_info);
+        }
+      }
+      result = true;
+    }
+  }
+  else
+  {
+    ROS_WARN("No map received! Not able to propose sensor positions.");
+  }
+  return result;
+}
+
+
+
+// function to initialize GS-Algorithm
+void sensor_placement_node::initializeGS()
+{
+  geometry_msgs::Pose initial_pose;
+
+  // initialize pointer to dummy sensor_model
+  FOV_2D_model dummy_GS_2D_model;
+  dummy_GS_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);   //-b- verify values usage
+
+  // initialize dummy GSparticle
+  GSparticle gs_obj_dummy = GSparticle(sensor_num_, target_num_, dummy_GS_2D_model);    // -b- target_num ??
+
+  gs_obj_ = gs_obj_dummy;   // -b-
+
+  gs_obj_.setMap(map_);
+  gs_obj_.setAreaOfInterest(area_of_interest_);
+  gs_obj_.setForbiddenArea(forbidden_area_);
+  gs_obj_.setOpenAngles(open_angles_);
+  gs_obj_.setRange(sensor_range_);
+  gs_obj_.setPointInfoVec(point_info_vec_, target_num_);
+  gs_obj_.setGSpool(GS_pool_);
+  gs_obj_.setLookupTable(& lookup_table_);
+
+  // place all sensors initially at first position in the GS pool
+  initial_pose.position.x = mapToWorldX(GS_pool_[0].p.x, map_);
+  initial_pose.position.y = mapToWorldY(GS_pool_[0].p.y, map_);
+  initial_pose.position.z = 0;
+  initial_pose.orientation = tf::createQuaternionMsgFromYaw(0);
+  gs_obj_.placeSensorsAtPos(initial_pose);
+
+  // publish the GSparticle
+  marker_array_pub_.publish(gs_obj_.getVisualizationMarkers());
+
+}
+
+// function to run Greedy Search Algorithm
+void sensor_placement_node::runGS()
+{
+
+  double GS_coverage;
+
+  // now start placing sensors one by one according to greedy algorithm
+  for(size_t sensor_index = 0; sensor_index < sensor_num_; sensor_index++)
+  {
+
+    gs_obj_.gSearch(sensor_index);
+
+    // publish the GSparticle
+    marker_array_pub_.publish(gs_obj_.getVisualizationMarkers());
+
+    ROS_INFO("done");
+
+    GS_coverage = gs_obj_.calGScoverage();
+
+    ROS_INFO_STREAM("No. of sensors placed " << sensor_index+1 << " coverage: " << GS_coverage);
+
+  }
+
+}
+
+
+// callback function for the start GS service
+bool sensor_placement_node::startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  // call static_map-service from map_server to get the actual map
+  sc_get_map_.waitForExistence();
+
+  nav_msgs::GetMap srv_map;
+
+  if(sc_get_map_.call(srv_map))
+  {
+    ROS_INFO("Map service called successfully");
+    map_received_ = true;
+
+    if(AoI_received_)
+    {
+      // get bounding box of area of interest
+      geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
+      // cropMap to boundingBox
+      cropMap(bound_box, srv_map.response.map, map_);
+    }
+    else
+    {
+      map_ = srv_map.response.map;
+
+      // if no AoI was specified, we consider the whole map to be the AoI
+      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
+    }
+
+    // publish map
+    map_.header.stamp = ros::Time::now();
+    map_pub_.publish(map_);
+    map_meta_pub_.publish(map_.info);
+  }
+  else
+  {
+    ROS_INFO("Failed to call map service");
+  }
+
+  if(map_received_)
+  {
+    ROS_INFO("Received a map");
+
+    // now create the lookup table based on the range of the sensor and the resolution of the map
+    int radius_in_cells = floor(sensor_range_ / map_.info.resolution);
+    lookup_table_ = createLookupTableCircle(radius_in_cells);
+  }
+
+
+  ROS_INFO("getting targets from specified map and area of interest!");
+
+  targets_saved_ = getGSTargets();
+
+  if(targets_saved_)
+  {
+  ROS_INFO_STREAM("Saved " << target_num_ << " targets in GS pool");
+
+  ROS_INFO_STREAM("Saved " << point_info_vec_.size() << " overall targets");
+  }
+
+  ROS_INFO("Initializing Greedy Search algorithm");
+  initializeGS();
+
+  // now start the actual Greedy Search  Algorithm
+  ROS_INFO("Run Greedy Search Algorithm");
+  runGS();
+
+  ROS_INFO("Clean up everything");
+
+  GS_pool_.clear();
+  point_info_vec_.clear();
+
+  target_num_ = 0;
+
+  ROS_INFO("GS Algorithm terminated successfully");
+
+  return true;
+
+}
+
 
 // callback function for the test service
 bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)

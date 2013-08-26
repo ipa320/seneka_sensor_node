@@ -124,6 +124,8 @@ namespace seneka_utilities
     // holds the info if the given cell is a potential target, i.e. the position is inside
     // the area of interest (-1 == outside, 0 == on perimeter, 1 == inside)
     int8_t potential_target;
+
+    bool covered;
   };
 
 

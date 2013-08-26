@@ -79,10 +79,11 @@
 #include <sensor_model.h>
 #include <particle.h>
 #include <seneka_utilities.h>
-#include <GSparticle.h>   //-b-
+#include "GSparticle.h"   //-b-
 
 using namespace std;
 using namespace seneka_utilities;
+
 
 class sensor_placement_node
 {
@@ -151,11 +152,14 @@ private:
   vector<target_info_fix> targets_with_info_fix_; //fix information
   vector<target_info_var> targets_with_info_var_; //variable information
 
-  // vector of points (holds coordinates and potential target information
+  // vector of points (holds coordinates and potential target information)
   vector<point_info> point_info_vec_;
 
-  // pool of points for Greedy placement of sensor (holds coordinates and max coverage information
+  // pool of points for Greedy placement of sensor (holds coordinates and max coverage information)
   vector<GS_point_info> GS_pool_;
+
+  // Greedy search object
+  GSparticle gs_obj_;    //-b-
 
   // PSO parameter constants
   double PSO_param_1_;
@@ -193,6 +197,9 @@ public:
   ros::ServiceServer ss_start_PSO_;
   ros::ServiceServer ss_test_;
 
+  ros::ServiceServer ss_start_GS_;    //-b-
+
+
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
 
@@ -215,6 +222,16 @@ public:
   // function to get the current global best solution
   void getGlobalBest();
 
+  //get targets (GS_point_info for all points of interest for Greedy Searc
+  bool getGSTargets();
+
+  // function to initialize GS-Algorithm
+  void initializeGS();
+
+  // function to run Greedy Search Algorithm
+  void runGS();
+
+
   /* ----------------------------------- */
   /* --------- ROS Callbacks ----------- */
   /* ----------------------------------- */
@@ -224,6 +241,9 @@ public:
 
   // callback function for the test service
   bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+
+  // callback function for the start GS service
+  bool startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
