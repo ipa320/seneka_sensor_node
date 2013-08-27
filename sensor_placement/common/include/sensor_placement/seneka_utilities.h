@@ -114,18 +114,22 @@ namespace seneka_utilities
     GS_point p;
     //maximum number of targets covered
     unsigned int max_targets_covered;
+    // function to reset the GS point information
+    void reset();
+
   };
 
 
   struct point_info
   {
-    //co-ordinates of this point. are the coordinates needed??    -b-
-    GS_point p;
     // holds the info if the given cell is a potential target, i.e. the position is inside
     // the area of interest (-1 == outside, 0 == on perimeter, 1 == inside)
     int8_t potential_target;
-
+    // holds the info if the given cell is occupied
+    bool occupied;
+    // holds if the target is covered
     bool covered;
+
   };
 
 

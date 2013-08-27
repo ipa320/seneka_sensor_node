@@ -79,7 +79,7 @@
 #include <sensor_model.h>
 #include <particle.h>
 #include <seneka_utilities.h>
-#include "GSparticle.h"   //-b-
+#include <greedySearch.h>   //-b-
 
 using namespace std;
 using namespace seneka_utilities;
@@ -159,7 +159,7 @@ private:
   vector<GS_point_info> GS_pool_;
 
   // Greedy search object
-  GSparticle gs_obj_;    //-b-
+  greedySearch GS_solution;
 
   // PSO parameter constants
   double PSO_param_1_;
@@ -196,8 +196,7 @@ public:
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
   ros::ServiceServer ss_test_;
-
-  ros::ServiceServer ss_start_GS_;    //-b-
+  ros::ServiceServer ss_start_GS_;
 
 
   // declaration of ros service clients
