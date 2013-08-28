@@ -13,7 +13,7 @@ As this stack contains dependencies to non-released packages and libraries, you 
 Please call the following commands from the folder where you cloned the seneka repository in:
 ```bash
 rosinstall . seneka/seneka.rosinstall
-rosdep install seneka
+rosdep install seneka optris_drivers 
 ```
 This will check out the `optris_drivers` package from the repo specified in the `seneka.rosinstall` file.
 
