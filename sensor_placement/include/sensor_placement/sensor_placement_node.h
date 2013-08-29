@@ -79,7 +79,7 @@
 #include <sensor_model.h>
 #include <particle.h>
 #include <seneka_utilities.h>
-#include <greedySearch.h>   //-b-
+#include <greedySearch.h>
 
 using namespace std;
 using namespace seneka_utilities;
@@ -160,6 +160,10 @@ private:
 
   // Greedy search object
   greedySearch GS_solution;
+
+  // parameters for angle and cell resolution in Greedy Search
+  int angle_resolution_;
+  int cell_search_resolution_;
 
   // PSO parameter constants
   double PSO_param_1_;

@@ -1,3 +1,53 @@
+/****************************************************************
+ *
+ * Copyright (c) 2013
+ *
+ * Fraunhofer Institute for Manufacturing Engineering
+ * and Automation (IPA)
+ *
+ * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ *
+ * Project name: SeNeKa
+ * ROS stack name: seneka
+ * ROS package name: sensor_placement
+ *
+ * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ *
+ * Author: Muhammad Bilal Chughtai, email:Muhammad.Chughtai@ipa.fraunhofer.de
+ *
+ * Date of creation: August 2013
+ *
+ * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *   * Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ *   * Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ *   * Neither the name of the Fraunhofer Institute for Manufacturing
+ *     Engineering and Automation (IPA) nor the names of its
+ *     contributors may be used to endorse or promote products derived from
+ *     this software without specific prior written permission.
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU Lesser General Public License LGPL as
+ * published by the Free Software Foundation, either version 3 of the
+ * License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU Lesser General Public License LGPL for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License LGPL along with this program.
+ * If not, see <http://www.gnu.org/licenses/>.
+ *
+ ****************************************************************/
+
 #include <greedySearch.h>
 
 // standard constructor
@@ -48,33 +98,134 @@ greedySearch::greedySearch(int num_of_sensors, int num_of_targets, FOV_2D_model 
 greedySearch::~greedySearch(){}
 
 
+// function to initialize the sensors on the perimeter [does not take care of forbidden area]
+void greedySearch::initializeSensorsOnPerimeter()
+{
+  // initialize workspace
+  size_t edge_ind = 0;
+  size_t successor = 0;
+  double t = 0;
+  double alpha = 0;
+  unsigned int cell_in_vector_coordinates = 0;
+  geometry_msgs::Pose newPose;
+  geometry_msgs::Vector3 vec_sensor_dir;
+
+  // get bounding box of area of interest
+  geometry_msgs::Polygon bound_box = getBoundingBox2D(pArea_of_interest_->polygon, *pMap_);
+  double x_min = bound_box.points.at(0).x;
+  double y_min = bound_box.points.at(0).y;
+
+  double x_max = bound_box.points.at(2).x;
+  double y_max = bound_box.points.at(2).y;
+
+  // get center of the area of interest
+  geometry_msgs::Point32 polygon_center = geometry_msgs::Point32();
+
+  polygon_center.x = (double) x_min + (x_max - x_min)/2;
+  polygon_center.y = (double) y_min + (y_max - y_min)/2;
+
+  for(size_t i = 0; i < sensors_.size(); i++)
+  {
+    if(i < pArea_of_interest_->polygon.points.size())
+    {
+      cell_in_vector_coordinates =
+        worldToMapY(pArea_of_interest_->polygon.points.at(i).y, *pMap_) * pMap_->info.width
+        + worldToMapX(pArea_of_interest_->polygon.points.at(i).x, *pMap_);
+    }
+
+    if(i < pArea_of_interest_->polygon.points.size() &&
+       (!pPoint_info_vec_->at(cell_in_vector_coordinates).occupied) &&
+       (pMap_->data.at(cell_in_vector_coordinates) > -1) )    //-b-
+    {
+      // only set new position if the cell is not occupied and not unknoown, otherwise skip this corner
+      newPose.position.x = mapToWorldX(worldToMapX(pArea_of_interest_->polygon.points.at(i).x, *pMap_), *pMap_);
+      newPose.position.y = mapToWorldY(worldToMapY(pArea_of_interest_->polygon.points.at(i).y, *pMap_), *pMap_);
+      newPose.position.z = 0;
+
+      vec_sensor_dir.x = polygon_center.x - newPose.position.x;
+      vec_sensor_dir.y = polygon_center.y - newPose.position.y;
+      vec_sensor_dir.z = 0;
+
+      // get angle between desired sensor facing direction and x-axis
+      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
+
+      if(vec_sensor_dir.y < 0)
+        alpha = -alpha;
+
+      // get quaternion message for desired sensor facing direction
+      newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+
+      // set new sensor pose
+      sensors_.at(i).setSensorPose(newPose);
+    }
+    else
+    {
+      // get index of a random edge of the area of interest specified by a polygon
+      edge_ind = (int) randomNumber(0, pArea_of_interest_->polygon.points.size());
+
+      successor = 0;
+      if(edge_ind < (pArea_of_interest_->polygon.points.size() - 1))
+      successor = edge_ind++;
+
+      t = randomNumber(0,1);
+
+      // get random Pose on perimeter of the area of interest specified by a polygon
+      newPose.position.x = mapToWorldX(worldToMapX(pArea_of_interest_->polygon.points.at(edge_ind).x
+                            + t * (pArea_of_interest_->polygon.points.at(successor).x - pArea_of_interest_->polygon.points.at(edge_ind).x), *pMap_), *pMap_);
+      newPose.position.y = mapToWorldY(worldToMapY(pArea_of_interest_->polygon.points.at(edge_ind).y
+                            + t * (pArea_of_interest_->polygon.points.at(successor).y - pArea_of_interest_->polygon.points.at(edge_ind).y), *pMap_), *pMap_);
+      newPose.position.z = 0;
+
+      vec_sensor_dir.x = polygon_center.x - newPose.position.x;
+      vec_sensor_dir.y = polygon_center.y - newPose.position.y;
+      vec_sensor_dir.z = 0;
+
+      // get angle between desired sensor facing direction and x-axis
+      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
+
+      if(vec_sensor_dir.y < 0)
+        alpha = -alpha;
+
+      // get quaternion message for desired sensor facing direction
+      newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+
+      cell_in_vector_coordinates = worldToMapY(newPose.position.y, *pMap_) * pMap_->info.width + worldToMapX(newPose.position.x, *pMap_);
+
+      sensors_.at(i).setSensorPose(newPose);
+    }
+    // update the target information
+    updateGSpointsRaytracing(i, 0, false);
+  }
+}
+
+
 //Greedy Search for maximum coverage position and place sensor at the max coverage position found
 void greedySearch::greedyPlacement(size_t sensor_index)
 {
-
-  double angle_resolution;
+  unsigned int angle_resolution;
+  unsigned int cell_search_resolution;
   double num_of_steps;
   bool update_covered_info;
   int placement_point_id;
   geometry_msgs::Pose new_pose;
   geometry_msgs::Pose placement_pose;
-  int gs_size;
 
-  //set angle resolution
-  angle_resolution = 20;
-
-  //reset previous max coverage information before searching for new position
-  resetMaxSensorCovInfo();
-
+  //initializations
+  angle_resolution = getAngleResolution();
+  cell_search_resolution = getCellSearchResolution();
   num_of_steps = ceil(360/angle_resolution);
 
   //while searching, restrict updating of 'covered' info in updateGSpointsRaytracing
   update_covered_info=false;
 
-  //place the current sensor on all points in GS pool one by one and calculate coverge
-  for (size_t point_id=0; point_id<GS_pool_.size(); point_id=point_id+50)
-  {
+  //reset previous max coverage information before searching for new position
+  resetMaxSensorCovInfo();
+  //reset max targets covered information
+  resetGSpool();
 
+  //place the current sensor on all points in GS pool one by one and calculate coverge
+  for (size_t point_id=0; point_id<GS_pool_.size(); point_id=point_id+cell_search_resolution)
+  {
     //first calculate world position of current point id and place sensor at that position
     new_pose.position.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
     new_pose.position.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
@@ -103,15 +254,7 @@ void greedySearch::greedyPlacement(size_t sensor_index)
   update_covered_info = true;
   updateGSpointsRaytracing(sensor_index, placement_point_id, update_covered_info);
 
-
-//  GS_pool_.erase(GS_pool_.begin()+placement_point_id); //-b-
-//  gs_size = GS_pool_.size();
-//  ROS_INFO_STREAM("new pool size: " << gs_size);
-
-
 }
-
-
 
 
 //function to update the GS_point_info with raytracing (lookup table)
@@ -126,7 +269,7 @@ void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, b
   std::vector<double> open_ang = sensors_.at(sensor_index).getOpenAngles();
   double orientation = tf::getYaw(sensor_pose.orientation);
 
-  //get angles of sensor and keep them between 0 and 2*PI     //MODIFY here for efficient search of max coverage angle
+  //get angles of sensor and keep them between 0 and 2*PI
   double angle1 = orientation - (open_ang.front() / 2.0);
   if(angle1 >= 2.0*PI)
     angle1 -= 2.0*PI;
@@ -199,7 +342,7 @@ void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, b
               if(update_covered_info == true)
               {
                 pPoint_info_vec_->at(cell_in_vector_coordinates).covered = true;
-                covered_targets_num_++;   // -b-
+                covered_targets_num_++;
               }
             }
           }
@@ -301,16 +444,6 @@ void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, b
 }
 
 
-// function to place all sensors at a given pose
-void greedySearch::placeSensorsAtPos(geometry_msgs::Pose new_pose)
-{
-  for(size_t i = 0; i < sensors_.size(); i++)
-  {
-    sensors_.at(i).setSensorPose(new_pose);
-  }
-}
-
-
 // function to calculate coverage achieved
 double greedySearch::calGScoverage()
 {
@@ -338,6 +471,17 @@ geometry_msgs::Pose greedySearch::getMaxSensorCovPOSE()
   return max_sensor_cov_pose_;
 }
 
+// function to get angle resolution for Greedy Placement function
+unsigned int greedySearch::getAngleResolution()
+{
+  return angle_resolution_;
+}
+
+// function to get cell search resolution for Greedy Placement function
+unsigned int greedySearch::getCellSearchResolution()
+{
+  return cell_search_resolution_;
+}
 
 // function to set maximum coverage by a sensor
 void greedySearch::setMaxSensorCov(int coverage)
@@ -357,7 +501,7 @@ void greedySearch::setMaxSensorCovPOSE(geometry_msgs::Pose sensor_pose)
   max_sensor_cov_pose_ = sensor_pose;
 }
 
-//function to reset maximum coverage information for new sensor placement
+// function to reset maximum coverage information for new sensor placement
 void greedySearch::resetMaxSensorCovInfo()
 {
   geometry_msgs::Pose reset_pose;
@@ -464,6 +608,22 @@ void greedySearch::setLookupTable(const std::vector< std::vector<geometry_msgs::
     ROS_ERROR("LookupTable not set correctly");
 }
 
+// function to set angle resolution while doing Greedy Search
+void greedySearch::setAngleResolution(unsigned int angle_resolution_param)
+{
+  if ((angle_resolution_param > 0) && (angle_resolution_param < 360))
+  {
+    angle_resolution_=angle_resolution_param;
+  }
+  else
+    ROS_ERROR("Wrong input in angle_resolution parameter for Greedy Search");
+}
+
+// function to set the cell search resolution while doing Greedy Search
+void greedySearch::setCellSearchResolution(unsigned int cell_search_resolution_param)
+{
+  cell_search_resolution_=cell_search_resolution_param;
+}
 
 // returns all visualization markers of the greedySearch solution
 visualization_msgs::MarkerArray greedySearch::getVisualizationMarkers()

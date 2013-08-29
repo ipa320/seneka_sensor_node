@@ -184,6 +184,19 @@ void sensor_placement_node::getParams()
     ROS_WARN("No parameter c3 on parameter server. Using default [1.49445]");
   }
   pnh_.param("c3",PSO_param_3_,1.49445);
+
+  // get Greedy Search algorithm parameters
+  if(!pnh_.hasParam("angle_resolution"))
+  {
+    ROS_WARN("No parameter angle_resolution_ on parameter server. Using default [90]");
+  }
+  pnh_.param("angle_resolution",angle_resolution_,90);
+
+  if(!pnh_.hasParam("cell_search_resolution"))
+  {
+    ROS_WARN("No parameter cell_search_resolution on parameter server. Using default [100]");
+  }
+  pnh_.param("cell_search_resolution",cell_search_resolution_,100);
 }
 
 
@@ -646,7 +659,7 @@ bool sensor_placement_node::getGSTargets()
               // points outside the forbidden area are of interest for greedy search so save coordinates of this point
               dummy_GS_point_info.p.x=i;
               dummy_GS_point_info.p.y=j;
-              dummy_GS_point_info.max_targets_covered=0;  //initial value of coverage
+              dummy_GS_point_info.max_targets_covered=0;
               GS_pool_.push_back(dummy_GS_point_info);
             }
 
@@ -675,6 +688,7 @@ bool sensor_placement_node::getGSTargets()
 // function to initialize GS-Algorithm
 void sensor_placement_node::initializeGS()
 {
+  double coverage;
   geometry_msgs::Pose initial_pose;
 
   // initialize pointer to dummy sensor_model
@@ -694,29 +708,30 @@ void sensor_placement_node::initializeGS()
   GS_solution.setPointInfoVec(point_info_vec_, target_num_);
   GS_solution.setGSpool(GS_pool_);
   GS_solution.setLookupTable(& lookup_table_);
-/*
-  // place all sensors initially at first position in the GS pool
-  initial_pose.position.x = mapToWorldX(GS_pool_[0].p.x, map_);
-  initial_pose.position.y = mapToWorldY(GS_pool_[0].p.y, map_);
-  initial_pose.position.z = 0;
-  initial_pose.orientation = tf::createQuaternionMsgFromYaw(0);
-  GS_solution.placeSensorsAtPos(initial_pose);
+  GS_solution.setAngleResolution(angle_resolution_);
+  GS_solution.setCellSearchResolution(cell_search_resolution_);
 
-  // publish the greedySearch solution
+  //initializing sensors on perimeter
+  GS_solution.initializeSensorsOnPerimeter();
+
+  //publish
   marker_array_pub_.publish(GS_solution.getVisualizationMarkers());
-*/
 }
 
 // function to run Greedy Search Algorithm
 void sensor_placement_node::runGS()
 {
+  //initialization
   double GS_coverage;
+  ros::Time start_time;
+  ros::Duration end_time;
 
   //start placing sensors one by one according to greedy algorithm
   for(size_t sensor_index = 0; sensor_index < sensor_num_; sensor_index++)
   {
-    //reset max targets covered information
-    GS_solution.resetGSpool();
+    //note start time for greedy search
+    start_time = ros::Time::now();
+
     //do Greedy Search and place sensor on the max coverage pose
     GS_solution.greedyPlacement(sensor_index);
     //publish the solution
@@ -724,7 +739,11 @@ void sensor_placement_node::runGS()
     //calculate the current coverage
     GS_coverage = GS_solution.calGScoverage();
 
-    ROS_INFO_STREAM("No. of sensors placed " << sensor_index+1 << " coverage: " << GS_coverage);
+    //note end time for greedy_search
+    end_time= ros::Time::now() - start_time;
+
+    ROS_INFO_STREAM("No. of sensors placed: " << sensor_index+1 << " coverage: " << GS_coverage);
+    ROS_INFO_STREAM("Time taken: " << end_time << "[s]");
   }
 
 }
@@ -776,7 +795,6 @@ bool sensor_placement_node::startGSCallback(std_srvs::Empty::Request& req, std_s
     int radius_in_cells = floor(sensor_range_ / map_.info.resolution);
     lookup_table_ = createLookupTableCircle(radius_in_cells);
   }
-
 
   ROS_INFO("getting targets from specified map and area of interest!");
 

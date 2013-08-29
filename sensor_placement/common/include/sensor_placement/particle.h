@@ -72,7 +72,6 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/String.h>
-#include <std_msgs/String.h>
 #include <visualization_msgs/MarkerArray.h>
 
 // external includes
