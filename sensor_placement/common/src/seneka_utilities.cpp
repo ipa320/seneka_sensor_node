@@ -2,7 +2,7 @@
  *
  * Copyright (c) 2013
  *
- * Fraunhofer Institute for Manufacturing Engineering  
+ * Fraunhofer Institute for Manufacturing Engineering
  * and Automation (IPA)
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -10,9 +10,9 @@
  * Project name: SeNeKa
  * ROS stack name: seneka
  * ROS package name: sensor_placement
- *                
+ *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *      
+ *
  * Author: Matthias Gruhler, email:Matthias.Gruhler@ipa.fhg.de
  * Author: Florian Mirus, email:Florian.Mirus@ipa.fhg.de
  *
@@ -28,23 +28,23 @@
  *   * Redistributions in binary form must reproduce the above copyright
  *     notice, this list of conditions and the following disclaimer in the
  *     documentation and/or other materials provided with the distribution.
- *   * Neither the name of the Fraunhofer Institute for Manufacturing 
+ *   * Neither the name of the Fraunhofer Institute for Manufacturing
  *     Engineering and Automation (IPA) nor the names of its
  *     contributors may be used to endorse or promote products derived from
  *     this software without specific prior written permission.
  *
  * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License LGPL as 
- * published by the Free Software Foundation, either version 3 of the 
+ * it under the terms of the GNU Lesser General Public License LGPL as
+ * published by the Free Software Foundation, either version 3 of the
  * License, or (at your option) any later version.
- * 
+ *
  * This program is distributed in the hope that it will be useful,
  * but WITHOUT ANY WARRANTY; without even the implied warranty of
  * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  * GNU Lesser General Public License LGPL for more details.
- * 
- * You should have received a copy of the GNU Lesser General Public 
- * License LGPL along with this program. 
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License LGPL along with this program.
  * If not, see <http://www.gnu.org/licenses/>.
  *
  ****************************************************************/
@@ -62,8 +62,14 @@ namespace seneka_utilities
   {
     covered = false;
     multiple_covered = false;
-    
+
     std::fill(covered_by_sensor.begin(), covered_by_sensor.end(), false);
+  }
+
+  // function to reset the targets covered info
+  void GS_point_info::reset()
+  {
+    max_targets_covered = 0;
   }
 
   /* ----------------------------------- */
@@ -155,7 +161,7 @@ namespace seneka_utilities
     return floor((world_y - map.info.origin.position.y + EPSILON) / map.info.resolution);
   }
 
-  geometry_msgs::Point32 mapToWorld2D(unsigned int map_x, unsigned int map_y, 
+  geometry_msgs::Point32 mapToWorld2D(unsigned int map_x, unsigned int map_y,
                                       const nav_msgs::OccupancyGrid & map)
   {
     geometry_msgs::Point32 p;
@@ -165,7 +171,7 @@ namespace seneka_utilities
     return p;
   }
 
-  void worldToMap2D(const geometry_msgs::Point32 &p, 
+  void worldToMap2D(const geometry_msgs::Point32 &p,
                     const nav_msgs::OccupancyGrid &map,
                     unsigned int &map_x, unsigned int &map_y)
   {
@@ -173,44 +179,44 @@ namespace seneka_utilities
     map_y = worldToMapY(p.y, map);
   }
 
-  // crops a map to the given bounding_box 
+  // crops a map to the given bounding_box
   // taken from https://kforge.ros.org/navigation/trac/attachment/ticket/5/map-server-crop-map.patch
   void cropMap(const geometry_msgs::Polygon &bounding_box,
                const nav_msgs::OccupancyGrid &map,
-               nav_msgs::OccupancyGrid &croppedMap) 
-  { 
-    uint32_t top_index; 
-    uint32_t left_index; 
-    uint32_t bottom_index; 
-    uint32_t right_index; 
-    
+               nav_msgs::OccupancyGrid &croppedMap)
+  {
+    uint32_t top_index;
+    uint32_t left_index;
+    uint32_t bottom_index;
+    uint32_t right_index;
+
     // first point of polygon contains x_min and y_min, 3rd contains x_max and y_max
     worldToMap2D(bounding_box.points.at(0), map, left_index, top_index);
     worldToMap2D(bounding_box.points.at(2), map, right_index, bottom_index);
 
-    croppedMap.info = map.info; 
-    croppedMap.info.width = right_index - left_index; 
-    croppedMap.info.height = bottom_index - top_index; 
-    croppedMap.info.origin.position.x = 
-       map.info.origin.position.x + left_index * map.info.resolution; 
-    croppedMap.info.origin.position.y = 
-       map.info.origin.position.y + top_index * map.info.resolution; 
-    croppedMap.data.resize(croppedMap.info.width * croppedMap.info.height); 
+    croppedMap.info = map.info;
+    croppedMap.info.width = right_index - left_index;
+    croppedMap.info.height = bottom_index - top_index;
+    croppedMap.info.origin.position.x =
+       map.info.origin.position.x + left_index * map.info.resolution;
+    croppedMap.info.origin.position.y =
+       map.info.origin.position.y + top_index * map.info.resolution;
+    croppedMap.data.resize(croppedMap.info.width * croppedMap.info.height);
 
-    uint32_t i = 0; 
-    for(uint32_t y = top_index; y < bottom_index; y++ ) { 
-      for (uint32_t x = left_index; x < right_index; x++, i++ ) { 
-        croppedMap.data[i] = map.data[y * map.info.width + x]; 
-      } 
-    } 
-  } 
+    uint32_t i = 0;
+    for(uint32_t y = top_index; y < bottom_index; y++ ) {
+      for (uint32_t x = left_index; x < right_index; x++, i++ ) {
+        croppedMap.data[i] = map.data[y * map.info.width + x];
+      }
+    }
+  }
 
   /* ----------------------------------- */
   /* --------- geometric stuff --------- */
   /* ----------------------------------- */
-  // function to check if a given point is inside (return 2), outside (return 0) 
+  // function to check if a given point is inside (return 2), outside (return 0)
   // or on an edge (return 1) of a given polygon
-  // If no polygon is given, it returns -1 
+  // If no polygon is given, it returns -1
   int pointInPolygon(geometry_msgs::Pose2D point, geometry_msgs::Polygon polygon)
   {
     // check if we received a polygon
@@ -253,7 +259,7 @@ namespace seneka_utilities
           if(poly_point_1.x != point.x)
           {
             start_index = i;
-            start_index_set = true; 
+            start_index_set = true;
           }
         }
       }
@@ -309,7 +315,7 @@ namespace seneka_utilities
           }
           ignore = false;
           poly_point_1 = poly_point_2;
-          
+
         }
       }
       else
@@ -383,7 +389,7 @@ namespace seneka_utilities
           checker = true;
           break;
         default: // wrong input
-          checker = false; 
+          checker = false;
       }
       if(checker)
       {
@@ -437,7 +443,7 @@ namespace seneka_utilities
             result = true;
           break;
         default: // wrong input
-          result = false; 
+          result = false;
       }
     }
 
@@ -445,7 +451,7 @@ namespace seneka_utilities
 
   }
 
-  // get 2D bounding box of polygon 
+  // get 2D bounding box of polygon
   // (assuming z=0 for all points, otherwise, a down-projection occurs)
   // returns bounding polygon consisting of 4 points
   geometry_msgs::Polygon getBoundingBox2D(const geometry_msgs::Polygon & polygon, const nav_msgs::OccupancyGrid &map)
@@ -455,7 +461,7 @@ namespace seneka_utilities
     double x_max = mapToWorldX(0, map);
     double y_min = mapToWorldY(map.info.height, map);
     double y_max = mapToWorldY(0, map);
-    
+
     for (unsigned int i = 0; i < polygon.points.size(); i++)
     {
       if ( polygon.points[i].x > x_max )
@@ -476,15 +482,15 @@ namespace seneka_utilities
     out_poly.points.push_back(p);
     p.x = x_min; p.y = y_max;
     out_poly.points.push_back(p);
-    
+
     return out_poly;
   }
-  
-  // get 3D bounding box of polygon 
+
+  // get 3D bounding box of polygon
   // returns 8 points, first four are lower plane
   geometry_msgs::Polygon getBoundingBox3D(const geometry_msgs::Polygon & polygon, const nav_msgs::OccupancyGrid &map)
   {
-    // TO DO: remove zero-init and initialize variables with min and max values of the map 
+    // TO DO: remove zero-init and initialize variables with min and max values of the map
     geometry_msgs::Polygon out_poly;
     double x_min = 0.0, x_max = 0.0;
     double y_min = 0.0, y_max = 0.0;
@@ -521,7 +527,7 @@ namespace seneka_utilities
     out_poly.points.push_back(p);
     p.x = x_max; p.y = y_max; p.z = z_max;
     out_poly.points.push_back(p);
-    
+
     return out_poly;
   }
 
@@ -636,8 +642,8 @@ namespace seneka_utilities
         error += 2 * (y - x + 1);
 
         //if x is decreased, also add the cell next to it to ensure 4-connectivity
-        addCircleCells(octants,x+1,y); 
-      } 
+        addCircleCells(octants,x+1,y);
+      }
     }
 
     //final vector for all cells of the circle in correct order
@@ -695,7 +701,7 @@ namespace seneka_utilities
     {
       cells[i].z = 0;
       octants[i].push_back(cells[i]);
-    } 
+    }
   }
 
   //function to create a lookup table of all cells inside a circle

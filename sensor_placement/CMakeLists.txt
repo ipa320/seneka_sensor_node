@@ -45,7 +45,8 @@ include_directories(
 
 ## Declare a cpp executable
 # add_executable(seneka_node src/seneka_node.cpp)
-add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
+add_executable(sensor_placement_node 	  	src/sensor_placement_node.cpp
+          common/src/greedySearch.cpp
 					common/src/particle.cpp
 					common/src/seneka_utilities.cpp
 					common/src/sensor_model.cpp)

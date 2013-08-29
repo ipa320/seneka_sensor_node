@@ -99,6 +99,41 @@ namespace seneka_utilities
     void reset();
   };
 
+  //set of points for Greedy Search
+  struct GS_point
+  {
+    // x coordinate of the point
+    unsigned int x;
+    // y coordinate of the point
+    unsigned int y;
+  };
+
+  struct GS_point_info
+  {
+    //co-ordinates of this point
+    GS_point p;
+    //maximum number of targets covered
+    unsigned int max_targets_covered;
+    // function to reset the GS point information
+    void reset();
+
+  };
+
+
+  struct point_info
+  {
+    // holds the info if the given cell is a potential target, i.e. the position is inside
+    // the area of interest (-1 == outside, 0 == on perimeter, 1 == inside)
+    int8_t potential_target;
+    // holds the info if the given cell is occupied
+    bool occupied;
+    // holds if the target is covered
+    bool covered;
+
+  };
+
+
+
 
   /* ----------------------------------- */
   /* -------------- MATH --------------- */

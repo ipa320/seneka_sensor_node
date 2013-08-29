@@ -70,8 +70,7 @@
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/Point.h>
 #include <nav_msgs/OccupancyGrid.h>
-#include <nav_msgs/Path.h> 
-#include <std_msgs/String.h>
+#include <nav_msgs/Path.h>
 #include <std_msgs/String.h>
 #include <visualization_msgs/MarkerArray.h>
 
@@ -121,6 +120,7 @@ private:
   // actual map
   const nav_msgs::OccupancyGrid * pMap_;
 
+
 public:
 
   // standard constructor
@@ -158,6 +158,7 @@ public:
   // function to get multiple coverage index
   int getMultipleCoverageIndex();
 
+
   // ************************ setter functions ************************
 
   // function that sets the member variable sensor_num_ and reserves capacity for vector sensors_
@@ -189,6 +190,8 @@ public:
 
   //function to create and set a lookup table for raytracing for each sensor in the particle
   void setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table);
+
+
   // ************************ update functions ************************
 
   // function to place the sensors randomly on the perimeter
