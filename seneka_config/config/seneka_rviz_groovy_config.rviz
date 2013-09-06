@@ -62,13 +62,6 @@ Visualization Manager:
         camera0: true
         camera1: true
         camera2: true
-        camera3: true
-        camera4: true
-        camera5: true
-        camera6: true
-        camera7: true
-        camera8: true
-        camera9: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -101,11 +94,11 @@ Visualization Manager:
       Class: rviz/TopDownOrtho
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 30.8878
+      Scale: 5.60417
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 130.524
-      Y: 148.884
+      X: 155.479
+      Y: 150.832
     Saved: ~
 Window Geometry:
   Displays:
@@ -125,5 +118,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1535
-  X: 65
+  X: 58
   Y: 24

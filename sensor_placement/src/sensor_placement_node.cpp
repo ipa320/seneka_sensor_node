@@ -49,6 +49,7 @@
  ****************************************************************/
 
 #include <sensor_placement_node.h>
+#include <clipper.hpp>
 
 // constructor
 sensor_placement_node::sensor_placement_node()
@@ -559,11 +560,79 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 
 }
 
+
+geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(int offset)
+{
+  //intializations
+  ClipperLib::Polygon cl_AoI;
+  ClipperLib::IntPoint cl_point;
+  ClipperLib::Polygons in_polys;
+  ClipperLib::Polygons out_polys;
+  ClipperLib::JoinType jointype = ClipperLib::jtMiter;
+  double miterLimit = 0.0;
+  geometry_msgs::Point32 p;
+  geometry_msgs::PolygonStamped offset_AoI;
+
+  // check if offset input is valid for deflating the area of interest
+  if(offset<0)
+  {
+    //get AoI for clipper library
+    for (size_t i=0; i<area_of_interest_.polygon.points.size(); i++)
+    {
+      cl_point.X = (int) (area_of_interest_.polygon.points.at(i).x * 10000);
+      cl_point.Y = (int) (area_of_interest_.polygon.points.at(i).y * 10000);
+      cl_AoI.push_back(cl_point);
+    }
+
+    //save
+    in_polys.push_back(cl_AoI);
+
+    //apply offset function to get an offsetted polygon in out_polys
+    ClipperLib::OffsetPolygons(in_polys, out_polys, offset*10000, jointype, miterLimit);
+
+    //check if the offset function returned only one polygon (if more, then in_polys is set incorrectly)
+    if(out_polys.size()==1)
+    {
+      //save the offsetted polygon as geometry_msgs::PolygonStamped type
+      for (size_t i=0; i<out_polys.at(0).size(); i++)
+      {
+        p.x = (double) (out_polys.at(0).at(i).X / 10000);
+        p.y = (double) (out_polys.at(0).at(i).Y / 10000);
+        p.z = 0;
+        offset_AoI.polygon.points.push_back(p);
+      }
+    }
+    else
+    {
+      ROS_ERROR("wrong output from ClipperLib::OffsetPolygons function");
+    }
+
+    // checking output
+    for (int i=0; i<offset_AoI.polygon.points.size(); i++)
+    {
+      ROS_INFO_STREAM("offset_AoI point " << i << " (" << offset_AoI.polygon.points.at(i).x << "," << offset_AoI.polygon.points.at(i).y << ")" ) ;
+    }
+    // -b-
+
+    return offset_AoI;
+  }
+  // offset input is invalid
+  else
+    ROS_ERROR("wrong offset input offset must be negative for deflated polygon");
+}
+
+
 //get targets (GS_point_info for all points of interest for Greedy Search)
 bool sensor_placement_node::getGSTargets()
 {
+  // declaration
+  geometry_msgs::PolygonStamped offset_AoI;
+
   // initialize result
   bool result = false;
+
+  // get an offsetted polygon from area of interest
+  offset_AoI = offsetAoI(-2);
 
   if(map_received_ == true)
   {
@@ -590,9 +659,9 @@ bool sensor_placement_node::getGSTargets()
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
-            if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+            if(pointInPolygon(world_Coord, offset_AoI.polygon) == 0)
             {
-              // points outside the forbidden area that are not ocuupied are of interest for greedy search
+              // points outside the offset_AoI, and not occupied, are of interest for greedy search
               dummy_GS_point_info.p.x=i;
               dummy_GS_point_info.p.y=j;
               dummy_GS_point_info.max_targets_covered=0;
@@ -632,10 +701,10 @@ bool sensor_placement_node::getGSTargets()
           {
             dummy_point_info.potential_target = 1;
 
-            if((pointInPolygon(world_Coord, forbidden_area_.polygon) == 0) &&
+            if((pointInPolygon(world_Coord, offset_AoI.polygon) == 0) &&
               (map_.data.at( j * map_.info.width + i) == 0))
             {
-              // points outside the forbidden area that are not ocuupied are of interest for greedy search
+              // points outside the offset_AoI, and not occupied, are of interest for greedy search
               dummy_GS_point_info.p.x=i;
               dummy_GS_point_info.p.y=j;
               dummy_GS_point_info.max_targets_covered=0;
@@ -654,9 +723,9 @@ bool sensor_placement_node::getGSTargets()
           {
             dummy_point_info.potential_target = 0;
 
-            if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+            if(pointInPolygon(world_Coord, offset_AoI.polygon) == 0)
             {
-              // points outside the forbidden area are of interest for greedy search so save coordinates of this point
+              // points outside the offset_AoI, are of interest for greedy search. So, save coordinates of this point
               dummy_GS_point_info.p.x=i;
               dummy_GS_point_info.p.y=j;
               dummy_GS_point_info.max_targets_covered=0;
@@ -670,7 +739,6 @@ bool sensor_placement_node::getGSTargets()
           }
           // save information
           point_info_vec_.at(j * map_.info.width + i) = dummy_point_info;
-
         }
       }
       result = true;
@@ -702,7 +770,7 @@ void sensor_placement_node::initializeGS()
 
   GS_solution.setMap(map_);
   GS_solution.setAreaOfInterest(area_of_interest_);
-  GS_solution.setForbiddenArea(forbidden_area_);
+//  GS_solution.setForbiddenArea(forbidden_area_);
   GS_solution.setOpenAngles(open_angles_);
   GS_solution.setRange(sensor_range_);
   GS_solution.setPointInfoVec(point_info_vec_, target_num_);
@@ -960,7 +1028,6 @@ void sensor_placement_node::AoICB(const geometry_msgs::PolygonStamped::ConstPtr 
 void sensor_placement_node::forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_area)
 {
   forbidden_area_ = *forbidden_area;
-
 }
 
 //######################

@@ -107,6 +107,9 @@ private:
   // polygon for forbidden area
   geometry_msgs::PolygonStamped forbidden_area_;
 
+  // polygon for offsetted area of interest
+  geometry_msgs::PolygonStamped offset_AoI_;
+
   // number of sensors
   int sensor_num_;
 
@@ -233,6 +236,9 @@ public:
 
   // function to run Greedy Search Algorithm
   void runGS();
+
+  // function to create an offsetted polygon from area of interest
+  geometry_msgs::PolygonStamped offsetAoI(int offset);
 
 
   /* ----------------------------------- */

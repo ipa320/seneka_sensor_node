@@ -50,6 +50,7 @@
 
 #include <greedySearch.h>
 
+
 // standard constructor
 greedySearch::greedySearch()
 {
@@ -96,6 +97,7 @@ greedySearch::greedySearch(int num_of_sensors, int num_of_targets, FOV_2D_model 
 }
 
 greedySearch::~greedySearch(){}
+
 
 
 // function to initialize the sensors on the perimeter [does not take care of forbidden area]
@@ -564,6 +566,8 @@ void greedySearch::setForbiddenArea(const geometry_msgs::PolygonStamped & new_fo
     ROS_ERROR("Forbidden Area was not set correctly.");
 
 }
+
+
 
 // function that sets the opening angles for each sensor
 bool greedySearch::setOpenAngles(std::vector<double> new_angles)
