@@ -229,6 +229,21 @@ namespace seneka_utilities
   //lookuptable[2][3] is the relativ position of the third cell in the second ray
   std::vector< std::vector<geometry_msgs::Point32> > createLookupTableCircle(unsigned int radius_in_cells);
 
+
+  /* ----------------------------------- */
+  /* --------- other functions --------- */
+  /* ----------------------------------- */
+
+  // function to convert a value from int to double
+  double intToDouble (int in_value);
+
+  // function to convert a value from double to int. and keep value only upto map resolution
+  int doubleToIntWithRes (double in_value);
+
+  // function to convert a value from double to int
+  int doubleToInt (double in_value);
+
+
 }; // end namespace
 
 #endif

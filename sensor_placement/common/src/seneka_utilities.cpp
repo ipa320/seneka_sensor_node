@@ -727,4 +727,44 @@ namespace seneka_utilities
     return lookup_table_complete_circle;
   }
 
+  /* ----------------------------------- */
+  /* --------- other functions --------- */
+  /* ----------------------------------- */
+
+  // function to convert a value from int to double
+  double intToDouble (int in_value)
+  {
+    double temp;
+
+    temp = (double) (in_value / 10000);
+
+    return temp;
+  }
+
+
+/*
+  // function to convert a value from double to int. and keep value only upto map resolution
+  int doubleToIntWithRes (double in_value)
+  {
+    int temp;
+
+    temp = (int) ( round (in_value / pMap_->info.resolution) * 10000 );
+
+    return temp;
+  }
+*/
+
+  // function to convert a value from double to int
+  int doubleToInt (double in_value)
+  {
+    int temp;
+
+    temp = (int) ( in_value * 10000 );
+
+    return temp;
+  }
+
+
+
+
 } // end namespace

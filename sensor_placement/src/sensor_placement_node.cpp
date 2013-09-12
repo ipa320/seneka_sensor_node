@@ -49,7 +49,7 @@
  ****************************************************************/
 
 #include <sensor_placement_node.h>
-#include <clipper.hpp>
+#include <clipper.hpp>    // -b- move to header
 
 // constructor
 sensor_placement_node::sensor_placement_node()
@@ -70,6 +70,7 @@ sensor_placement_node::sensor_placement_node()
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
   map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("out_cropped_map_metadata",1,true);
+  offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("offset_AoI", 1,true);
 
   // ros service servers
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
@@ -561,7 +562,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 }
 
 
-geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(int offset)
+geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
 {
   //intializations
   ClipperLib::Polygon cl_AoI;
@@ -573,14 +574,16 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(int offset)
   geometry_msgs::Point32 p;
   geometry_msgs::PolygonStamped offset_AoI;
 
+  offset = doubleToInt(offset);
+
   // check if offset input is valid for deflating the area of interest
   if(offset<0)
   {
     //get AoI for clipper library
     for (size_t i=0; i<area_of_interest_.polygon.points.size(); i++)
     {
-      cl_point.X = (int) (area_of_interest_.polygon.points.at(i).x * 10000);
-      cl_point.Y = (int) (area_of_interest_.polygon.points.at(i).y * 10000);
+      cl_point.X = doubleToInt(area_of_interest_.polygon.points.at(i).x);
+      cl_point.Y = doubleToInt(area_of_interest_.polygon.points.at(i).y);
       cl_AoI.push_back(cl_point);
     }
 
@@ -588,7 +591,7 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(int offset)
     in_polys.push_back(cl_AoI);
 
     //apply offset function to get an offsetted polygon in out_polys
-    ClipperLib::OffsetPolygons(in_polys, out_polys, offset*10000, jointype, miterLimit);
+    ClipperLib::OffsetPolygons(in_polys, out_polys, offset, jointype, miterLimit);
 
     //check if the offset function returned only one polygon (if more, then in_polys is set incorrectly)
     if(out_polys.size()==1)
@@ -596,8 +599,8 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(int offset)
       //save the offsetted polygon as geometry_msgs::PolygonStamped type
       for (size_t i=0; i<out_polys.at(0).size(); i++)
       {
-        p.x = (double) (out_polys.at(0).at(i).X / 10000);
-        p.y = (double) (out_polys.at(0).at(i).Y / 10000);
+        p.x = intToDouble(out_polys.at(0).at(i).X);
+        p.y = intToDouble(out_polys.at(0).at(i).Y);
         p.z = 0;
         offset_AoI.polygon.points.push_back(p);
       }
@@ -613,6 +616,8 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(int offset)
       ROS_INFO_STREAM("offset_AoI point " << i << " (" << offset_AoI.polygon.points.at(i).x << "," << offset_AoI.polygon.points.at(i).y << ")" ) ;
     }
     // -b-
+
+
 
     return offset_AoI;
   }
@@ -632,7 +637,9 @@ bool sensor_placement_node::getGSTargets()
   bool result = false;
 
   // get an offsetted polygon from area of interest
-  offset_AoI = offsetAoI(-2);
+  offset_AoI = offsetAoI(-4.333);
+
+  offset_AoI_ = offset_AoI; // setting global offset_AoI_ for publishing - change position later?
 
   if(map_received_ == true)
   {
@@ -758,6 +765,11 @@ void sensor_placement_node::initializeGS()
 {
   double coverage;
   geometry_msgs::Pose initial_pose;
+
+  //publish offset_AoI_ -b-
+  offset_AoI_.header.frame_id = "/map";
+  offset_AoI_pub_.publish(offset_AoI_);
+
 
   // initialize pointer to dummy sensor_model
   FOV_2D_model dummy_GS_2D_model;

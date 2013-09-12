@@ -199,6 +199,7 @@ public:
   ros::Publisher marker_array_pub_;
   ros::Publisher map_pub_, map_meta_pub_;
   ros::Publisher nav_path_pub_;
+  ros::Publisher offset_AoI_pub_;
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
@@ -238,7 +239,7 @@ public:
   void runGS();
 
   // function to create an offsetted polygon from area of interest
-  geometry_msgs::PolygonStamped offsetAoI(int offset);
+  geometry_msgs::PolygonStamped offsetAoI(double offset);
 
 
   /* ----------------------------------- */
