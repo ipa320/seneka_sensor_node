@@ -1,4 +1,4 @@
-SENEKA
+SENEKA_SENSOR_NODE
 ======
 
 ## Description
@@ -12,10 +12,10 @@ As this stack contains dependencies to non-released packages and libraries, you 
 ### Installing the optris_drivers package required for the ThermoVideoManager
 Please call the following commands from the folder where you cloned the seneka repository in:
 ```bash
-rosinstall . seneka/seneka.rosinstall
-rosdep install seneka optris_drivers 
+rosinstall . seneka_sensor_node/seneka_sensor_node.rosinstall
+rosdep install seneka_sensor_node optris_drivers 
 ```
-This will check out the `optris_drivers` package from the repo specified in the `seneka.rosinstall` file.
+This will check out the `optris_drivers` package from the repo specified in the `seneka_sensor_node.rosinstall` file.
 
 ### Building the `seneka_sony_camera node`
 The `seneka_sony_camera` node requires the eBus SDK which is provided by Pleora (http://www.pleora.com/our-products/ebus-sdk).
@@ -28,7 +28,7 @@ However, this driver is only required for the sensor nodes or for testing the so
 Thus, you do not need to have the SDK for developing code other than that related to this package.
 
 ### Now you're good to go
-If everything has been set up correctly, the SENEKA stack should now be built.
+If everything has been set up correctly, the SENEKA_SENSOR_NODE repository should now build correctly.
 Else, you have to start ...
 
 ### Debugging

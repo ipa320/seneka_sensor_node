@@ -1,9 +1,9 @@
 <?xml version="1.0"?>
 <package>
-  <name>seneka</name>
+  <name>seneka_sensor_node</name>
   <version>0.0.0</version>
-  <description>The seneka metapackage contains several packages that are built specifically for the Sensor-Nodes developed at Fraunhofer IPA for the SENEKA project.
-    These packages might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the developed sensors</description>
+  <description>The seneka_sensor_node metapackage contains several packages that are built specifically for the Sensor-Nodes developed at Fraunhofer IPA in the SENEKA project.
+    These packages might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <maintainer email="mig@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
