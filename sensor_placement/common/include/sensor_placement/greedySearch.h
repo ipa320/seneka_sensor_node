@@ -75,8 +75,7 @@ class greedySearch
 {
 private:
 
-
-  // std-vector storing the sensors
+  // std-vector for storing the sensors
   std::vector< FOV_2D_model > sensors_;
 
   // point info vectors
@@ -113,6 +112,7 @@ private:
 
 
 public:
+
   // standard constructor
   greedySearch();
 
@@ -122,18 +122,15 @@ public:
   // destructor
   ~greedySearch();
 
-  // declaration of ros publisher for greedySearch solution
+  // declaration of ros publisher for publishing greedySearch solution
   ros::Publisher marker_array_pub_;
 
   // ************************ update functions ************************;
 
-  // function to initialize the sensors on the perimeter
-  void initializeSensorsOnPerimeter();
-
-  // Greedy Search for maximum coverage position
+  // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
   void greedyPlacement(size_t sensor_index);
 
-  //function to update the GS_point_info with raytracing (lookup table)
+  // function to update the GS_point_info with raytracing
   void updateGSpointsRaytracing(size_t sensor_index, int point_id, bool update_covered_info);
 
   // function to calculate coverage achieved

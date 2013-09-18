@@ -49,7 +49,6 @@
  ****************************************************************/
 
 #include <sensor_placement_node.h>
-#include <clipper.hpp>    // -b- move to header
 
 // constructor
 sensor_placement_node::sensor_placement_node()
@@ -200,8 +199,6 @@ void sensor_placement_node::getParams()
   }
   pnh_.param("cell_search_resolution",cell_search_resolution_,100);
 }
-
-
 
 
 bool sensor_placement_node::getTargets()
@@ -562,84 +559,32 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 }
 
 
-geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
-{
-  //intializations
-  ClipperLib::Polygon cl_AoI;
-  ClipperLib::IntPoint cl_point;
-  ClipperLib::Polygons in_polys;
-  ClipperLib::Polygons out_polys;
-  ClipperLib::JoinType jointype = ClipperLib::jtMiter;
-  double miterLimit = 0.0;
-  geometry_msgs::Point32 p;
-  geometry_msgs::PolygonStamped offset_AoI;
-
-  offset = doubleToInt(offset);
-
-  // check if offset input is valid for deflating the area of interest
-  if(offset<0)
-  {
-    //get AoI for clipper library
-    for (size_t i=0; i<area_of_interest_.polygon.points.size(); i++)
-    {
-      cl_point.X = doubleToInt(area_of_interest_.polygon.points.at(i).x);
-      cl_point.Y = doubleToInt(area_of_interest_.polygon.points.at(i).y);
-      cl_AoI.push_back(cl_point);
-    }
-
-    //save
-    in_polys.push_back(cl_AoI);
-
-    //apply offset function to get an offsetted polygon in out_polys
-    ClipperLib::OffsetPolygons(in_polys, out_polys, offset, jointype, miterLimit);
-
-    //check if the offset function returned only one polygon (if more, then in_polys is set incorrectly)
-    if(out_polys.size()==1)
-    {
-      //save the offsetted polygon as geometry_msgs::PolygonStamped type
-      for (size_t i=0; i<out_polys.at(0).size(); i++)
-      {
-        p.x = intToDouble(out_polys.at(0).at(i).X);
-        p.y = intToDouble(out_polys.at(0).at(i).Y);
-        p.z = 0;
-        offset_AoI.polygon.points.push_back(p);
-      }
-    }
-    else
-    {
-      ROS_ERROR("wrong output from ClipperLib::OffsetPolygons function");
-    }
-
-    // checking output
-    for (int i=0; i<offset_AoI.polygon.points.size(); i++)
-    {
-      ROS_INFO_STREAM("offset_AoI point " << i << " (" << offset_AoI.polygon.points.at(i).x << "," << offset_AoI.polygon.points.at(i).y << ")" ) ;
-    }
-    // -b-
-
-
-
-    return offset_AoI;
-  }
-  // offset input is invalid
-  else
-    ROS_ERROR("wrong offset input offset must be negative for deflated polygon");
-}
-
-
 //get targets (GS_point_info for all points of interest for Greedy Search)
 bool sensor_placement_node::getGSTargets()
 {
-  // declaration
+
+  // **************** get offset polygon ***************
+
   geometry_msgs::PolygonStamped offset_AoI;
+  double  perimeter_res = 3*map_.info.resolution;     // define perimiter resolution in meters
+  double offset_val = clipper_offset_value_;          // load offset value
+
+  // set a lower bound on offset value according to perimeter
+  if (offset_val < perimeter_res)
+    offset_val = perimeter_res;
+
+  // now get an offsetted polygon from area of interest
+  offset_AoI = offsetAoI(offset_val);
+
+  //publish offset_AoI
+  offset_AoI.header.frame_id = "/map";
+  offset_AoI_pub_.publish(offset_AoI);
+
+
+  //****************** now get targets *****************
 
   // initialize result
   bool result = false;
-
-  // get an offsetted polygon from area of interest
-  offset_AoI = offsetAoI(-4.333);
-
-  offset_AoI_ = offset_AoI; // setting global offset_AoI_ for publishing - change position later?
 
   if(map_received_ == true)
   {
@@ -759,18 +704,71 @@ bool sensor_placement_node::getGSTargets()
 }
 
 
+geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
+{
+  //intializations
+  ClipperLib::Polygon cl_AoI;
+  ClipperLib::IntPoint cl_point;
+  ClipperLib::Polygons in_polys;
+  ClipperLib::Polygons out_polys;
+  ClipperLib::JoinType jointype = ClipperLib::jtMiter;
+  double miterLimit = 0.0;
+  geometry_msgs::Point32 p;
+  geometry_msgs::PolygonStamped offset_AoI;
+
+  offset = doubleToInt(offset);
+
+  // check if offset input is valid for deflating the area of interest
+  if(offset>0)
+  {
+    //save AoI as a clipper library polygon
+    for (size_t i=0; i<area_of_interest_.polygon.points.size(); i++)
+    {
+      cl_point.X = doubleToInt(area_of_interest_.polygon.points.at(i).x);
+      cl_point.Y = doubleToInt(area_of_interest_.polygon.points.at(i).y);
+      cl_AoI.push_back(cl_point);
+    }
+
+    //save the AoI
+    in_polys.push_back(cl_AoI);
+
+    //apply offset function to get an offsetted polygon in out_polys
+    ClipperLib::OffsetPolygons(in_polys, out_polys, -1*offset, jointype, miterLimit);
+
+    //check if the offset function returned only one polygon (if more, then in_polys is set incorrectly)
+    if(out_polys.size()==1)
+    {
+      //save the offsetted polygon as geometry_msgs::PolygonStamped type
+      for (size_t i=0; i<out_polys.at(0).size(); i++)
+      {
+        p.x = intToDouble(out_polys.at(0).at(i).X);
+        p.y = intToDouble(out_polys.at(0).at(i).Y);
+        p.z = 0;
+        offset_AoI.polygon.points.push_back(p);
+      }
+    }
+    else
+    {
+      ROS_ERROR("wrong output from ClipperLib::OffsetPolygons function");
+    }
+
+    // show output -b-
+    for (int i=0; i<offset_AoI.polygon.points.size(); i++)
+    {
+      ROS_INFO_STREAM("offset_AoI point " << i << " (" << offset_AoI.polygon.points.at(i).x << "," << offset_AoI.polygon.points.at(i).y << ")" ) ;
+    }
+
+    return offset_AoI;
+  }
+  // offset input is invalid
+  else
+    ROS_ERROR("wrong offset input! Enter a positive offset value for deflated polygon");
+}
+
 
 // function to initialize GS-Algorithm
 void sensor_placement_node::initializeGS()
 {
-  double coverage;
-  geometry_msgs::Pose initial_pose;
-
-  //publish offset_AoI_ -b-
-  offset_AoI_.header.frame_id = "/map";
-  offset_AoI_pub_.publish(offset_AoI_);
-
-
   // initialize pointer to dummy sensor_model
   FOV_2D_model dummy_GS_2D_model;
   dummy_GS_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
@@ -779,10 +777,8 @@ void sensor_placement_node::initializeGS()
   greedySearch gs_dummy = greedySearch(sensor_num_, target_num_, dummy_GS_2D_model);
 
   GS_solution = gs_dummy;
-
   GS_solution.setMap(map_);
   GS_solution.setAreaOfInterest(area_of_interest_);
-//  GS_solution.setForbiddenArea(forbidden_area_);
   GS_solution.setOpenAngles(open_angles_);
   GS_solution.setRange(sensor_range_);
   GS_solution.setPointInfoVec(point_info_vec_, target_num_);
@@ -790,13 +786,8 @@ void sensor_placement_node::initializeGS()
   GS_solution.setLookupTable(& lookup_table_);
   GS_solution.setAngleResolution(angle_resolution_);
   GS_solution.setCellSearchResolution(cell_search_resolution_);
-
-  //initializing sensors on perimeter
-  GS_solution.initializeSensorsOnPerimeter();
-
-  //publish
-  marker_array_pub_.publish(GS_solution.getVisualizationMarkers());
 }
+
 
 // function to run Greedy Search Algorithm
 void sensor_placement_node::runGS()
@@ -822,7 +813,7 @@ void sensor_placement_node::runGS()
     //note end time for greedy_search
     end_time= ros::Time::now() - start_time;
 
-    ROS_INFO_STREAM("No. of sensors placed: " << sensor_index+1 << " coverage: " << GS_coverage);
+    ROS_INFO_STREAM("Sensors placed: " << sensor_index+1 << " coverage: " << GS_coverage);
     ROS_INFO_STREAM("Time taken: " << end_time << "[s]");
   }
 
@@ -830,8 +821,11 @@ void sensor_placement_node::runGS()
 
 
 // callback function for the start GS service
-bool sensor_placement_node::startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+bool sensor_placement_node::startGSCallback(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res)
 {
+  // save offset value received
+  clipper_offset_value_ = req.offset_value;
+
   // call static_map-service from map_server to get the actual map
   sc_get_map_.waitForExistence();
 
@@ -896,6 +890,7 @@ bool sensor_placement_node::startGSCallback(std_srvs::Empty::Request& req, std_s
 
   ROS_INFO("Clean up everything");
 
+  res.success = true;
   GS_pool_.clear();
   point_info_vec_.clear();
 

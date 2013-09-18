@@ -736,7 +736,7 @@ namespace seneka_utilities
   {
     double temp;
 
-    temp = (double) (in_value / 10000);
+    temp = (double (in_value)) / 10000;
 
     return temp;
   }

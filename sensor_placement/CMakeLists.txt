@@ -15,6 +15,17 @@ find_package(catkin REQUIRED COMPONENTS
   tf
   tf_conversions
   std_srvs
+  message_generation
+)
+
+add_service_files(
+  FILES
+  polygon_offset.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
 )
 
 catkin_package(
@@ -22,6 +33,7 @@ catkin_package(
     include
     common/include
     common/third_party_lib/include
+    CATKIN_DEPENDS message_runtime
 #  LIBRARIES seneka
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
@@ -43,6 +55,9 @@ add_executable(sensor_placement_node 	  	src/sensor_placement_node.cpp
 					)
 add_executable(sensor_placement_test	test/sensor_placement_test_publisher.cpp)
 
+
+
+
 ## Specify libraries to link a library or executable target against
  target_link_libraries(sensor_placement_node
    ${catkin_LIBRARIES}
@@ -56,6 +71,6 @@ add_executable(sensor_placement_test	test/sensor_placement_test_publisher.cpp)
    ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
    LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
    RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
-
+   
  )
 

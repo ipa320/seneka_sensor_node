@@ -50,7 +50,6 @@
 
 #include <greedySearch.h>
 
-
 // standard constructor
 greedySearch::greedySearch()
 {
@@ -99,109 +98,7 @@ greedySearch::greedySearch(int num_of_sensors, int num_of_targets, FOV_2D_model 
 greedySearch::~greedySearch(){}
 
 
-
-// function to initialize the sensors on the perimeter [does not take care of forbidden area]
-void greedySearch::initializeSensorsOnPerimeter()
-{
-  // initialize workspace
-  size_t edge_ind = 0;
-  size_t successor = 0;
-  double t = 0;
-  double alpha = 0;
-  unsigned int cell_in_vector_coordinates = 0;
-  geometry_msgs::Pose newPose;
-  geometry_msgs::Vector3 vec_sensor_dir;
-
-  // get bounding box of area of interest
-  geometry_msgs::Polygon bound_box = getBoundingBox2D(pArea_of_interest_->polygon, *pMap_);
-  double x_min = bound_box.points.at(0).x;
-  double y_min = bound_box.points.at(0).y;
-
-  double x_max = bound_box.points.at(2).x;
-  double y_max = bound_box.points.at(2).y;
-
-  // get center of the area of interest
-  geometry_msgs::Point32 polygon_center = geometry_msgs::Point32();
-
-  polygon_center.x = (double) x_min + (x_max - x_min)/2;
-  polygon_center.y = (double) y_min + (y_max - y_min)/2;
-
-  for(size_t i = 0; i < sensors_.size(); i++)
-  {
-    if(i < pArea_of_interest_->polygon.points.size())
-    {
-      cell_in_vector_coordinates =
-        worldToMapY(pArea_of_interest_->polygon.points.at(i).y, *pMap_) * pMap_->info.width
-        + worldToMapX(pArea_of_interest_->polygon.points.at(i).x, *pMap_);
-    }
-
-    if(i < pArea_of_interest_->polygon.points.size() &&
-       (!pPoint_info_vec_->at(cell_in_vector_coordinates).occupied) &&
-       (pMap_->data.at(cell_in_vector_coordinates) > -1) )    //-b-
-    {
-      // only set new position if the cell is not occupied and not unknoown, otherwise skip this corner
-      newPose.position.x = mapToWorldX(worldToMapX(pArea_of_interest_->polygon.points.at(i).x, *pMap_), *pMap_);
-      newPose.position.y = mapToWorldY(worldToMapY(pArea_of_interest_->polygon.points.at(i).y, *pMap_), *pMap_);
-      newPose.position.z = 0;
-
-      vec_sensor_dir.x = polygon_center.x - newPose.position.x;
-      vec_sensor_dir.y = polygon_center.y - newPose.position.y;
-      vec_sensor_dir.z = 0;
-
-      // get angle between desired sensor facing direction and x-axis
-      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
-
-      if(vec_sensor_dir.y < 0)
-        alpha = -alpha;
-
-      // get quaternion message for desired sensor facing direction
-      newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
-
-      // set new sensor pose
-      sensors_.at(i).setSensorPose(newPose);
-    }
-    else
-    {
-      // get index of a random edge of the area of interest specified by a polygon
-      edge_ind = (int) randomNumber(0, pArea_of_interest_->polygon.points.size());
-
-      successor = 0;
-      if(edge_ind < (pArea_of_interest_->polygon.points.size() - 1))
-      successor = edge_ind++;
-
-      t = randomNumber(0,1);
-
-      // get random Pose on perimeter of the area of interest specified by a polygon
-      newPose.position.x = mapToWorldX(worldToMapX(pArea_of_interest_->polygon.points.at(edge_ind).x
-                            + t * (pArea_of_interest_->polygon.points.at(successor).x - pArea_of_interest_->polygon.points.at(edge_ind).x), *pMap_), *pMap_);
-      newPose.position.y = mapToWorldY(worldToMapY(pArea_of_interest_->polygon.points.at(edge_ind).y
-                            + t * (pArea_of_interest_->polygon.points.at(successor).y - pArea_of_interest_->polygon.points.at(edge_ind).y), *pMap_), *pMap_);
-      newPose.position.z = 0;
-
-      vec_sensor_dir.x = polygon_center.x - newPose.position.x;
-      vec_sensor_dir.y = polygon_center.y - newPose.position.y;
-      vec_sensor_dir.z = 0;
-
-      // get angle between desired sensor facing direction and x-axis
-      alpha = acos(vec_sensor_dir.x / vecNorm(vec_sensor_dir));
-
-      if(vec_sensor_dir.y < 0)
-        alpha = -alpha;
-
-      // get quaternion message for desired sensor facing direction
-      newPose.orientation = tf::createQuaternionMsgFromYaw(alpha);
-
-      cell_in_vector_coordinates = worldToMapY(newPose.position.y, *pMap_) * pMap_->info.width + worldToMapX(newPose.position.x, *pMap_);
-
-      sensors_.at(i).setSensorPose(newPose);
-    }
-    // update the target information
-    updateGSpointsRaytracing(i, 0, false);
-  }
-}
-
-
-//Greedy Search for maximum coverage position and place sensor at the max coverage position found
+// function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
 void greedySearch::greedyPlacement(size_t sensor_index)
 {
   unsigned int angle_resolution;
@@ -219,7 +116,6 @@ void greedySearch::greedyPlacement(size_t sensor_index)
 
   //while searching, restrict updating of 'covered' info in updateGSpointsRaytracing
   update_covered_info=false;
-
   //reset previous max coverage information before searching for new position
   resetMaxSensorCovInfo();
   //reset max targets covered information
@@ -259,7 +155,7 @@ void greedySearch::greedyPlacement(size_t sensor_index)
 }
 
 
-//function to update the GS_point_info with raytracing (lookup table)
+//function to update the GS_point_info with raytracing
 void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, bool update_covered_info)
 {
   //clear vector of ray end points
@@ -428,6 +324,7 @@ void greedySearch::updateGSpointsRaytracing(size_t sensor_index, int point_id, b
     }
   }
   //all rays checked
+
   //update coverage of this position if it exceeds the coverage noted with old orientation at this position
   if(coverage_by_new_orientation>coverage_by_old_orientation)
   {
@@ -503,19 +400,6 @@ void greedySearch::setMaxSensorCovPOSE(geometry_msgs::Pose sensor_pose)
   max_sensor_cov_pose_ = sensor_pose;
 }
 
-// function to reset maximum coverage information for new sensor placement
-void greedySearch::resetMaxSensorCovInfo()
-{
-  geometry_msgs::Pose reset_pose;
-  reset_pose.position.x = 0;
-  reset_pose.position.y = 0;
-  reset_pose.position.z = 0;
-  reset_pose.orientation = tf::createQuaternionMsgFromYaw(0);
-
-  setMaxSensorCovPOSE(reset_pose);
-  setMaxSensorCov(0);
-  setMaxSensorCovPointID(0);
-}
 // function to set the information for all targets (point_info_vec_)
 void greedySearch::setPointInfoVec(std::vector<point_info> & point_info_vec, int target_num)
 {
@@ -530,15 +414,6 @@ void greedySearch::setGSpool(const std::vector<GS_point_info> &GS_pool)
 {
   GS_pool_ = GS_pool;
   covered_targets_num_ = 0;
-}
-
-// function to reset the max targets covered information for all points in GS pool
-void greedySearch::resetGSpool()
-{
-  for(int i=0; i<GS_pool_.size(); i++)
-  {
-    GS_pool_.at(i).reset();
-  }
 }
 
 // function that set the map
@@ -566,8 +441,6 @@ void greedySearch::setForbiddenArea(const geometry_msgs::PolygonStamped & new_fo
     ROS_ERROR("Forbidden Area was not set correctly.");
 
 }
-
-
 
 // function that sets the opening angles for each sensor
 bool greedySearch::setOpenAngles(std::vector<double> new_angles)
@@ -627,6 +500,29 @@ void greedySearch::setAngleResolution(unsigned int angle_resolution_param)
 void greedySearch::setCellSearchResolution(unsigned int cell_search_resolution_param)
 {
   cell_search_resolution_=cell_search_resolution_param;
+}
+
+// function to reset maximum coverage information for new sensor placement
+void greedySearch::resetMaxSensorCovInfo()
+{
+  geometry_msgs::Pose reset_pose;
+  reset_pose.position.x = 0;
+  reset_pose.position.y = 0;
+  reset_pose.position.z = 0;
+  reset_pose.orientation = tf::createQuaternionMsgFromYaw(0);
+
+  setMaxSensorCovPOSE(reset_pose);
+  setMaxSensorCov(0);
+  setMaxSensorCovPointID(0);
+}
+
+// function to reset the max targets covered information for all points in GS pool
+void greedySearch::resetGSpool()
+{
+  for(int i=0; i<GS_pool_.size(); i++)
+  {
+    GS_pool_.at(i).reset();
+  }
 }
 
 // returns all visualization markers of the greedySearch solution

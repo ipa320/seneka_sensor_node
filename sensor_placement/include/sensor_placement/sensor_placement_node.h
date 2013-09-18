@@ -72,6 +72,7 @@
 #include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <nav_msgs/GetMap.h>
+#include <sensor_placement/polygon_offset.h>
 
 #include <visualization_msgs/Marker.h>
 
@@ -80,6 +81,7 @@
 #include <particle.h>
 #include <seneka_utilities.h>
 #include <greedySearch.h>
+#include <clipper.hpp>
 
 using namespace std;
 using namespace seneka_utilities;
@@ -106,9 +108,6 @@ private:
 
   // polygon for forbidden area
   geometry_msgs::PolygonStamped forbidden_area_;
-
-  // polygon for offsetted area of interest
-  geometry_msgs::PolygonStamped offset_AoI_;
 
   // number of sensors
   int sensor_num_;
@@ -163,6 +162,9 @@ private:
 
   // Greedy search object
   greedySearch GS_solution;
+
+  // offset value for offsetAoI function
+  double clipper_offset_value_;
 
   // parameters for angle and cell resolution in Greedy Search
   int angle_resolution_;
@@ -229,7 +231,7 @@ public:
   // function to get the current global best solution
   void getGlobalBest();
 
-  //get targets (GS_point_info for all points of interest for Greedy Searc
+  // get targets (GS_point_info for all points of interest for Greedy Searc
   bool getGSTargets();
 
   // function to initialize GS-Algorithm
@@ -246,6 +248,7 @@ public:
   /* --------- ROS Callbacks ----------- */
   /* ----------------------------------- */
 
+
   // callback function for the start PSO service
   bool startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
@@ -253,7 +256,7 @@ public:
   bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback function for the start GS service
-  bool startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+  bool startGSCallback(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res);
 
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
