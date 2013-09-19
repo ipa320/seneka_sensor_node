@@ -887,6 +887,11 @@ bool sensor_placement_node::startGSCallback(sensor_placement::polygon_offset::Re
   ROS_INFO_STREAM("Saved " << target_num_ << " all targets");
   ROS_INFO_STREAM("Saved " << point_info_vec_.size() << " all points on map");
   }
+  else
+  {
+    ROS_ERROR("No targets received! Error in getGSTargets function");
+    return false;
+  }
 
   ROS_INFO("Initializing Greedy Search algorithm");
   initializeGS();
