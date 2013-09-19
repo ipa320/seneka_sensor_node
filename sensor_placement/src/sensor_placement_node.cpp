@@ -576,10 +576,17 @@ bool sensor_placement_node::getGSTargets()
   // now get an offsetted polygon from area of interest
   offset_AoI = offsetAoI(offset_val);
 
-  //publish offset_AoI
-  offset_AoI.header.frame_id = "/map";
-  offset_AoI_pub_.publish(offset_AoI);
-
+  if (!offset_AoI.polygon.points.empty())
+  {
+    //publish offset_AoI
+    offset_AoI.header.frame_id = "/map";
+    offset_AoI_pub_.publish(offset_AoI);
+  }
+  else
+  {
+    ROS_ERROR("No offset polygon returned");
+    return false;
+  }
 
   //****************** now get targets *****************
 
@@ -757,12 +764,12 @@ geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
     {
       ROS_INFO_STREAM("offset_AoI point " << i << " (" << offset_AoI.polygon.points.at(i).x << "," << offset_AoI.polygon.points.at(i).y << ")" ) ;
     }
-
-    return offset_AoI;
   }
   // offset input is invalid
   else
     ROS_ERROR("wrong offset input! Enter a positive offset value for deflated polygon");
+
+  return offset_AoI;
 }
 
 

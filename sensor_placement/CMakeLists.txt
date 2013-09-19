@@ -32,7 +32,7 @@ catkin_package(
   INCLUDE_DIRS 
     include
     common/include
-    common/third_party_lib/include
+    third_party/clipper_library/include
     CATKIN_DEPENDS message_runtime
 #  LIBRARIES seneka
 #  CATKIN_DEPENDS other_catkin_pkg
@@ -42,7 +42,7 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-include_directories(include/sensor_placement common/include/sensor_placement common/third_party_lib/include/clipper ${catkin_INCLUDE_DIRS} )
+include_directories(include/sensor_placement common/include/sensor_placement third_party/clipper_library/include/clipper ${catkin_INCLUDE_DIRS} )
 
 ## Declare a cpp executable
 # add_executable(seneka_node src/seneka_node.cpp)
@@ -51,7 +51,7 @@ add_executable(sensor_placement_node 	  	src/sensor_placement_node.cpp
 					common/src/seneka_utilities.cpp
 					common/src/sensor_model.cpp
 					common/src/greedySearch.cpp
-					common/third_party_lib/src/clipper.cpp
+					third_party/clipper_library/src/clipper.cpp
 					)
 add_executable(sensor_placement_test	test/sensor_placement_test_publisher.cpp)
 

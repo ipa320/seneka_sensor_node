@@ -237,9 +237,6 @@ namespace seneka_utilities
   // function to convert a value from int to double
   double intToDouble (int in_value);
 
-  // function to convert a value from double to int. and keep value only upto map resolution
-  int doubleToIntWithRes (double in_value);
-
   // function to convert a value from double to int
   int doubleToInt (double in_value);
 

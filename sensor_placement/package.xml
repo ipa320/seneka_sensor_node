@@ -13,6 +13,7 @@
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
   <license>LGPL</license>
+  <license>Boost Software License (Clipper Library)</license>
 
 
   <!-- Url tags are optional, but mutiple are allowed, one per tag -->
