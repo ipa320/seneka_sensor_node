@@ -59,20 +59,22 @@ sensor_placement_node::sensor_placement_node()
 
   // ros subscribers
 
-  AoI_sub_ = nh_.subscribe("in_AoI_poly", 1, 
+  AoI_sub_ = nh_.subscribe("in_AoI_poly", 1,
                            &sensor_placement_node::AoICB, this);
   forbidden_area_sub_ = nh_.subscribe("in_forbidden_area", 1,
                                       &sensor_placement_node::forbiddenAreaCB, this);
-  
+
   // ros publishers
   nav_path_pub_ = nh_.advertise<nav_msgs::Path>("out_path",1,true);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
   map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("out_cropped_map_metadata",1,true);
+  offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("offset_AoI", 1,true);
 
   // ros service servers
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
   ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
+  ss_start_GS_ = nh_.advertiseService("StartGS", &sensor_placement_node::startGSCallback, this);
 
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
@@ -116,7 +118,7 @@ void sensor_placement_node::getParams()
     ROS_WARN("No parameter max_sensor_range on parameter server. Using default [5.0 in m]");
   }
   pnh_.param("max_sensor_range",sensor_range_,5.0);
-  
+
   double open_angle_1, open_angle_2;
 
   if(!pnh_.hasParam("open_angle_1"))
@@ -183,7 +185,21 @@ void sensor_placement_node::getParams()
     ROS_WARN("No parameter c3 on parameter server. Using default [1.49445]");
   }
   pnh_.param("c3",PSO_param_3_,1.49445);
+
+  // get Greedy Search algorithm parameters
+  if(!pnh_.hasParam("angle_resolution"))
+  {
+    ROS_WARN("No parameter angle_resolution_ on parameter server. Using default [90]");
+  }
+  pnh_.param("angle_resolution",angle_resolution_,90);
+
+  if(!pnh_.hasParam("cell_search_resolution"))
+  {
+    ROS_WARN("No parameter cell_search_resolution on parameter server. Using default [100]");
+  }
+  pnh_.param("cell_search_resolution",cell_search_resolution_,100);
 }
+
 
 bool sensor_placement_node::getTargets()
 {
@@ -223,7 +239,7 @@ bool sensor_placement_node::getTargets()
           //variable information
           dummy_target_info_var.covered = false;
           dummy_target_info_var.multiple_covered = false;
-          
+
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
             if(pointInPolygon(world_Coord, forbidden_area_.polygon) >= 1)
@@ -253,6 +269,7 @@ bool sensor_placement_node::getTargets()
           world_Coord.x = mapToWorldX(i, map_);
           world_Coord.y = mapToWorldY(j, map_);
           world_Coord.theta = 0;
+
 
           //fix information
           dummy_target_info_fix.world_pos.x = world_Coord.x;
@@ -317,6 +334,8 @@ bool sensor_placement_node::getTargets()
   return result;
 }
 
+
+
 // function to initialize PSO-Algorithm
 void sensor_placement_node::initializePSO()
 {
@@ -361,13 +380,15 @@ void sensor_placement_node::initializePSO()
         global_best_ = particle_swarm_.at(i);
       }
     }
-    // after the initialization step we're looking for a new global best solution 
+    // after the initialization step we're looking for a new global best solution
     getGlobalBest();
 
     // publish the actual global best visualization
     marker_array_pub_.publish(global_best_.getVisualizationMarkers());
   }
 }
+
+
 
 // function for the actual particle-swarm-optimization
 void sensor_placement_node::PSOptimize()
@@ -446,7 +467,7 @@ void sensor_placement_node::getGlobalBest()
 // callback function for the start PSO service
 bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  // call static_map-service from map_server to get the actual map  
+  // call static_map-service from map_server to get the actual map
   sc_get_map_.waitForExistence();
 
   nav_msgs::GetMap srv_map;
@@ -461,7 +482,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
       // get bounding box of area of interest
       geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
       // cropMap to boundingBox
-      cropMap(bound_box, srv_map.response.map, map_); 
+      cropMap(bound_box, srv_map.response.map, map_);
     }
     else
     {
@@ -470,7 +491,7 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
       // if no AoI was specified, we consider the whole map to be the AoI
       area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
     }
-    
+
     // publish map
     map_.header.stamp = ros::Time::now();
     map_pub_.publish(map_);
@@ -537,10 +558,367 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 
 }
 
+
+//get targets (GS_point_info for all points of interest for Greedy Search)
+bool sensor_placement_node::getGSTargets()
+{
+
+  // **************** get offset polygon ***************
+
+  geometry_msgs::PolygonStamped offset_AoI;
+  double  perimeter_res = 3*map_.info.resolution;     // define perimiter resolution in meters
+  double offset_val = clipper_offset_value_;          // load offset value
+
+  // set a lower bound on offset value according to perimeter
+  if (offset_val < perimeter_res)
+    offset_val = perimeter_res;
+
+  // now get an offsetted polygon from area of interest
+  offset_AoI = offsetAoI(offset_val);
+
+  if (!offset_AoI.polygon.points.empty())
+  {
+    //publish offset_AoI
+    offset_AoI.header.frame_id = "/map";
+    offset_AoI_pub_.publish(offset_AoI);
+  }
+  else
+  {
+    ROS_ERROR("No offset polygon returned");
+    return false;
+  }
+
+  //****************** now get targets *****************
+
+  // initialize result
+  bool result = false;
+
+  if(map_received_ == true)
+  {
+    // only if we received a map, we can get targets
+    point_info dummy_point_info;
+    point_info_vec_.assign(map_.info.width * map_.info.height, dummy_point_info);
+    // create dummy GS_point_info to save information in the pool
+    GS_point_info dummy_GS_point_info;
+
+    if(AoI_received_ == false)
+    {
+      for(unsigned int i = 0; i < map_.info.width; i++)
+      {
+        for(unsigned int j = 0; j < map_.info.height; j++)
+        {
+          // calculate world coordinates from map coordinates of given target
+          geometry_msgs::Pose2D world_Coord;
+          world_Coord.x = mapToWorldX(i, map_);
+          world_Coord.y = mapToWorldY(j, map_);
+          world_Coord.theta = 0;
+
+          dummy_point_info.occupied = true;
+          dummy_point_info.potential_target = -1;
+
+          if(map_.data.at( j * map_.info.width + i) == 0)
+          {
+            if(pointInPolygon(world_Coord, offset_AoI.polygon) == 0)
+            {
+              // points outside the offset_AoI, and not occupied, are of interest for greedy search
+              dummy_GS_point_info.p.x=i;
+              dummy_GS_point_info.p.y=j;
+              dummy_GS_point_info.max_targets_covered=0;
+              GS_pool_.push_back(dummy_GS_point_info);
+            }
+
+            dummy_point_info.occupied = false;
+            dummy_point_info.potential_target = 1;
+
+            target_num_++;
+          }
+
+          // saving point/target information
+          point_info_vec_.at(j * map_.info.width + i) = dummy_point_info;
+        }
+      }
+      result = true;
+    }
+    else
+    {
+      // if area of interest polygon was specified, we consider the non-occupied grid cells within the polygon as targets
+      for(unsigned int i = 0; i < map_.info.width; i++)
+      {
+        for(unsigned int j = 0; j < map_.info.height; j++)
+        {
+          // calculate world coordinates from map coordinates of given target
+          geometry_msgs::Pose2D world_Coord;
+          world_Coord.x = mapToWorldX(i, map_);
+          world_Coord.y = mapToWorldY(j, map_);
+          world_Coord.theta = 0;
+
+          dummy_point_info.occupied = true;
+          dummy_point_info.potential_target = -1;
+
+          // the given position lies withhin the polygon
+          if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 2)
+          {
+            dummy_point_info.potential_target = 1;
+
+            if((pointInPolygon(world_Coord, offset_AoI.polygon) == 0) &&
+              (map_.data.at( j * map_.info.width + i) == 0))
+            {
+              // points outside the offset_AoI, and not occupied, are of interest for greedy search
+              dummy_GS_point_info.p.x=i;
+              dummy_GS_point_info.p.y=j;
+              dummy_GS_point_info.max_targets_covered=0;
+              GS_pool_.push_back(dummy_GS_point_info);
+            }
+
+            if(map_.data.at( j * map_.info.width + i) == 0)
+            {
+              target_num_++;
+              dummy_point_info.occupied = false;
+            }
+
+          }
+          // the given position lies on the perimeter
+          else if(pointInPolygon(world_Coord, area_of_interest_.polygon) == 1)
+          {
+            dummy_point_info.potential_target = 0;
+
+            if(pointInPolygon(world_Coord, offset_AoI.polygon) == 0)
+            {
+              // points outside the offset_AoI, are of interest for greedy search. So, save coordinates of this point
+              dummy_GS_point_info.p.x=i;
+              dummy_GS_point_info.p.y=j;
+              dummy_GS_point_info.max_targets_covered=0;
+              GS_pool_.push_back(dummy_GS_point_info);
+            }
+
+            if(map_.data.at( j * map_.info.width + i) == 0)
+            {
+              dummy_point_info.occupied = false;
+            }
+          }
+          // save information
+          point_info_vec_.at(j * map_.info.width + i) = dummy_point_info;
+        }
+      }
+      result = true;
+    }
+  }
+  else
+  {
+    ROS_WARN("No map received! Not able to propose sensor positions.");
+  }
+  return result;
+}
+
+
+geometry_msgs::PolygonStamped sensor_placement_node::offsetAoI(double offset)
+{
+  //intializations
+  ClipperLib::Polygon cl_AoI;
+  ClipperLib::IntPoint cl_point;
+  ClipperLib::Polygons in_polys;
+  ClipperLib::Polygons out_polys;
+  ClipperLib::JoinType jointype = ClipperLib::jtMiter;
+  double miterLimit = 0.0;
+  geometry_msgs::Point32 p;
+  geometry_msgs::PolygonStamped offset_AoI;
+
+  offset = doubleToInt(offset);
+
+  // check if offset input is valid for deflating the area of interest
+  if(offset>0)
+  {
+    //save AoI as a clipper library polygon
+    for (size_t i=0; i<area_of_interest_.polygon.points.size(); i++)
+    {
+      cl_point.X = doubleToInt(area_of_interest_.polygon.points.at(i).x);
+      cl_point.Y = doubleToInt(area_of_interest_.polygon.points.at(i).y);
+      cl_AoI.push_back(cl_point);
+    }
+
+    //save the AoI
+    in_polys.push_back(cl_AoI);
+
+    //apply offset function to get an offsetted polygon in out_polys
+    ClipperLib::OffsetPolygons(in_polys, out_polys, -1*offset, jointype, miterLimit);
+
+    //check if the offset function returned only one polygon (if more, then in_polys is set incorrectly)
+    if(out_polys.size()==1)
+    {
+      //save the offsetted polygon as geometry_msgs::PolygonStamped type
+      for (size_t i=0; i<out_polys.at(0).size(); i++)
+      {
+        p.x = intToDouble(out_polys.at(0).at(i).X);
+        p.y = intToDouble(out_polys.at(0).at(i).Y);
+        p.z = 0;
+        offset_AoI.polygon.points.push_back(p);
+      }
+    }
+    else
+    {
+      ROS_ERROR("wrong output from ClipperLib::OffsetPolygons function");
+    }
+
+    // show output -b-
+    for (int i=0; i<offset_AoI.polygon.points.size(); i++)
+    {
+      ROS_INFO_STREAM("offset_AoI point " << i << " (" << offset_AoI.polygon.points.at(i).x << "," << offset_AoI.polygon.points.at(i).y << ")" ) ;
+    }
+  }
+  // offset input is invalid
+  else
+    ROS_ERROR("wrong offset input! Enter a positive offset value for deflated polygon");
+
+  return offset_AoI;
+}
+
+
+// function to initialize GS-Algorithm
+void sensor_placement_node::initializeGS()
+{
+  // initialize pointer to dummy sensor_model
+  FOV_2D_model dummy_GS_2D_model;
+  dummy_GS_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
+
+  // initialize dummy greedySearch object
+  greedySearch gs_dummy = greedySearch(sensor_num_, target_num_, dummy_GS_2D_model);
+
+  GS_solution = gs_dummy;
+  GS_solution.setMap(map_);
+  GS_solution.setAreaOfInterest(area_of_interest_);
+  GS_solution.setOpenAngles(open_angles_);
+  GS_solution.setRange(sensor_range_);
+  GS_solution.setPointInfoVec(point_info_vec_, target_num_);
+  GS_solution.setGSpool(GS_pool_);
+  GS_solution.setLookupTable(& lookup_table_);
+  GS_solution.setAngleResolution(angle_resolution_);
+  GS_solution.setCellSearchResolution(cell_search_resolution_);
+}
+
+
+// function to run Greedy Search Algorithm
+void sensor_placement_node::runGS()
+{
+  //initialization
+  double GS_coverage;
+  ros::Time start_time;
+  ros::Duration end_time;
+
+  //start placing sensors one by one according to greedy algorithm
+  for(size_t sensor_index = 0; sensor_index < sensor_num_; sensor_index++)
+  {
+    //note start time for greedy search
+    start_time = ros::Time::now();
+
+    //do Greedy Search and place sensor on the max coverage pose
+    GS_solution.greedyPlacement(sensor_index);
+    //publish the solution
+    marker_array_pub_.publish(GS_solution.getVisualizationMarkers());
+    //calculate the current coverage
+    GS_coverage = GS_solution.calGScoverage();
+
+    //note end time for greedy_search
+    end_time= ros::Time::now() - start_time;
+
+    ROS_INFO_STREAM("Sensors placed: " << sensor_index+1 << " coverage: " << GS_coverage);
+    ROS_INFO_STREAM("Time taken: " << end_time << "[s]");
+  }
+
+}
+
+
+// callback function for the start GS service
+bool sensor_placement_node::startGSCallback(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res)
+{
+  // save offset value received
+  clipper_offset_value_ = req.offset_value;
+
+  // call static_map-service from map_server to get the actual map
+  sc_get_map_.waitForExistence();
+
+  nav_msgs::GetMap srv_map;
+
+  if(sc_get_map_.call(srv_map))
+  {
+    ROS_INFO("Map service called successfully");
+    map_received_ = true;
+
+    if(AoI_received_)
+    {
+      // get bounding box of area of interest
+      geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
+      // cropMap to boundingBox
+      cropMap(bound_box, srv_map.response.map, map_);
+    }
+    else
+    {
+      map_ = srv_map.response.map;
+
+      // if no AoI was specified, we consider the whole map to be the AoI
+      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
+    }
+
+    // publish map
+    map_.header.stamp = ros::Time::now();
+    map_pub_.publish(map_);
+    map_meta_pub_.publish(map_.info);
+  }
+  else
+  {
+    ROS_INFO("Failed to call map service");
+  }
+
+  if(map_received_)
+  {
+    ROS_INFO("Received a map");
+
+    // now create the lookup table based on the range of the sensor and the resolution of the map
+    int radius_in_cells = floor(sensor_range_ / map_.info.resolution);
+    lookup_table_ = createLookupTableCircle(radius_in_cells);
+  }
+
+  ROS_INFO("getting targets from specified map and area of interest!");
+
+  targets_saved_ = getGSTargets();
+
+  if(targets_saved_)
+  {
+  ROS_INFO_STREAM("Saved " << GS_pool_.size() << " targets in GS pool");
+  ROS_INFO_STREAM("Saved " << target_num_ << " all targets");
+  ROS_INFO_STREAM("Saved " << point_info_vec_.size() << " all points on map");
+  }
+  else
+  {
+    ROS_ERROR("No targets received! Error in getGSTargets function");
+    return false;
+  }
+
+  ROS_INFO("Initializing Greedy Search algorithm");
+  initializeGS();
+
+  // now start the actual Greedy Search  Algorithm
+  ROS_INFO("Running Greedy Search Algorithm");
+  runGS();
+
+  ROS_INFO("Clean up everything");
+
+  res.success = true;
+  GS_pool_.clear();
+  point_info_vec_.clear();
+
+  target_num_ = 0;
+
+  ROS_INFO("Greedy Search Algorithm terminated successfully");
+
+  return true;
+
+}
+
+
 // callback function for the test service
 bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  // call static_map-service from map_server to get the actual map  
+  // call static_map-service from map_server to get the actual map
   sc_get_map_.waitForExistence();
 
   nav_msgs::GetMap srv_map;
@@ -669,7 +1047,6 @@ void sensor_placement_node::AoICB(const geometry_msgs::PolygonStamped::ConstPtr 
 void sensor_placement_node::forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_area)
 {
   forbidden_area_ = *forbidden_area;
-
 }
 
 //######################

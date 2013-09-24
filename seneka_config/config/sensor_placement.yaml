@@ -1,8 +1,10 @@
 # number of sensors
-number_of_sensors: 3
+number_of_sensors: 5
+#number_of_sensors: 10
 
 # maximal sensor range
 max_sensor_range: 30.0 # in [m]
+#max_sensor_range: 4.0 # in [m]
 
 # opening angles for the sensors
 open_angle_1: 1.5708 # (=90*PI/180 deg) in [rad]
@@ -10,6 +12,7 @@ open_angle_2: 0.0 # in [rad]
 
 # maximal allowed linear velocity for each sensor
 max_linear_sensor_velocity: 10.5 # in [m/s]
+#max_linear_sensor_velocity: 1.5 # in [m/s]
 
 # maximal allowed angular velocity for each sensor
 max_angular_sensor_velocity: 0.5236 # (=30*PI/180) in [rad/s]
@@ -30,3 +33,8 @@ c1: 0.729
 c2: 1.49445
 # parameter for the global best velocity part
 c3: 1.49445
+
+# parameter for the angle resolution to be used in Greedy Search Algorithm
+angle_resolution: 90
+# parameter for the cell search resolution to be used in Greedy Search Algorithm
+cell_search_resolution: 300

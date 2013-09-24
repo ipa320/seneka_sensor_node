@@ -13,13 +13,27 @@ find_package(catkin REQUIRED COMPONENTS
   geometry_msgs
   visualization_msgs
   tf
+  tf_conversions
   std_srvs
+  message_generation
+)
+
+add_service_files(
+  FILES
+  polygon_offset.srv
+)
+
+generate_messages(
+  DEPENDENCIES
+  std_msgs
 )
 
 catkin_package(
   INCLUDE_DIRS 
     include
     common/include
+    third_party/clipper_library/include
+    CATKIN_DEPENDS message_runtime
 #  LIBRARIES seneka
   CATKIN_DEPENDS
     roslib
@@ -37,9 +51,9 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 # include_directories(include ${catkin_INCLUDE_DIRS} ${Boost_INCLUDE_DIRS})
-include_directories(
-  include/sensor_placement
+include_directories(include/sensor_placement
   common/include/sensor_placement
+  third_party/clipper_library/include/clipper
   ${catkin_INCLUDE_DIRS}
 )
 
@@ -48,7 +62,10 @@ include_directories(
 add_executable(sensor_placement_node 	src/sensor_placement_node.cpp
 					common/src/particle.cpp
 					common/src/seneka_utilities.cpp
-					common/src/sensor_model.cpp)
+					common/src/sensor_model.cpp
+					common/src/greedySearch.cpp
+					third_party/clipper_library/src/clipper.cpp
+					)
 add_executable(sensor_placement_test	test/sensor_placement_test_publisher.cpp)
 
 ## Specify libraries to link a library or executable target against

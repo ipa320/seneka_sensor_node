@@ -279,7 +279,7 @@ void particle::setRange(double new_range)
   }
 }
 
-//function to create and set a lookup table for raytracing for each sensor in the particle
+// function to create and set a lookup table for raytracing for each sensor in the particle
 void particle::setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table)
 {
   if (pLookup_table != NULL)
@@ -290,8 +290,9 @@ void particle::setLookupTable(const std::vector< std::vector<geometry_msgs::Poin
     }
   }
   else
-    ROS_ERROR("LookupTable not set corretly");
+    ROS_ERROR("LookupTable not set correctly");
 }
+
 
 // function to place the sensors randomly on the perimeter
 void particle::placeSensorsRandomlyOnPerimeter()
@@ -301,6 +302,7 @@ void particle::placeSensorsRandomlyOnPerimeter()
   size_t edge_ind = 0;
   size_t successor = 0;
   double t = 0;
+  unsigned int cell_in_vector_coordinates = 0;
   geometry_msgs::Pose randomPose;
   geometry_msgs::Pose2D rand_pose2D;
 
@@ -331,7 +333,11 @@ void particle::placeSensorsRandomlyOnPerimeter()
       rand_pose2D.y = randomPose.position.y;
       rand_pose2D.theta = tf::getYaw(randomPose.orientation);
 
-      if (pointInPolygon(rand_pose2D, pForbidden_poly_->polygon) <= 0)
+      cell_in_vector_coordinates =
+        worldToMapY(pArea_of_interest_->polygon.points.at(edge_ind).y, *pMap_) * pMap_->info.width
+        + worldToMapX(pArea_of_interest_->polygon.points.at(edge_ind).x, *pMap_);
+
+      if (!pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden)
       {
         //found a point which is not in the forbidden area
         sensors_.at(i).setSensorPose(randomPose);
@@ -355,6 +361,7 @@ void particle::placeSensorsRandomlyOnPerimeter()
     pers_best_ = sensors_;
   }
 }
+
 
 // function to initialize the sensors on the perimeter
 void particle::initializeSensorsOnPerimeter()
@@ -387,12 +394,12 @@ void particle::initializeSensorsOnPerimeter()
   {
     if(i < pArea_of_interest_->polygon.points.size())
     {
-      cell_in_vector_coordinates = 
+      cell_in_vector_coordinates =
         worldToMapY(pArea_of_interest_->polygon.points.at(i).y, *pMap_) * pMap_->info.width
         + worldToMapX(pArea_of_interest_->polygon.points.at(i).x, *pMap_);
     }
 
-    if(i < pArea_of_interest_->polygon.points.size() && 
+    if(i < pArea_of_interest_->polygon.points.size() &&
        (!pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden) &&
        (!pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied) &&
        (pTargets_with_info_fix_->at(cell_in_vector_coordinates).map_data > -1) )
@@ -681,10 +688,10 @@ void particle::updateTargetsInfo(size_t sensor_index)
   double y_max = mapToWorldY(pMap_->info.height, *pMap_);
 
   // initialize index variables
-  uint32_t top_index; 
-  uint32_t left_index; 
-  uint32_t bottom_index; 
-  uint32_t right_index; 
+  uint32_t top_index;
+  uint32_t left_index;
+  uint32_t bottom_index;
+  uint32_t right_index;
 
   // initialize sensor_kite to approximate the sensors' FOV
   geometry_msgs::Polygon sensor_kite;
@@ -773,8 +780,8 @@ void particle::updateTargetsInfo(size_t sensor_index)
           }
         }
       }
-    } 
-  } 
+    }
+  }
 }
 
 //function to update the targets_with_info variable with raytracing (lookup table)
@@ -834,7 +841,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
       lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell).y;
 
       //absolute x and y map coordinates of the current cell
-      x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;        
+      x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;
       y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
 
       int cell_in_vector_coordinates = y * pMap_->info.width + x;
@@ -865,7 +872,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
               {
                 // now the given target is covered by multiple sensors
                 targets_with_info_var_.at(cell_in_vector_coordinates).multiple_covered = true;
-              }            
+              }
               multiple_coverage_++;
             }
           }
@@ -902,11 +909,11 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
     if((cell != sensors_.at(sensor_index).getLookupTable()->at(ray).size()-1) && (cell != 0))
     {
       lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).x;
-      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).y; 
+      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).y;
     }
 
     //absolute x and y map coordinates of the last non-occupied cell
-    x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;        
+    x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;
     y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
 
     //update endpoint
@@ -949,6 +956,7 @@ void particle::updateTargetsInfoRaytracing(size_t sensor_index)
     }
   }
 }
+
 
 // function to calculate the actual and personal best coverage
 void particle::calcCoverage()
@@ -1030,7 +1038,7 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
   dummy_pose2D.x = new_pose_candidate.position.x;
   dummy_pose2D.y = new_pose_candidate.position.y;
   dummy_pose2D.theta = tf::getYaw(new_pose_candidate.orientation);
-  
+
   if(pointInPolygon(dummy_pose2D, pArea_of_interest_->polygon) == 0)
   {
     // the pose candidate is not within the area of interest
@@ -1038,20 +1046,20 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
   }
   else
   {
-    // checking if pose candidate is within the forbidden area or not
-    if (pointInPolygon(dummy_pose2D, pForbidden_poly_->polygon) <= 0)
-    {
-      // the pose candidate is not within the forbidden area, so we can continue
-      pose_x_index = worldToMapX(new_pose_candidate.position.x, *pMap_);
-      pose_y_index = worldToMapY(new_pose_candidate.position.y, *pMap_);
+    pose_x_index = worldToMapX(new_pose_candidate.position.x, *pMap_);
+    pose_y_index = worldToMapY(new_pose_candidate.position.y, *pMap_);
 
-      if(pose_y_index * pMap_->info.width + pose_x_index >= pTargets_with_info_fix_->size())
-      { 
-        // indices are out of bounds
-        result = false;
-      }
-      else
+    if(pose_y_index * pMap_->info.width + pose_x_index >= pTargets_with_info_fix_->size())
+    {
+      // indices are out of bounds
+      result = false;
+    }
+    else
+    {
+      // checking if pose candidate is within the forbidden area or not
+      if(!pTargets_with_info_fix_->at(pose_y_index * pMap_->info.width + pose_x_index).forbidden)
       {
+        // the pose candidate is not within the forbidden area, so we can continue
         if(pTargets_with_info_fix_->at(pose_y_index * pMap_->info.width + pose_x_index).occupied)
         {
           // the pose candidate is within the area of interest
@@ -1064,11 +1072,11 @@ bool particle::newPositionAccepted(geometry_msgs::Pose new_pose_candidate)
           result = true;
         }
       }
-    }
-    else
-    {
-      // the pose candidate is within the forbidden area
-      result = false;
+      else
+      {
+        // the pose candidate is within the forbidden area
+        result = false;
+      }
     }
   }
 
@@ -1100,8 +1108,8 @@ unsigned int particle::findFarthestUncoveredTarget(size_t sensor_index)
 
   for(size_t i = 0; i < pTargets_with_info_fix_->size(); i++)
   {
-    if( (!targets_with_info_var_.at(i).covered) && 
-        (pTargets_with_info_fix_->at(i).potential_target == 1) && 
+    if( (!targets_with_info_var_.at(i).covered) &&
+        (pTargets_with_info_fix_->at(i).potential_target == 1) &&
         (!pTargets_with_info_fix_->at(i).forbidden) )
     {
       // we found an uncovered target which is not forbidden, check if this is further away from the sensor than the current maximum
@@ -1109,7 +1117,7 @@ unsigned int particle::findFarthestUncoveredTarget(size_t sensor_index)
       // calculate vector between sensor and target
       vec_sensor_target.x = pTargets_with_info_fix_->at(i).world_pos.x - sensor_pose.position.x;
       vec_sensor_target.y = pTargets_with_info_fix_->at(i).world_pos.y - sensor_pose.position.y;
-      vec_sensor_target.z = 0; 
+      vec_sensor_target.z = 0;
 
       actual_distance = vecNorm(vec_sensor_target);
 
@@ -1123,7 +1131,8 @@ unsigned int particle::findFarthestUncoveredTarget(size_t sensor_index)
   return result;
 }
 
-// helper function to find a random uncovered and non occupied target 
+
+// helper function to find a random uncovered and non occupied target
 // the return value is the index of that uncovered target
 unsigned int particle::randomFreeTarget()
 {
@@ -1132,15 +1141,15 @@ unsigned int particle::randomFreeTarget()
   unsigned int y = randomNumber(0, pMap_->info.height - 1);
   unsigned int cell_in_vector_coordinates = y * pMap_->info.width + x;
 
-  while(pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied 
-    || pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden 
+  while(pTargets_with_info_fix_->at(cell_in_vector_coordinates).occupied
+    || pTargets_with_info_fix_->at(cell_in_vector_coordinates).forbidden
     || targets_with_info_var_.at(cell_in_vector_coordinates).covered
     || pTargets_with_info_fix_->at(cell_in_vector_coordinates).map_data < 0 )
   {
     // the random cell was not accepted so check another
     x = randomNumber(0, pMap_->info.width - 1);
     y = randomNumber(0, pMap_->info.height - 1);
-    cell_in_vector_coordinates = y * pMap_->info.width + x;    
+    cell_in_vector_coordinates = y * pMap_->info.width + x;
   }
 
   return cell_in_vector_coordinates;
@@ -1201,7 +1210,7 @@ double particle::intersectionCalculation(double v1, double v2, double x1, double
 {
   // initialize workspace
   double result = 0;
-  // without loss of generality we assume v1 to be nonzero 
+  // without loss of generality we assume v1 to be nonzero
   if(floor(x2*v1 - x1*v2) > 0.01)
   {
     result = (y1 / v1) - (x1 / v1)*( (y2 - y1 * (v2 / v1) ) / (x2 - x1 * (v2 / v1)) );
@@ -1223,7 +1232,7 @@ visualization_msgs::MarkerArray particle::getVisualizationMarkers()
     // copy over all markers
     for (unsigned int i = 0; i < tmp.markers.size(); i++)
       array.markers.push_back(tmp.markers.at(i));
-    
+
     id++;
   }
 
