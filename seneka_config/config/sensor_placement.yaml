@@ -7,7 +7,11 @@ max_sensor_range: 30.0 # in [m]
 #max_sensor_range: 4.0 # in [m]
 
 # opening angles for the sensors
-open_angle_1: 1.5708 # (=90*PI/180 deg) in [rad]
+#open_angle_1: 1.5708 # (=90*PI/180 deg) in [rad]
+#open_angle_2: 0.0 # in [rad]
+
+# opening angles for the sensors for Greedy Search algorithm
+open_angle_1: 0.7854 # (=45*PI/180 deg) in [rad]
 open_angle_2: 0.0 # in [rad]
 
 # maximal allowed linear velocity for each sensor

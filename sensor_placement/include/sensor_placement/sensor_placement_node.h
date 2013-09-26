@@ -100,6 +100,10 @@ private:
   // bool variable to check if an AoI was already received
   bool AoI_received_;
 
+
+  // bool variable to check if an forbidden area was already received
+  bool fa_received_;
+
   // bool variable to check if the targets were already taken from the map
   bool targets_saved_;
 
