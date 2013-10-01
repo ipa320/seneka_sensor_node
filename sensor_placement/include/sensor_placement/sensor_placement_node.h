@@ -211,7 +211,7 @@ public:
   ros::ServiceServer ss_start_PSO_;
   ros::ServiceServer ss_test_;
   ros::ServiceServer ss_start_GS_;
-
+  ros::ServiceServer ss_start_GS_with_offset_;
 
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
@@ -235,8 +235,11 @@ public:
   // function to get the current global best solution
   void getGlobalBest();
 
-  // get targets (GS_point_info for all points of interest for Greedy Searc
+  // get greedy search targets
   bool getGSTargets();
+
+  // get greedy search targets also taking care of offset polygon
+  bool getGSTargets2();
 
   // function to initialize GS-Algorithm
   void initializeGS();
@@ -260,7 +263,10 @@ public:
   bool testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
   // callback function for the start GS service
-  bool startGSCallback(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res);
+  bool startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+
+  // callback function for the start GS service with offset parameter
+  bool startGSCallback2(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res);
 
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
