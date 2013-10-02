@@ -89,6 +89,10 @@ private:
   int target_num_;
   int covered_targets_num_;
 
+  // coverage data for all specified orientations at fixed point (modified in updateGSpointsRaytracing)
+  std::vector<int> coverage_vec_;
+
+
   // actual coverage
   double coverage_;
 
@@ -130,8 +134,14 @@ public:
   // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
   void greedyPlacement(size_t sensor_index);
 
+  // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
+  void newGreedyPlacement(size_t sensor_index);
+
   // function to update the GS_point_info with raytracing
   void updateGSpointsRaytracing(size_t sensor_index, int point_id, bool update_covered_info);
+
+  //function to get the coverage done by the sensor
+  int getCoverageRaytracing(size_t sensor_index);
 
   // function to calculate coverage achieved
   double calGScoverage();

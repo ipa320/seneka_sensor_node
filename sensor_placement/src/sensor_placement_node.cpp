@@ -1025,7 +1025,7 @@ void sensor_placement_node::runGS()
     start_time = ros::Time::now();
 
     //do Greedy Search and place sensor on the max coverage pose
-    GS_solution.greedyPlacement(sensor_index);
+    GS_solution.newGreedyPlacement(sensor_index);
     //publish the solution
     marker_array_pub_.publish(GS_solution.getVisualizationMarkers());
     //calculate the current coverage
