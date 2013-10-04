@@ -157,7 +157,7 @@ void greedySearch::greedyPlacement(size_t sensor_index)
 
 
 // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
-void greedySearch::newGreedyPlacement(size_t sensor_index)
+void greedySearch::newGreedyPlacement_old(size_t sensor_index)
 {
   unsigned int angle_resolution;
   unsigned int cell_search_resolution;
@@ -177,7 +177,7 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   std::vector<double> new_open_angles(2,0);
 
   //initilizations
-  gs_sector_r.at(0) = 0.5236; //  make this a parameter similar to openangles (a vector) -b-
+  gs_sector_r.at(0) = 0.019; //  make this a parameter similar to openangles (a vector) -b-
   gs_sector_r.at(1) = 0.0;
 
   angle_inc = (int) (gs_sector_r.at(0)*(180/PI));
@@ -187,6 +187,8 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   num_of_sectors = (orig_ang_r.at(0)-orig_ang_r.at(1))/(gs_sector_r.at(0)-gs_sector_r.at(1));
   if ((num_of_sectors>720) || (num_of_sectors==0))
     ROS_WARN("num_of_sectors is too high or invalid");
+
+  ROS_INFO_STREAM("num_of_sectors: " << num_of_sectors << " angle_inc: " <<angle_inc);
 
   //change the sensor open angles for search
   setOpenAngles(gs_sector_r);
@@ -266,6 +268,110 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   updateGSpointsRaytracing(sensor_index, placement_point_id, update_covered_info);
 
 }
+
+
+
+
+// function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
+void greedySearch::newGreedyPlacement(size_t sensor_index)
+{
+  unsigned int angle_resolution;
+  unsigned int cell_search_resolution;
+  unsigned int index;
+  unsigned int new_sum, max_sum, max_cov_ind;
+  double num_of_steps;
+  double max_cov_orientation;
+  int placement_point_id;
+  int fov_sectors;
+  int coverage;
+  int angle_inc;
+  bool update_covered_info;
+  geometry_msgs::Pose new_pose;
+  geometry_msgs::Pose placement_pose;
+  std::vector<double> orig_ang_r(2,0);
+  std::vector<double> gs_ang_r(2,0);
+
+  fov_sectors = 3;
+
+  //num_of_sectors = (orig_ang_r.at(0)-orig_ang_r.at(1))/(gs_sector_r.at(0)-gs_sector_r.at(1));
+  if ((fov_sectors>720) || (fov_sectors<=0))
+    ROS_WARN("fov_sectors is too high or invalid");
+
+  orig_ang_r = sensors_.at(sensor_index).getOpenAngles();
+
+  gs_ang_r[0] = ((orig_ang_r[0]-orig_ang_r[1])/fov_sectors)+orig_ang_r[1];
+  gs_ang_r[1] = orig_ang_r[1];
+
+  cell_search_resolution = getCellSearchResolution();
+
+  //change the sensor open angles for search
+  setOpenAngles(gs_ang_r);
+  //while searching, restrict updating of 'covered' info in updateGSpointsRaytracing
+  update_covered_info=false;
+  //reset previous max coverage information before searching for new position
+  resetMaxSensorCovInfo();
+  //reset max targets covered information
+  resetGSpool();
+
+  max_cov_ind=0;
+  max_sum=0;
+
+  //place the current sensor on all points in GS pool one by one and calculate coverge
+  for (size_t point_id=0; point_id<GS_pool_.size(); point_id=point_id+cell_search_resolution)
+  {
+    //clear data
+    coverage_vec_.clear();
+
+    //calculate world position of current point id and place sensor at that position
+    new_pose.position.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
+    new_pose.position.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
+    new_pose.position.z = 0;
+
+    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //change loop index to int -b-
+    {
+      //look around at all N non-overlapping sectors, N = fov_sectors
+      new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+      sensors_.at(sensor_index).setSensorPose(new_pose);
+      coverage = getCoverageRaytracing(sensor_index);         //get coverage at new_pose
+      coverage_vec_.push_back(coverage);                      //save in coverage in coverage_vec_
+    }
+
+    //coverage array at given point is computed for all non-overlapping sectors, now find N consecutive sectors that give maximum coverage. (N = fov_sectors)
+    for (size_t cov_vec_ind=0; cov_vec_ind<coverage_vec_.size(); cov_vec_ind++)
+    {
+      //compute consecutive sum of N elements from coverage_vec_[start] to coverage_vec_[end]
+      new_sum=0;
+      for (size_t k = 0; k<fov_sectors; k++)
+      {
+        new_sum = new_sum + coverage_vec_.at( (cov_vec_ind+k) % (coverage_vec_.size()) );
+      }
+
+      //if new sum is larger than max sum then save max pose info
+      if (new_sum>max_sum)
+      {
+        max_sum = new_sum;
+        new_pose.orientation = tf::createQuaternionMsgFromYaw(cov_vec_ind*gs_ang_r[0] + gs_ang_r[0]);
+        setMaxSensorCovPOSE(new_pose);
+        setMaxSensorCovPointID(point_id);
+      }
+    }
+  }
+
+  //search complete, so reset the sensor open angles to original values
+  setOpenAngles(orig_ang_r);
+  //Get maximum coverage pose
+  placement_pose = getMaxSensorCovPOSE();
+  //Get maximum coverage point ID
+  placement_point_id = getMaxSensorCovPointID();
+  //place the sensor at max coverage point
+  sensors_.at(sensor_index).setSensorPose(placement_pose);
+  //now update the 'covered' info
+  update_covered_info = true;
+  updateGSpointsRaytracing(sensor_index, placement_point_id, update_covered_info);
+
+}
+
+
 
 
 //function to get the coverage done by the sensor
