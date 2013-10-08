@@ -63,6 +63,8 @@ Visualization Manager:
         camera0: true
         camera1: true
         camera2: true
+        camera3: true
+        camera4: true
       Queue Size: 100
       Value: true
     - Alpha: 1
@@ -74,7 +76,7 @@ Visualization Manager:
       Value: true
     - Alpha: 1
       Class: rviz/Polygon
-      Color: 0; 0; 255
+      Color: 0; 255; 255
       Enabled: true
       Name: Polygon
       Topic: /offset_AoI
@@ -105,8 +107,8 @@ Visualization Manager:
       Scale: 5.60417
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 155.479
-      Y: 150.832
+      X: 138.706
+      Y: 142.713
     Saved: ~
 Window Geometry:
   Displays:
