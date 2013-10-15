@@ -83,8 +83,8 @@ namespace boost {
 		ar & m.dts;
 		ar & m.size;
 
-		// store data
-		for (int i = 0; i < m.size; ++i) {
+		// store data pointer into archive
+		for (int i = 0; i < m.size; i++) {
 			ar & m.data[i];
 		}
 
@@ -106,8 +106,11 @@ namespace boost {
 		ar & m.dts;
 		ar & m.size;
 
-		// load data
-		for (int i = 0; i < m.size; ++i) {
+		// allocate required memory for AVPacket data
+		m.data = (uint8_t *) malloc(m.size * sizeof(uint8_t));
+
+		// load data pointer from archive
+		for (int i = 0; i < m.size; i++) {
 			ar & m.data[i];
 		}
 
@@ -122,8 +125,7 @@ namespace boost {
 
 	}
 
-
-	// Contains the input file another AVPackets
+	// Contains the input file further AVPackets?
 	template<class Archive, class Stream, class Obj>
 	bool try_stream_next(Archive &ar, const Stream &s, Obj &o)
 	{
@@ -131,6 +133,7 @@ namespace boost {
 
 		// try to read data from archive file
 		try {
+
 			ar >> o;
 			success = true;
 		}

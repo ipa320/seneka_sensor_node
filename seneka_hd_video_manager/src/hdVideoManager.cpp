@@ -159,11 +159,14 @@ int connectToVideoStream(int argc, char **argv){
 
 	// Find the first video stream
 	videoStream=-1;
-	for(i=0; i<pFormatCtx->nb_streams; i++)
+	ROS_INFO("streams incl. in source: %d", pFormatCtx->nb_streams);
+	for(i=0; i<pFormatCtx->nb_streams; i++){
 		if(pFormatCtx->streams[i]->codec->codec_type==AVMEDIA_TYPE_VIDEO) {
 			videoStream=i;
 			break;
 		}
+	}
+
 	if(videoStream==-1)
 		return -1; // Didn't find a video stream
 
@@ -319,8 +322,10 @@ int main(int argc, char **argv)
 	ros::NodeHandle nHandler("HD_VIDEO_MANAGER");
 	fManager = new FrameManager();
 
-	// connect to HD stream and collect encoded frames
+	// connect to source and collect encoded frames
 	while(true){
+
+		ROS_INFO("Connecting to source ... ");
 		int statusInfo = connectToVideoStream(argc, argv);
 
 		// if input file is missing

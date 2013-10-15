@@ -207,11 +207,11 @@ void FrameManager::cacheFrame(AVPacket* packet){
 
 	std::vector<AVPacket>* currentCache = getCurrentCache();
 	currentCache->push_back(*packet);
-//	std::cout << "caching packet" << currentCache->size() << std::endl;
+	//	std::cout << "caching packet" << currentCache->size() << std::endl;
 
 	ausloeser++;
 
-	if(ausloeser == 1000)
+	if(ausloeser == 500)
 		createVideo();
 }
 
@@ -343,17 +343,21 @@ int FrameManager::createVideo(){
 	ROS_INFO("createVideo ...");
 
 	createVideoActive = true;
-
-	// create a videoRecorder instance
-	VideoRecorder* vRecoder = new VideoRecorder(vfr, videoCodec);
 	bool firstFrame = true;
-
 	/* start binary for video creation
 	 * selecting binaryFileIndex + 1 to get the oldest binary file,
 	 * which includes the first frame for the video creation
 	 */
 	int currentIndex = binaryFileIndex + 1;
 	int numBinaries = fpv/fpb;
+	FILE *outputFile;
+	char *outputFilename = "/tmp/output.mp4";
+	outputFile = fopen(outputFilename, "wb");
+	if (!outputFile) {
+		fprintf(stderr, "Could not open %s\n", outputFilename);
+		exit(1);
+	}
+	uint8_t endcode[] = { 0, 0, 1, 0xb7 };
 
 	// add all binaries which are required (numBinaries) into a video
 	for(int i=0; i < numBinaries; i++){
@@ -365,7 +369,6 @@ int FrameManager::createVideo(){
 			inputFileName << binaryFilePath << (currentIndex) << ".bin";
 			mutexID = currentIndex;
 			currentIndex++;
-
 		}
 		else{
 			// load currentIndex - numBinaries-1
@@ -376,9 +379,10 @@ int FrameManager::createVideo(){
 
 		// lock current binary file as input
 		binaryFileMutexes[mutexID]->lock();
-		// open inputFile
+
+		// open inputFile (binary)
 		std::ifstream ifs(inputFileName.str().c_str(), std::ios::in | std::ios::binary);
-		std::cout << inputFileName.str().c_str() << std::endl;
+
 		// scope is required to ensure archive and filtering stream buffer go out of scope
 		// before stream
 		{
@@ -388,23 +392,19 @@ int FrameManager::createVideo(){
 			//			in.push(ifs);
 
 			boost::archive::binary_iarchive ia(ifs);
-
 			bool hasContent = true;
 			while (hasContent)
 			{
-				AVPacket loadedFrame;
+				AVPacket loadedPacket;
 				if(firstFrame){
 					// try to read image from binary file
-					ROS_INFO(" DEBBUGGER 01");
-					boost::serialization::load(ia, loadedFrame, 1);
-					ROS_INFO(" DEBBUGGER 02");
-					hasContent = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
-					ROS_INFO(" DEBBUGGER 022");
+					hasContent = boost::serialization::try_stream_next(ia, ifs, loadedPacket);
 					if (hasContent == true){
+						// TODO: firstframe variable isnt needed any more because no videorecoder is used
+						firstFrame = false;
 
 						// TODO: Add loaddedFrame to videoContainer or cache it in a vector
-
-						firstFrame = false;
+						fwrite(loadedPacket.data, 1, loadedPacket.size, outputFile);
 
 						// display current frame
 						if(showFrame){
@@ -415,19 +415,21 @@ int FrameManager::createVideo(){
 				}
 				else{
 					// try to read image from binary file
-					hasContent = boost::serialization::try_stream_next(ia, ifs, loadedFrame);
+					hasContent = boost::serialization::try_stream_next(ia, ifs, loadedPacket);
+
 					// add frame to video
 					if (hasContent == true){
 
 						// TODO: Add loaddedFrame to videoContainer or cache it in a vector
+						fwrite(loadedPacket.data, 1, loadedPacket.size, outputFile);
 
 						// display current frame
 						if(showFrame){
 							// TODO: if requiered add visualization
 						}
 					}
+
 				}
-				ROS_INFO(" DEBBUGGER 03");
 			}
 			ifs.close();
 			// unlock current binary file
@@ -436,6 +438,9 @@ int FrameManager::createVideo(){
 	}
 
 	// TODO: release video
+    /* add sequence end code to have a real mpeg file */
+    fwrite(endcode, 1, sizeof(endcode), outputFile);
+    fclose(outputFile);
 
 	createVideoActive = false;
 	ROS_INFO("finished createVideo ...");
@@ -444,81 +449,81 @@ int FrameManager::createVideo(){
 }
 
 void FrameManager::displayFrame(AVPacket* mat){
-//	cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
-//	cv::imshow( "Display window", *mat );
-//	cv::waitKey(1);
+	//	cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
+	//	cv::imshow( "Display window", *mat );
+	//	cv::waitKey(1);
 }
 
 void FrameManager::startSnapshots(int interval){
 
-//	if(!isSnapShotRunning()){
-//		snapshotThread = boost::thread(boost::bind(&FrameManager::createSnapshots, this, interval));
-//		snapshotRunning = true;
-//	}
+	//	if(!isSnapShotRunning()){
+	//		snapshotThread = boost::thread(boost::bind(&FrameManager::createSnapshots, this, interval));
+	//		snapshotRunning = true;
+	//	}
 }
 
 void FrameManager::stopSnapshots(){
 	// call interrupt point of snapshotThread
-//	snapshotThread.interrupt();
+	//	snapshotThread.interrupt();
 }
 
 void FrameManager::createSnapshots(int interval){
-//	ROS_INFO("Starting creating snapshots ...");
-//	while(true){
-//
-//		std::stringstream imgFile;
-//		std::vector<AVPacket>* currentCache = getCurrentCache();
-//
-//		if(currentCache->size() > 0){
-//			AVPacket img = currentCache->at(currentCache->size()-1);
-//
-//			// file name and path to the image files
-//			// file name is the current system time stamp
-//			imgFile << outputFolder << ros::Time::now() << ".jpg";
-//
-//			// create JPEG image
-//			cv::imwrite(imgFile.str(), img);
-//
-//			// display current frame
-//			if(showFrame && stateMachine != LIVE_STREAM)
-//				displayFrame(&img);
-//
-//			// try to set thread to sleep or if an interrupt occurred stop thread
-//			try{
-//				// set thread sleeping for the chosen interval
-//				boost::this_thread::sleep(boost::posix_time::milliseconds(interval*1000));
-//			}
-//			catch(boost::thread_interrupted const& )
-//			{
-//				// defined actions if an interrupt occurred
-//				snapshotRunning = false;
-//				ROS_INFO("Stopped creating snapshots ...");
-//				break;
-//			}
-//		}
-//	}
+	//	ROS_INFO("Starting creating snapshots ...");
+	//	while(true){
+	//
+	//		std::stringstream imgFile;
+	//		std::vector<AVPacket>* currentCache = getCurrentCache();
+	//
+	//		if(currentCache->size() > 0){
+	//			AVPacket img = currentCache->at(currentCache->size()-1);
+	//
+	//			// file name and path to the image files
+	//			// file name is the current system time stamp
+	//			imgFile << outputFolder << ros::Time::now() << ".jpg";
+	//
+	//			// create JPEG image
+	//			cv::imwrite(imgFile.str(), img);
+	//
+	//			// display current frame
+	//			if(showFrame && stateMachine != LIVE_STREAM)
+	//				displayFrame(&img);
+	//
+	//			// try to set thread to sleep or if an interrupt occurred stop thread
+	//			try{
+	//				// set thread sleeping for the chosen interval
+	//				boost::this_thread::sleep(boost::posix_time::milliseconds(interval*1000));
+	//			}
+	//			catch(boost::thread_interrupted const& )
+	//			{
+	//				// defined actions if an interrupt occurred
+	//				snapshotRunning = false;
+	//				ROS_INFO("Stopped creating snapshots ...");
+	//				break;
+	//			}
+	//		}
+	//	}
 }
 
 void FrameManager::startLiveStream(){
-//	ROS_INFO("Starting live stream mode ...");
-//
-//	if(createVideoActive){
-//		ROS_WARN("State change not possible ... creating video at the moment !!");
-//	}
-//	else{
-//		// initialize the LIVE_STREAM state
-//		stateMachine = LIVE_STREAM;
-//		liveStreamRunning = true;
-//
-//		// TODO: Impl. video coding for live stream
-//	}
+	//	ROS_INFO("Starting live stream mode ...");
+	//
+	//	if(createVideoActive){
+	//		ROS_WARN("State change not possible ... creating video at the moment !!");
+	//	}
+	//	else{
+	//		// initialize the LIVE_STREAM state
+	//		stateMachine = LIVE_STREAM;
+	//		liveStreamRunning = true;
+	//
+	//		// TODO: Impl. video coding for live stream
+	//	}
 }
 
 void FrameManager::stopLiveStream(){
-//	ROS_INFO("Stopped live stream mode ...");
-//
-//	stateMachine = ON_DEMAND;
-//	liveStreamRunning = false;
+	//	ROS_INFO("Stopped live stream mode ...");
+	//
+	//	stateMachine = ON_DEMAND;
+	//	liveStreamRunning = false;
 }
 
 
