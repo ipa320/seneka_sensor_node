@@ -135,9 +135,6 @@ public:
   void greedyPlacement(size_t sensor_index);
 
   // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
-  void newGreedyPlacement_old(size_t sensor_index);
-
-  // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
   void newGreedyPlacement(size_t sensor_index);
 
   // function to update the GS_point_info with raytracing

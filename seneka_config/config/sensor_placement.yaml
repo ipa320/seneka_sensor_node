@@ -39,6 +39,6 @@ c2: 1.49445
 c3: 1.49445
 
 # parameter for the angle resolution to be used in Greedy Search Algorithm
-angle_resolution: 30
+angle_resolution: 15
 # parameter for the cell search resolution to be used in Greedy Search Algorithm
 cell_search_resolution: 300
