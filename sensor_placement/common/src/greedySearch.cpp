@@ -122,7 +122,7 @@ void greedySearch::greedyPlacement(size_t sensor_index)
   resetGSpool();
 
   //place the current sensor on all points in GS pool one by one and calculate coverge
-  for (size_t point_id=0; point_id<GS_pool_.size(); point_id=point_id+cell_search_resolution)
+  for (size_t point_id=0; point_id<GS_pool_.size(); point_id++)
   {
     //first calculate world position of current point id and place sensor at that position
     new_pose.position.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
@@ -198,7 +198,7 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   max_sum=0;
 
   //place the current sensor on all points in GS pool one by one and calculate coverge
-  for (size_t point_id=0; point_id<GS_pool_.size(); point_id=point_id+cell_search_resolution)
+  for (size_t point_id=0; point_id<GS_pool_.size(); point_id=point_id++)
   {
     //clear data
     coverage_vec_.clear();

@@ -569,6 +569,8 @@ bool sensor_placement_node::getGSTargets()
   // initialize result
   bool result = false;
 
+  unsigned int GS_offset = 53;
+
   if(map_received_ == true)
   {
     // only if we received a map, we can get targets
@@ -594,24 +596,27 @@ bool sensor_placement_node::getGSTargets()
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
-            if (fa_received_==true)
+            if ((i%GS_offset==0) && (j%GS_offset==0))
             {
-              if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+              if (fa_received_==true)
               {
-                // points outside the forbidden area, and not occupied are of interest for greedy search
+                if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+                {
+                  // points outside the forbidden area, and not occupied are of interest for greedy search
+                  dummy_GS_point_info.p.x=i;
+                  dummy_GS_point_info.p.y=j;
+                  dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point_info);
+                }
+              }
+              else
+              {
+                // points that are not occupied, are of interest for greedy search
                 dummy_GS_point_info.p.x=i;
                 dummy_GS_point_info.p.y=j;
                 dummy_GS_point_info.max_targets_covered=0;
                 GS_pool_.push_back(dummy_GS_point_info);
               }
-            }
-            else
-            {
-              // points that are not occupied, are of interest for greedy search
-              dummy_GS_point_info.p.x=i;
-              dummy_GS_point_info.p.y=j;
-              dummy_GS_point_info.max_targets_covered=0;
-              GS_pool_.push_back(dummy_GS_point_info);
             }
 
             dummy_point_info.occupied = false;
@@ -646,27 +651,30 @@ bool sensor_placement_node::getGSTargets()
           {
             dummy_point_info.potential_target = 1;
 
-            if (fa_received_ == true)
+            if ((i%GS_offset==0) && (j%GS_offset==0))
             {
-              if((pointInPolygon(world_Coord, forbidden_area_.polygon) == 0) &&
-                 (map_.data.at( j * map_.info.width + i) == 0))
+              if (fa_received_ == true)
               {
-                // points outside the forbidden_area_ & not occupied are of interest for greedy search
-                dummy_GS_point_info.p.x=i;
-                dummy_GS_point_info.p.y=j;
-                dummy_GS_point_info.max_targets_covered=0;
-                GS_pool_.push_back(dummy_GS_point_info);
+                if((pointInPolygon(world_Coord, forbidden_area_.polygon) == 0) &&
+                   (map_.data.at( j * map_.info.width + i) == 0))
+                {
+                  // points outside the forbidden_area_ & not occupied are of interest for greedy search
+                  dummy_GS_point_info.p.x=i;
+                  dummy_GS_point_info.p.y=j;
+                  dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point_info);
+                }
               }
-            }
-            else
-            {
-              if(map_.data.at( j * map_.info.width + i) == 0)
+              else
               {
-                // points that are not occupied, are of interest for greedy search
-                dummy_GS_point_info.p.x=i;
-                dummy_GS_point_info.p.y=j;
-                dummy_GS_point_info.max_targets_covered=0;
-                GS_pool_.push_back(dummy_GS_point_info);
+                if(map_.data.at( j * map_.info.width + i) == 0)
+                {
+                  // points that are not occupied, are of interest for greedy search
+                  dummy_GS_point_info.p.x=i;
+                  dummy_GS_point_info.p.y=j;
+                  dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point_info);
+                }
               }
             }
 
@@ -682,27 +690,30 @@ bool sensor_placement_node::getGSTargets()
           {
             dummy_point_info.potential_target = 0;
 
-            if (fa_received_ == true)
+            if ((i%GS_offset==0) && (j%GS_offset==0))
             {
-              if((pointInPolygon(world_Coord, forbidden_area_.polygon) == 0) &&
-                 (map_.data.at( j * map_.info.width + i) == 0))
+              if (fa_received_ == true)
               {
-                // points outside the forbidden_area_ & not occupied are of interest for greedy search
-                dummy_GS_point_info.p.x=i;
-                dummy_GS_point_info.p.y=j;
-                dummy_GS_point_info.max_targets_covered=0;
-                GS_pool_.push_back(dummy_GS_point_info);
+                if((pointInPolygon(world_Coord, forbidden_area_.polygon) == 0) &&
+                   (map_.data.at( j * map_.info.width + i) == 0))
+                {
+                  // points outside the forbidden_area_ & not occupied are of interest for greedy search
+                  dummy_GS_point_info.p.x=i;
+                  dummy_GS_point_info.p.y=j;
+                  dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point_info);
+                }
               }
-            }
-            else
-            {
-              if(map_.data.at( j * map_.info.width + i) == 0)
+              else
               {
-                // points that are not occupied, are of interest for greedy search
-                dummy_GS_point_info.p.x=i;
-                dummy_GS_point_info.p.y=j;
-                dummy_GS_point_info.max_targets_covered=0;
-                GS_pool_.push_back(dummy_GS_point_info);
+                if(map_.data.at( j * map_.info.width + i) == 0)
+                {
+                  // points that are not occupied, are of interest for greedy search
+                  dummy_GS_point_info.p.x=i;
+                  dummy_GS_point_info.p.y=j;
+                  dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point_info);
+                }
               }
             }
 
@@ -736,6 +747,7 @@ bool sensor_placement_node::getGSTargets2()
 
   // initialize result
   bool result = false;
+  unsigned int GS_offset = 20;
 
   if(map_received_ == true)
   {
@@ -762,24 +774,27 @@ bool sensor_placement_node::getGSTargets2()
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
-            if (fa_received_==true)
+            if ((i%GS_offset==0) && (j%GS_offset==0))
             {
-              if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+              if (fa_received_==true)
               {
-                // points outside the forbidden area, and not occupied are of interest for greedy search
+                if(pointInPolygon(world_Coord, forbidden_area_.polygon) == 0)
+                {
+                  // points outside the forbidden area, and not occupied are of interest for greedy search
+                  dummy_GS_point_info.p.x=i;
+                  dummy_GS_point_info.p.y=j;
+                  dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point_info);
+                }
+              }
+              else
+              {
+                // points not occupied, are of interest for greedy search
                 dummy_GS_point_info.p.x=i;
                 dummy_GS_point_info.p.y=j;
                 dummy_GS_point_info.max_targets_covered=0;
                 GS_pool_.push_back(dummy_GS_point_info);
               }
-            }
-            else
-            {
-              // points not occupied, are of interest for greedy search
-              dummy_GS_point_info.p.x=i;
-              dummy_GS_point_info.p.y=j;
-              dummy_GS_point_info.max_targets_covered=0;
-              GS_pool_.push_back(dummy_GS_point_info);
             }
 
             dummy_point_info.occupied = false;
@@ -840,29 +855,32 @@ bool sensor_placement_node::getGSTargets2()
           {
             dummy_point_info.potential_target = 1;
 
-            if (fa_received_ == true)
+            if ((i%GS_offset==0) && (j%GS_offset==0))
             {
-              if((pointInPolygon(world_Coord, offset_AoI.polygon) == 0) &&
-                 (pointInPolygon(world_Coord, forbidden_area_.polygon) == 0) &&
-                 (map_.data.at( j * map_.info.width + i) == 0))
+              if (fa_received_ == true)
               {
-                // points outside the offset_AoI & forbidden_area_ & not occupied are of interest for greedy search
-                dummy_GS_point_info.p.x=i;
-                dummy_GS_point_info.p.y=j;
-                dummy_GS_point_info.max_targets_covered=0;
-                GS_pool_.push_back(dummy_GS_point_info);
+                if((pointInPolygon(world_Coord, offset_AoI.polygon) == 0) &&
+                   (pointInPolygon(world_Coord, forbidden_area_.polygon) == 0) &&
+                   (map_.data.at( j * map_.info.width + i) == 0))
+                {
+                  // points outside the offset_AoI & forbidden_area_ & not occupied are of interest for greedy search
+                  dummy_GS_point_info.p.x=i;
+                  dummy_GS_point_info.p.y=j;
+                  dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point_info);
+                }
               }
-            }
-            else
-            {
-              if((pointInPolygon(world_Coord, offset_AoI.polygon) == 0) &&
-                 (map_.data.at( j * map_.info.width + i) == 0))
+              else
               {
-                // points outside the offset_AoI & not occupied are of interest for greedy search
-                dummy_GS_point_info.p.x=i;
-                dummy_GS_point_info.p.y=j;
-                dummy_GS_point_info.max_targets_covered=0;
-                GS_pool_.push_back(dummy_GS_point_info);
+                if((pointInPolygon(world_Coord, offset_AoI.polygon) == 0) &&
+                   (map_.data.at( j * map_.info.width + i) == 0))
+                {
+                  // points outside the offset_AoI & not occupied are of interest for greedy search
+                  dummy_GS_point_info.p.x=i;
+                  dummy_GS_point_info.p.y=j;
+                  dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point_info);
+                }
               }
             }
 
@@ -878,29 +896,32 @@ bool sensor_placement_node::getGSTargets2()
           {
             dummy_point_info.potential_target = 0;
 
-            if (fa_received_ == true)
+            if ((i%GS_offset==0) && (j%GS_offset==0))
             {
-              if((pointInPolygon(world_Coord, offset_AoI.polygon) == 0) &&
-                 (pointInPolygon(world_Coord, forbidden_area_.polygon) == 0) &&
-                 (map_.data.at( j * map_.info.width + i) == 0))
+              if (fa_received_ == true)
               {
-                // points outside the offset_AoI & forbidden_area_ & not occupied are of interest for greedy search
-                dummy_GS_point_info.p.x=i;
-                dummy_GS_point_info.p.y=j;
-                dummy_GS_point_info.max_targets_covered=0;
-                GS_pool_.push_back(dummy_GS_point_info);
+                if((pointInPolygon(world_Coord, offset_AoI.polygon) == 0) &&
+                   (pointInPolygon(world_Coord, forbidden_area_.polygon) == 0) &&
+                   (map_.data.at( j * map_.info.width + i) == 0))
+                {
+                  // points outside the offset_AoI & forbidden_area_ & not occupied are of interest for greedy search
+                  dummy_GS_point_info.p.x=i;
+                  dummy_GS_point_info.p.y=j;
+                  dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point_info);
+                }
               }
-            }
-            else
-            {
-              if((pointInPolygon(world_Coord, offset_AoI.polygon) == 0) &&
-                 (map_.data.at( j * map_.info.width + i) == 0))
+              else
               {
-                // points outside the offset_AoI & not occupied are of interest for greedy search
-                dummy_GS_point_info.p.x=i;
-                dummy_GS_point_info.p.y=j;
-                dummy_GS_point_info.max_targets_covered=0;
-                GS_pool_.push_back(dummy_GS_point_info);
+                if((pointInPolygon(world_Coord, offset_AoI.polygon) == 0) &&
+                   (map_.data.at( j * map_.info.width + i) == 0))
+                {
+                  // points outside the offset_AoI & not occupied are of interest for greedy search
+                  dummy_GS_point_info.p.x=i;
+                  dummy_GS_point_info.p.y=j;
+                  dummy_GS_point_info.max_targets_covered=0;
+                  GS_pool_.push_back(dummy_GS_point_info);
+                }
               }
             }
 
