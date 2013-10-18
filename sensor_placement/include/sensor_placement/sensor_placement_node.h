@@ -122,6 +122,9 @@ private:
   // opening angles for sensors
   std::vector<double> open_angles_;
 
+  // opening angles of FOV slice for greedy search
+  std::vector<double> slice_open_angles_;
+
   // maximal allowed linear velocity for each sensor in particles
   double max_lin_vel_;
 
@@ -170,9 +173,9 @@ private:
   // offset value for offsetAoI function
   double clipper_offset_value_;
 
-  // parameters for angle and cell resolution in Greedy Search
+  // angle[in degrees] and grid_unit_size[in meters] parameters for Greedy Search
   int angle_resolution_;
-  int cell_search_resolution_;
+  double grid_unit_size_;
 
   // PSO parameter constants
   double PSO_param_1_;

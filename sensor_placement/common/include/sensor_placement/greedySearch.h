@@ -68,6 +68,7 @@
 // external includes
 #include <sensor_model.h>
 #include <seneka_utilities.h>
+#include <math.h>
 
 using namespace seneka_utilities;
 
@@ -81,6 +82,9 @@ private:
   // point info vectors
   std::vector<point_info> * pPoint_info_vec_;
   std::vector<GS_point_info> GS_pool_;
+
+  // opening angles of FOV slice
+  std::vector<double> slice_open_angles_;
 
   // number of sensors
   int sensor_num_;
@@ -164,6 +168,9 @@ public:
   // function to get maximum sensor coverage pose
   geometry_msgs::Pose getMaxSensorCovPOSE();
 
+  // function to get sensor's FOV slice open angles
+  std::vector<double> getSliceOpenAngles();
+
 
   // ************************ setter functions ************************
 
@@ -199,6 +206,9 @@ public:
 
   // function that sets the opening angles for each sensor
   bool setOpenAngles(std::vector<double> new_angles);
+
+  // function that sets sensor's FOV slice open anlges
+  bool setSliceOpenAngles(std::vector<double> new_angles);
 
   // function that sets the range for each sensor
   void setRange(double new_range);

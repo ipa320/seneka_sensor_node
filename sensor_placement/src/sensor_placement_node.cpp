@@ -139,6 +139,24 @@ void sensor_placement_node::getParams()
 
   open_angles_.push_back(open_angle_2);
 
+  double slice_open_angle_1, slice_open_angle_2;
+
+  if(!pnh_.hasParam("slice_open_angle_1"))
+  {
+    ROS_WARN("No parameter slice_open_angle_1 on parameter server. Using default [1.5708 in rad]");
+  }
+  pnh_.param("slice_open_angle_1",slice_open_angle_1,1.5708);
+
+  slice_open_angles_.push_back(slice_open_angle_1);
+
+  if(!pnh_.hasParam("slice_open_angle_2"))
+  {
+    ROS_WARN("No parameter slice_open_angle_2 on parameter server. Using default [0.0 in rad]");
+  }
+  pnh_.param("slice_open_angle_2",slice_open_angle_2,0.0);
+
+  slice_open_angles_.push_back(slice_open_angle_2);
+
   if(!pnh_.hasParam("max_linear_sensor_velocity"))
   {
     ROS_WARN("No parameter max_linear_sensor_velocity on parameter server. Using default [1.0]");
@@ -195,11 +213,11 @@ void sensor_placement_node::getParams()
   }
   pnh_.param("angle_resolution",angle_resolution_,90);
 
-  if(!pnh_.hasParam("cell_search_resolution"))
+  if(!pnh_.hasParam("grid_unit_size"))
   {
-    ROS_WARN("No parameter cell_search_resolution on parameter server. Using default [100]");
+    ROS_WARN("No parameter grid_unit_size on parameter server. Using default [5.0 in m]");
   }
-  pnh_.param("cell_search_resolution",cell_search_resolution_,100);
+  pnh_.param("grid_unit_size",grid_unit_size_, 5.0);
 }
 
 
@@ -565,11 +583,18 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 // get greedy search targets
 bool sensor_placement_node::getGSTargets()
 {
+  //define cell offset to get desired grid of potential GS targets
+
+  ROS_INFO_STREAM("grid_unit_size_ " <<grid_unit_size_);
+  ROS_INFO_STREAM("map_.info.resolution " <<map_.info.resolution);
+
+  unsigned int cell_offset = floor((grid_unit_size_*10000)/(map_.info.resolution*10000)); //-b- how to avoid rounding error ?
+  //modify for case whn grid unit size is less than resolution -b-
+
+  ROS_INFO_STREAM("cell offset is " << cell_offset); //-b-
 
   // initialize result
   bool result = false;
-
-  unsigned int GS_offset = 53;
 
   if(map_received_ == true)
   {
@@ -596,7 +621,7 @@ bool sensor_placement_node::getGSTargets()
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
-            if ((i%GS_offset==0) && (j%GS_offset==0))
+            if ((i%cell_offset==0) && (j%cell_offset==0))
             {
               if (fa_received_==true)
               {
@@ -651,7 +676,7 @@ bool sensor_placement_node::getGSTargets()
           {
             dummy_point_info.potential_target = 1;
 
-            if ((i%GS_offset==0) && (j%GS_offset==0))
+            if ((i%cell_offset==0) && (j%cell_offset==0))
             {
               if (fa_received_ == true)
               {
@@ -690,7 +715,7 @@ bool sensor_placement_node::getGSTargets()
           {
             dummy_point_info.potential_target = 0;
 
-            if ((i%GS_offset==0) && (j%GS_offset==0))
+            if ((i%cell_offset==0) && (j%cell_offset==0))
             {
               if (fa_received_ == true)
               {
@@ -745,9 +770,13 @@ bool sensor_placement_node::getGSTargets2()
 
   //****************** get targets *******************
 
+  //define cell offset to get desired grid of potential GS targets
+  unsigned int cell_offset = (unsigned int) (floor(grid_unit_size_/map_.info.resolution));
+
+  ROS_INFO_STREAM("cell offset is " << cell_offset);
+
   // initialize result
   bool result = false;
-  unsigned int GS_offset = 20;
 
   if(map_received_ == true)
   {
@@ -774,7 +803,7 @@ bool sensor_placement_node::getGSTargets2()
 
           if(map_.data.at( j * map_.info.width + i) == 0)
           {
-            if ((i%GS_offset==0) && (j%GS_offset==0))
+            if ((i%cell_offset==0) && (j%cell_offset==0))
             {
               if (fa_received_==true)
               {
@@ -855,7 +884,7 @@ bool sensor_placement_node::getGSTargets2()
           {
             dummy_point_info.potential_target = 1;
 
-            if ((i%GS_offset==0) && (j%GS_offset==0))
+            if ((i%cell_offset==0) && (j%cell_offset==0))
             {
               if (fa_received_ == true)
               {
@@ -896,7 +925,7 @@ bool sensor_placement_node::getGSTargets2()
           {
             dummy_point_info.potential_target = 0;
 
-            if ((i%GS_offset==0) && (j%GS_offset==0))
+            if ((i%cell_offset==0) && (j%cell_offset==0))
             {
               if (fa_received_ == true)
               {
@@ -1022,12 +1051,13 @@ void sensor_placement_node::initializeGS()
   GS_solution.setMap(map_);
   GS_solution.setAreaOfInterest(area_of_interest_);
   GS_solution.setOpenAngles(open_angles_);
+  GS_solution.setSliceOpenAngles(slice_open_angles_);
   GS_solution.setRange(sensor_range_);
   GS_solution.setPointInfoVec(point_info_vec_, target_num_);
   GS_solution.setGSpool(GS_pool_);
   GS_solution.setLookupTable(& lookup_table_);
   GS_solution.setAngleResolution(angle_resolution_);
-  GS_solution.setCellSearchResolution(cell_search_resolution_);
+//  GS_solution.setCellSearchResolution(cell_search_resolution_);
 }
 
 
