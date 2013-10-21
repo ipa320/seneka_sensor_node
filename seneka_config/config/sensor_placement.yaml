@@ -11,7 +11,7 @@ open_angle_1: 1.5708 # (=90*PI/180 deg) in [rad]
 open_angle_2: 0.0 # in [rad]
 
 # opening angles for the "sliced fov" for Greedy Search algorithm
-slice_open_angle_1: 0.7854 # (=45*PI/180 deg) in [rad]
+slice_open_angle_1: 0.26180 # (=15*PI/180 deg) in [rad]
 slice_open_angle_2: 0.0 # in [rad]
 
 # maximal allowed linear velocity for each sensor

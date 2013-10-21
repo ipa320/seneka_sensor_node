@@ -67,6 +67,7 @@ sensor_placement_node::sensor_placement_node()
   // ros publishers
   nav_path_pub_ = nh_.advertise<nav_msgs::Path>("out_path",1,true);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
+  GS_targets_grid_pub_ = nh_.advertise<visualization_msgs::Marker>("GS_targets_grid",1,true);
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
   map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("out_cropped_map_metadata",1,true);
   offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("offset_AoI", 1,true);
@@ -1058,6 +1059,17 @@ void sensor_placement_node::initializeGS()
   GS_solution.setLookupTable(& lookup_table_);
   GS_solution.setAngleResolution(angle_resolution_);
 //  GS_solution.setCellSearchResolution(cell_search_resolution_);
+
+  if (!GS_pool_.empty())
+  {
+    //publish the GS_targaets grid
+    GS_targets_grid_pub_.publish(GS_solution.getVisualizationMarkersGrid());
+  }
+    else
+  {
+    ROS_ERROR("No targets in GS_pool_");
+  }
+
 }
 
 

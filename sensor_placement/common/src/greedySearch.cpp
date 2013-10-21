@@ -990,5 +990,59 @@ visualization_msgs::MarkerArray greedySearch::getVisualizationMarkers()
 }
 
 
+// returns the visualization markers of points in GS_pool_
+visualization_msgs::Marker greedySearch::getVisualizationMarkersGrid()
+{
+
+//  visualization_msgs::MarkerArray array;
+  visualization_msgs::Marker t_points;
+  geometry_msgs::Point p;
+  size_t GS_poolsize = GS_pool_.size();
+
+  // setup standard stuff
+  t_points.header.frame_id = "/map";
+  t_points.header.stamp = ros::Time();
+  t_points.ns = "GS_targets_grid";
+  t_points.action = visualization_msgs::Marker::ADD;
 
 
+/*  t_points.pose.position.x = pMap_->info.origin.position.x;
+  t_points.pose.position.y = pMap_->info.origin.position.y;
+  t_points.pose.position.z = 0;
+  t_points.pose.orientation.x = 0.0;
+  t_points.pose.orientation.y = 0.0;
+  t_points.pose.orientation.z = 0.0;
+  t_points.pose.orientation.w = 1.0;
+*/
+
+  t_points.pose.orientation.w = 1.0;
+
+
+  t_points.id = 0;
+
+  t_points.type = visualization_msgs::Marker::POINTS;
+
+  t_points.scale.x = 1;
+  t_points.scale.x = 1;
+ // t_points.scale.z = 1;
+
+  t_points.color.a = 1.0;
+  t_points.color.r = 0.0;
+  t_points.color.g = 1.0;
+  t_points.color.b = 0.0;
+
+  for (size_t point_id=0; point_id<GS_poolsize; point_id=point_id++)  //modify to use iterators -b-
+  {
+
+   // p.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
+  //  p.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
+
+    p.x = GS_pool_[point_id].p.x;
+    p.y = GS_pool_[point_id].p.y;
+
+    t_points.points.push_back(p);
+
+  }
+
+  return t_points;
+}

@@ -206,6 +206,7 @@ public:
 
   // declaration of ros publishers
   ros::Publisher marker_array_pub_;
+  ros::Publisher GS_targets_grid_pub_;
   ros::Publisher map_pub_, map_meta_pub_;
   ros::Publisher nav_path_pub_;
   ros::Publisher offset_AoI_pub_;
