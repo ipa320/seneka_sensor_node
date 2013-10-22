@@ -173,9 +173,8 @@ private:
   // offset value for offsetAoI function
   double clipper_offset_value_;
 
-  // angle[in degrees] and grid_unit_size[in meters] parameters for Greedy Search
-  int angle_resolution_;
-  double grid_unit_size_;
+  // GS_target_offset_[in meters] parameters for Greedy Search
+  double GS_target_offset_;
 
   // PSO parameter constants
   double PSO_param_1_;

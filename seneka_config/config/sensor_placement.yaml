@@ -10,10 +10,6 @@ max_sensor_range: 30.0 # in [m]
 open_angle_1: 1.5708 # (=90*PI/180 deg) in [rad]
 open_angle_2: 0.0 # in [rad]
 
-# opening angles for the "sliced fov" for Greedy Search algorithm
-slice_open_angle_1: 0.26180 # (=15*PI/180 deg) in [rad]
-slice_open_angle_2: 0.0 # in [rad]
-
 # maximal allowed linear velocity for each sensor
 max_linear_sensor_velocity: 10.5 # in [m/s]
 #max_linear_sensor_velocity: 1.5 # in [m/s]
@@ -38,7 +34,9 @@ c2: 1.49445
 # parameter for the global best velocity part
 c3: 1.49445
 
-# parameter for the angle resolution to be used in Greedy Search Algorithm
-angle_resolution: 15
-# parameter for grid unit size to get targets for Greedy Search Algorithm
-grid_unit_size: 5.3 # in [m]
+# parameter for offset between two targets in Greedy Search Algorithm
+GS_target_offset: 5.3 # in [m]
+
+# opening angles for a single slice of sensor FOV (for sensor's orientation search optimization)
+slice_open_angle_1: 0.26180 # (=15*PI/180 deg) in [rad]
+slice_open_angle_2: 0.0 # in [rad]

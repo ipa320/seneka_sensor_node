@@ -67,15 +67,15 @@ sensor_placement_node::sensor_placement_node()
   // ros publishers
   nav_path_pub_ = nh_.advertise<nav_msgs::Path>("out_path",1,true);
   marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("out_marker_array",1,true);
-  GS_targets_grid_pub_ = nh_.advertise<visualization_msgs::Marker>("GS_targets_grid",1,true);
   map_pub_ = nh_.advertise<nav_msgs::OccupancyGrid>("out_cropped_map",1,true);
   map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("out_cropped_map_metadata",1,true);
   offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("offset_AoI", 1,true);
+  GS_targets_grid_pub_ = nh_.advertise<visualization_msgs::Marker>("GS_targets_grid",1,true);
 
   // ros service servers
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
   ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
-  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset", &sensor_placement_node::startGSCallback2, this);
+  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_node::startGSCallback2, this);
   ss_start_GS_ = nh_.advertiseService("StartGS", &sensor_placement_node::startGSCallback, this);
 
   // ros service clients
@@ -140,24 +140,6 @@ void sensor_placement_node::getParams()
 
   open_angles_.push_back(open_angle_2);
 
-  double slice_open_angle_1, slice_open_angle_2;
-
-  if(!pnh_.hasParam("slice_open_angle_1"))
-  {
-    ROS_WARN("No parameter slice_open_angle_1 on parameter server. Using default [1.5708 in rad]");
-  }
-  pnh_.param("slice_open_angle_1",slice_open_angle_1,1.5708);
-
-  slice_open_angles_.push_back(slice_open_angle_1);
-
-  if(!pnh_.hasParam("slice_open_angle_2"))
-  {
-    ROS_WARN("No parameter slice_open_angle_2 on parameter server. Using default [0.0 in rad]");
-  }
-  pnh_.param("slice_open_angle_2",slice_open_angle_2,0.0);
-
-  slice_open_angles_.push_back(slice_open_angle_2);
-
   if(!pnh_.hasParam("max_linear_sensor_velocity"))
   {
     ROS_WARN("No parameter max_linear_sensor_velocity on parameter server. Using default [1.0]");
@@ -208,17 +190,29 @@ void sensor_placement_node::getParams()
   pnh_.param("c3",PSO_param_3_,1.49445);
 
   // get Greedy Search algorithm parameters
-  if(!pnh_.hasParam("angle_resolution"))
-  {
-    ROS_WARN("No parameter angle_resolution_ on parameter server. Using default [90]");
-  }
-  pnh_.param("angle_resolution",angle_resolution_,90);
+  double slice_open_angle_1, slice_open_angle_2;
 
-  if(!pnh_.hasParam("grid_unit_size"))
+  if(!pnh_.hasParam("slice_open_angle_1"))
   {
-    ROS_WARN("No parameter grid_unit_size on parameter server. Using default [5.0 in m]");
+    ROS_WARN("No parameter slice_open_angle_1 on parameter server. Using default [1.5708 in rad]");
   }
-  pnh_.param("grid_unit_size",grid_unit_size_, 5.0);
+  pnh_.param("slice_open_angle_1",slice_open_angle_1,1.5708);
+
+  slice_open_angles_.push_back(slice_open_angle_1);
+
+  if(!pnh_.hasParam("slice_open_angle_2"))
+  {
+    ROS_WARN("No parameter slice_open_angle_2 on parameter server. Using default [0.0 in rad]");
+  }
+  pnh_.param("slice_open_angle_2",slice_open_angle_2,0.0);
+
+  slice_open_angles_.push_back(slice_open_angle_2);
+
+  if(!pnh_.hasParam("GS_target_offset"))
+  {
+    ROS_WARN("No parameter GS_target_offset on parameter server. Using default [5.0 in m]");
+  }
+  pnh_.param("GS_target_offset",GS_target_offset_, 5.0);
 }
 
 
@@ -580,22 +574,19 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 }
 
 
-
 // get greedy search targets
 bool sensor_placement_node::getGSTargets()
 {
-  //define cell offset to get desired grid of potential GS targets
-
-  ROS_INFO_STREAM("grid_unit_size_ " <<grid_unit_size_);
-  ROS_INFO_STREAM("map_.info.resolution " <<map_.info.resolution);
-
-  unsigned int cell_offset = floor((grid_unit_size_*10000)/(map_.info.resolution*10000)); //-b- how to avoid rounding error ?
-  //modify for case whn grid unit size is less than resolution -b-
-
-  ROS_INFO_STREAM("cell offset is " << cell_offset); //-b-
-
   // initialize result
   bool result = false;
+  // define cell offset (number of cells to be skipped)
+  unsigned int cell_offset = (unsigned int) round(GS_target_offset_/map_.info.resolution);
+
+  if (cell_offset==0)
+  {
+    cell_offset=1;
+    ROS_INFO("evaluated cell_offset = 0, forcing cell_offset = 1");
+  }
 
   if(map_received_ == true)
   {
@@ -649,7 +640,6 @@ bool sensor_placement_node::getGSTargets()
             dummy_point_info.potential_target = 1;
             target_num_++;
           }
-
           // saving point information
           point_info_vec_.at(j * map_.info.width + i) = dummy_point_info;
         }
@@ -768,16 +758,18 @@ bool sensor_placement_node::getGSTargets()
 // get greedy search targets also taking care of offset polygon
 bool sensor_placement_node::getGSTargets2()
 {
-
-  //****************** get targets *******************
-
-  //define cell offset to get desired grid of potential GS targets
-  unsigned int cell_offset = (unsigned int) (floor(grid_unit_size_/map_.info.resolution));
-
-  ROS_INFO_STREAM("cell offset is " << cell_offset);
-
   // initialize result
   bool result = false;
+  // define cell offset (number of cells to be skipped)
+  unsigned int cell_offset = (unsigned int) round(GS_target_offset_/map_.info.resolution);
+
+  if (cell_offset==0)
+  {
+    cell_offset=1;
+    ROS_INFO("evaluated cell_offset = 0, forcing cell_offset = 1");
+  }
+
+  //****************** get targets *******************
 
   if(map_received_ == true)
   {
@@ -843,12 +835,12 @@ bool sensor_placement_node::getGSTargets2()
       // **************** get offset polygon ***************
 
       geometry_msgs::PolygonStamped offset_AoI;
-      double  perimeter_res = 3*map_.info.resolution;     // define perimiter resolution in meters
+      double  perimeter_min = 3*map_.info.resolution;     // define minimum perimiter in meters
       double offset_val = clipper_offset_value_;          // load offset value
 
       // set a lower bound on offset value according to perimeter
-      if (offset_val < perimeter_res)
-        offset_val = perimeter_res;
+      if (offset_val < perimeter_min)
+        offset_val = perimeter_min;
 
       // now get an offsetted polygon from area of interest
       offset_AoI = offsetAoI(offset_val);
@@ -1057,18 +1049,14 @@ void sensor_placement_node::initializeGS()
   GS_solution.setPointInfoVec(point_info_vec_, target_num_);
   GS_solution.setGSpool(GS_pool_);
   GS_solution.setLookupTable(& lookup_table_);
-  GS_solution.setAngleResolution(angle_resolution_);
-//  GS_solution.setCellSearchResolution(cell_search_resolution_);
 
   if (!GS_pool_.empty())
   {
-    //publish the GS_targaets grid
-    GS_targets_grid_pub_.publish(GS_solution.getVisualizationMarkersGrid());
+    //publish the GS_targarts grid
+    GS_targets_grid_pub_.publish(GS_solution.getGridVisualizationMarker());
   }
-    else
-  {
+  else
     ROS_ERROR("No targets in GS_pool_");
-  }
 
 }
 

@@ -96,7 +96,6 @@ private:
   // coverage data for all specified orientations at fixed point (modified in updateGSpointsRaytracing)
   std::vector<int> coverage_vec_;
 
-
   // actual coverage
   double coverage_;
 
@@ -104,10 +103,6 @@ private:
   int max_sensor_cov_;
   int max_sensor_cov_point_id_;
   geometry_msgs::Pose max_sensor_cov_pose_;
-
-  // angle and cell resolution for the Greedy Search
-  unsigned int angle_resolution_;
-  unsigned int cell_search_resolution_;
 
   // actual area of interest to be covered by the sensor nodes
   const geometry_msgs::PolygonStamped * pArea_of_interest_;
@@ -152,12 +147,6 @@ public:
 
 
   // ************************ getter functions ************************
-
-  // function to get angle resolution for Greedy Placement function
-  unsigned int getAngleResolution();
-
-  // function to get cell search resolution for Greedy Placement function
-  unsigned int getCellSearchResolution();
 
   // function to get maximum sensor coverage
   int getMaxSensorCov();
@@ -229,7 +218,7 @@ public:
   visualization_msgs::MarkerArray getVisualizationMarkers();
 
   // returns the visualization markers of points in GS_pool_
-  visualization_msgs::Marker getVisualizationMarkersGrid();
+  visualization_msgs::Marker getGridVisualizationMarker();
 
 
 };
