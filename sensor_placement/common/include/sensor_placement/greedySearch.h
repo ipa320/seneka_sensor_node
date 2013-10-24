@@ -218,7 +218,7 @@ public:
   visualization_msgs::MarkerArray getVisualizationMarkers();
 
   // returns the visualization markers of points in GS_pool_
-  visualization_msgs::Marker getGridVisualizationMarker();
+  visualization_msgs::MarkerArray getGridVisualizationMarker();
 
 
 };

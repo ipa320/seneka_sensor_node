@@ -176,9 +176,8 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   {
     if (fmod(360,slice_res_deg)!=0)
     {
-      //given angle does not fit exactly into 360deg, computing closest angle that does fit
+      //**given angle does not fit exactly into 360deg, computing closest angle that does fit**
       error_pos = ceil(360/slice_res_deg)*slice_res_deg - 360;  //value by which (total_slices*slice_resolution) exceeds 360
-
       if (error_pos<(slice_res_deg/2))
       {
         //new angle must be less than old one to get closest solution
@@ -263,7 +262,7 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   }
 
   //search complete, so reset the sensor open angles
-  //NOTE! if slices don't exactly fit, new open angles will be max multiple of slices that does fit
+  //NOTE! if slices don't exactly fit, new open angles will be multiple of slices that does fit
   new_ang_r[0] = num_of_slices*gs_ang_r[0];
   //ROS_INFO_STREAM("new open angle varying from original by: " << (orig_ang_r[0]-new_ang_r[0]));
 
@@ -835,37 +834,41 @@ visualization_msgs::MarkerArray greedySearch::getVisualizationMarkers()
 
 
 // returns the visualization markers of points in GS_pool_
-visualization_msgs::Marker greedySearch::getGridVisualizationMarker()
+visualization_msgs::MarkerArray greedySearch::getGridVisualizationMarker()
 {
-
+  visualization_msgs::MarkerArray grids_array;
   visualization_msgs::Marker t_points;
   geometry_msgs::Point p;
   size_t GS_poolsize = GS_pool_.size();
+  unsigned int num_of_grids = 7;
 
-  // setup standard stuff
-  t_points.header.frame_id = "/map";
-  t_points.header.stamp = ros::Time();
-  t_points.ns = "grid";
-  t_points.action = visualization_msgs::Marker::ADD;
-  t_points.pose.orientation.w = 1.0;
-  t_points.id = 0;
-  t_points.type = visualization_msgs::Marker::POINTS;
-  t_points.scale.x = 0.2;
-  t_points.scale.y = 0.2;
-  t_points.color.a = 1.0;
-  t_points.color.r = 0.0;
-  t_points.color.g = 0.0;
-  t_points.color.b = 1.0;
-
-  for (size_t point_id=0; point_id<GS_poolsize; point_id=point_id++)  //modify to use iterators -b-
+  for (unsigned int i=0; i<num_of_grids; i++)
   {
+    // setup standard stuff
+    t_points.header.frame_id = "/map";
+    t_points.header.stamp = ros::Time();
+    t_points.ns = "grid" + boost::lexical_cast<std::string>(i);;
+    t_points.action = visualization_msgs::Marker::ADD;
+    t_points.pose.orientation.w = 1.0;
+    t_points.id = 0;
+    t_points.type = visualization_msgs::Marker::POINTS;
+    t_points.scale.x = 0.2+0.1*i;
+    t_points.scale.y = 0.2+0.1*i;
+    t_points.color.a = 1.0;
+    t_points.color.r = 0.0;
+    t_points.color.g = 0.0;
+    t_points.color.b = 1.0;
 
-    p.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
-    p.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
+    for (size_t point_id=0; point_id<GS_poolsize; point_id=point_id++)  //modify to use iterators -b-
+    {
 
-    t_points.points.push_back(p);
+      p.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
+      p.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
 
+      t_points.points.push_back(p);
+
+    }
+    grids_array.markers.push_back(t_points);
   }
-
-  return t_points;
+  return grids_array;
 }
