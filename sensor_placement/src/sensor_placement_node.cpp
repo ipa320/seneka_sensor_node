@@ -1068,22 +1068,21 @@ void sensor_placement_node::runGS()
   double GS_coverage;
   ros::Time start_time;
   ros::Duration end_time;
+  std::vector<double> open_angles(2,0);
 
   //start placing sensors one by one according to greedy algorithm
   for(size_t sensor_index = 0; sensor_index < sensor_num_; sensor_index++)
   {
     //note start time for greedy search
     start_time = ros::Time::now();
-
     //do Greedy Search and place sensor on the max coverage pose
     GS_solution.newGreedyPlacement(sensor_index);
+    //note end time for greedy_search
+    end_time= ros::Time::now() - start_time;
     //publish the solution
     marker_array_pub_.publish(GS_solution.getVisualizationMarkers());
     //calculate the current coverage
     GS_coverage = GS_solution.calGScoverage();
-
-    //note end time for greedy_search
-    end_time= ros::Time::now() - start_time;
 
     ROS_INFO_STREAM("Sensors placed: " << sensor_index+1 << " coverage: " << GS_coverage);
     ROS_INFO_STREAM("Time taken: " << end_time << "[s]");

@@ -131,15 +131,12 @@ public:
   // ************************ update functions ************************;
 
   // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
-  void greedyPlacement(size_t sensor_index);
-
-  // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
   void newGreedyPlacement(size_t sensor_index);
 
   // function to update the GS_point_info with raytracing
   void updateGSpointsRaytracing(size_t sensor_index, int point_id, bool update_covered_info);
 
-  //function to get the coverage done by the sensor
+  // function to get the coverage done by the sensor
   int getCoverageRaytracing(size_t sensor_index);
 
   // function to calculate coverage achieved
@@ -204,12 +201,6 @@ public:
 
   // function to create and set a lookup table for raytracing for each sensor
   void setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table);
-
-  // function to set angle resolution for Greedy Placement function
-  void setAngleResolution(unsigned int angle_resolution);
-
-  // function to set the cell search resolution for Greedy Placement function
-  void setCellSearchResolution(unsigned int cell_search_resolution);
 
 
   // ************************* help functions *************************

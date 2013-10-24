@@ -98,55 +98,6 @@ greedySearch::greedySearch(int num_of_sensors, int num_of_targets, FOV_2D_model 
 greedySearch::~greedySearch(){}
 
 
-// OLD function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
-void greedySearch::greedyPlacement(size_t sensor_index)
-{
-  unsigned int angle_resolution = 15;         //define angle_resolution parameter
-  unsigned int cell_search_resolution = 200;  //define cell_search_resolution parameter
-  double num_of_steps;
-  bool update_covered_info;
-  int placement_point_id;
-  geometry_msgs::Pose new_pose;
-  geometry_msgs::Pose placement_pose;
-
-  //while searching, restrict updating of 'covered' info in updateGSpointsRaytracing
-  update_covered_info=false;
-  //reset previous max coverage information before searching for new position
-  resetMaxSensorCovInfo();
-  //reset max targets covered information
-  resetGSpool();
-
-  //place the current sensor on all points in GS pool one by one and calculate coverge
-  for (size_t point_id=0; point_id<GS_pool_.size(); point_id++)
-  {
-    //first calculate world position of current point id and place sensor at that position
-    new_pose.position.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
-    new_pose.position.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
-    new_pose.position.z = 0;
-
-    //check all orientations
-    for (int alpha=0; alpha<angle_resolution*num_of_steps; alpha=alpha+angle_resolution)
-    {
-      //look around at all angles and save only the orientation that gives max coverage
-      new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha*(PI/180));
-      sensors_.at(sensor_index).setSensorPose(new_pose);
-      updateGSpointsRaytracing(sensor_index, point_id, update_covered_info);    //updates targets covered and keeps only the pose info that gives max coverage
-    }
-  }
-  //Get maximum coverage pose
-  placement_pose = getMaxSensorCovPOSE();
-  //Get maximum coverage point ID
-  placement_point_id = getMaxSensorCovPointID();
-  //place the sensor at max coverage point
-  sensors_.at(sensor_index).setSensorPose(placement_pose);
-
-  //now actually mark the targets as covered
-  update_covered_info = true;
-  updateGSpointsRaytracing(sensor_index, placement_point_id, update_covered_info);
-
-}
-
-
 // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
 void greedySearch::newGreedyPlacement(size_t sensor_index)
 {
@@ -182,13 +133,13 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
       {
         //new angle must be less than old one to get closest solution
         slice_res_deg = slice_res_deg - error_pos/ceil(360/slice_res_deg);
-        ROS_INFO_STREAM("Modified slice open anlges[in degrees]: " << slice_res_deg);
+        ROS_INFO_STREAM("Modified slice open angles[in degrees]: " << slice_res_deg);
       }
       else
       {
         //new angle must be greater than old one to get closest solution
         slice_res_deg = slice_res_deg + ((slice_res_deg-error_pos)/floor(360/slice_res_deg));
-        ROS_INFO_STREAM("Modified slice open anlges[in degrees]: " << slice_res_deg);
+        ROS_INFO_STREAM("Modified slice open angles[in degrees]: " << slice_res_deg);
       }
     }
   }
