@@ -182,7 +182,7 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
     new_pose.position.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
     new_pose.position.z = 0;
 
-    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //change loop index to int -b-
+    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //change loop index to int? -b-
     {
       //look around in all directions with resolution of the slice
       new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
@@ -810,7 +810,7 @@ visualization_msgs::MarkerArray greedySearch::getGridVisualizationMarker()
     t_points.color.g = 0.0;
     t_points.color.b = 1.0;
 
-    for (size_t point_id=0; point_id<GS_poolsize; point_id=point_id++)  //modify to use iterators -b-
+    for (size_t point_id=0; point_id<GS_poolsize; point_id=point_id++)
     {
 
       p.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
