@@ -66,15 +66,14 @@
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/Point32.h>
 #include <geometry_msgs/Pose2D.h>
+#include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <nav_msgs/GetMap.h>
-#include <sensor_placement/polygon_offset.h>
 
-#include <visualization_msgs/Marker.h>
 
 // external includes
 #include <sensor_model.h>
@@ -82,6 +81,8 @@
 #include <seneka_utilities.h>
 #include <greedySearch.h>
 #include <clipper.hpp>
+#include <sensor_placement/polygon_offset.h>
+#include <sensor_placement/PolygonStamped_array.h>
 
 using namespace std;
 using namespace seneka_utilities;
@@ -103,14 +104,17 @@ private:
   // bool variable to check if an forbidden area was already received
   bool fa_received_;
 
+  // bool variable to check if an offset_polygon was already received
+  bool polygon_offset_val_received_;
+
   // bool variable to check if the targets were already taken from the map
   bool targets_saved_;
 
   // actual area of interest to be covered by the sensor nodes
   geometry_msgs::PolygonStamped area_of_interest_;
 
-  // polygon for forbidden area
-  geometry_msgs::PolygonStamped forbidden_area_;
+  // polygon array for forbidden area
+  sensor_placement::PolygonStamped_array forbidden_areas_;
 
   // number of sensors
   int sensor_num_;
@@ -272,7 +276,7 @@ public:
 
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
-  void forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_area);
+  void forbiddenAreaCB(const sensor_placement::PolygonStamped_array::ConstPtr &forbidden_areas);
 
 };
 

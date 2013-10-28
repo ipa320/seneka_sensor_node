@@ -23,9 +23,15 @@ add_service_files(
   polygon_offset.srv
 )
 
+add_message_files(
+  FILES
+  PolygonStamped_array.msg
+)
+
 generate_messages(
   DEPENDENCIES
   std_msgs
+  geometry_msgs
 )
 
 catkin_package(

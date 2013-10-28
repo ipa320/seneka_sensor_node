@@ -241,12 +241,12 @@ void particle::setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly)
 
 }
 
-// function that sets forbidden area
-void particle::setForbiddenArea(const geometry_msgs::PolygonStamped & new_forbidden_area)
+// function that sets forbidden areas array
+void particle::setForbiddenAreas(const sensor_placement::PolygonStamped_array & new_forbidden_areas)
 {
-  pForbidden_poly_ = & new_forbidden_area;
+  pForbidden_poly_ = & new_forbidden_areas;
   if (pForbidden_poly_ == NULL)
-    ROS_ERROR("Forbidden Area was not set correctly.");
+    ROS_ERROR("Forbidden Areas array was not set correctly.");
 
 }
 

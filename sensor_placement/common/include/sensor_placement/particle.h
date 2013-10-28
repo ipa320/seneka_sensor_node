@@ -77,6 +77,8 @@
 // external includes
 #include <sensor_model.h>
 #include <seneka_utilities.h>
+#include <sensor_placement/PolygonStamped_array.h> //-b-
+
 
 using namespace seneka_utilities;
 
@@ -115,7 +117,7 @@ private:
   const geometry_msgs::PolygonStamped * pArea_of_interest_;
 
   // forbidden area for the placement of sensors
-  const geometry_msgs::PolygonStamped * pForbidden_poly_;
+  const sensor_placement::PolygonStamped_array * pForbidden_poly_;
 
   // actual map
   const nav_msgs::OccupancyGrid * pMap_;
@@ -179,8 +181,8 @@ public:
   // function that sets the area of interest
   void setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly);
 
-  // function that sets forbidden area
-  void setForbiddenArea(const geometry_msgs::PolygonStamped & new_forbidden_area);
+  // function that sets forbidden areas array
+  void setForbiddenAreas(const sensor_placement::PolygonStamped_array & new_forbidden_areas);
 
   // function that sets the opening angles for each sensor in the particle
   bool setOpenAngles(std::vector<double> new_angles);

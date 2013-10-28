@@ -54,6 +54,7 @@
 // standard includes
 #include <iostream>
 #include <vector>
+#include <math.h>
 
 // ros includes
 #include <ros/ros.h>
@@ -68,7 +69,8 @@
 // external includes
 #include <sensor_model.h>
 #include <seneka_utilities.h>
-#include <math.h>
+#include <sensor_placement/PolygonStamped_array.h>  //-b-
+
 
 using namespace seneka_utilities;
 
@@ -77,24 +79,28 @@ class greedySearch
 private:
 
   // std-vector for storing the sensors
-  std::vector< FOV_2D_model > sensors_;
+  std::vector<FOV_2D_model> sensors_;
 
-  // point info vectors
+  // std-vector for storing occupied, potential_target and, covered info
   std::vector<point_info> * pPoint_info_vec_;
+
+  // std-vector for storing Greedy Search targets
   std::vector<GS_point_info> GS_pool_;
 
-  // opening angles of FOV slice
+  // opening angles of slice FOV
   std::vector<double> slice_open_angles_;
+
+  // 360deg coverage info in discrete parts according to slice FOV
+  std::vector<int> coverage_vec_;
 
   // number of sensors
   int sensor_num_;
 
   // number of targets
   int target_num_;
-  int covered_targets_num_;
 
-  // coverage data for all specified orientations at fixed point (modified in updateGSpointsRaytracing)
-  std::vector<int> coverage_vec_;
+  // number of targets covered
+  int covered_targets_num_;
 
   // actual coverage
   double coverage_;
@@ -108,7 +114,7 @@ private:
   const geometry_msgs::PolygonStamped * pArea_of_interest_;
 
   // forbidden area for the placement of sensors
-  const geometry_msgs::PolygonStamped * pForbidden_poly_;
+  const sensor_placement::PolygonStamped_array * pForbidden_poly_;
 
   // actual map
   const nav_msgs::OccupancyGrid * pMap_;
@@ -125,9 +131,6 @@ public:
   // destructor
   ~greedySearch();
 
-  // declaration of ros publisher for publishing greedySearch solution
-  ros::Publisher marker_array_pub_;
-
   // ************************ update functions ************************;
 
   // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
@@ -142,7 +145,6 @@ public:
   // function to calculate coverage achieved
   double calGScoverage();
 
-
   // ************************ getter functions ************************
 
   // function to get maximum sensor coverage
@@ -156,7 +158,6 @@ public:
 
   // function to get sensor's FOV slice open angles
   std::vector<double> getSliceOpenAngles();
-
 
   // ************************ setter functions ************************
 
@@ -187,8 +188,8 @@ public:
   // function that sets the area of interest
   void setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly);
 
-  // function that sets forbidden area
-  void setForbiddenArea(const geometry_msgs::PolygonStamped & new_forbidden_area);
+  // function that sets forbidden areas
+  void setForbiddenAreas(const sensor_placement::PolygonStamped_array & new_forbidden_areas);
 
   // function that sets the opening angles for each sensor
   bool setOpenAngles(std::vector<double> new_angles);
@@ -202,7 +203,6 @@ public:
   // function to create and set a lookup table for raytracing for each sensor
   void setLookupTable(const std::vector< std::vector<geometry_msgs::Point32> > * pLookup_table);
 
-
   // ************************* help functions *************************
 
   // returns all visualization markers of the Greedy Search solution
@@ -210,7 +210,6 @@ public:
 
   // returns the visualization markers of points in GS_pool_
   visualization_msgs::MarkerArray getGridVisualizationMarker();
-
 
 };
 

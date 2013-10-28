@@ -101,13 +101,11 @@ greedySearch::~greedySearch(){}
 // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
 void greedySearch::newGreedyPlacement(size_t sensor_index)
 {
+  bool update_covered_info;
   unsigned int max_cov_ind;
-  double new_sum, max_sum;
-  double max_cov_orientation;
   int placement_point_id;
   int num_of_slices;
   int coverage;
-  bool update_covered_info;
   geometry_msgs::Pose new_pose;
   geometry_msgs::Pose placement_pose;
   std::vector<double> orig_ang_r(2,0);
@@ -115,6 +113,8 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   std::vector<double> new_ang_r(2,0);
   double slice_res_deg;
   double error_pos;
+  double new_sum, max_sum;
+  double max_cov_orientation;
 
 
   //************************* "slice" open angle adjustment ********************
@@ -670,12 +670,12 @@ void greedySearch::setAreaOfInterest(const geometry_msgs::PolygonStamped & new_p
 
 }
 
-// function that sets forbidden area
-void greedySearch::setForbiddenArea(const geometry_msgs::PolygonStamped & new_forbidden_area)
+// function that sets forbidden areas array
+void greedySearch::setForbiddenAreas(const sensor_placement::PolygonStamped_array & new_forbidden_areas)
 {
-  pForbidden_poly_ = & new_forbidden_area;
+  pForbidden_poly_ = & new_forbidden_areas;
   if (pForbidden_poly_ == NULL)
-    ROS_ERROR("Forbidden Area was not set correctly.");
+    ROS_ERROR("Forbidden Areas array was not set correctly.");
 
 }
 

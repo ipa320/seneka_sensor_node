@@ -60,11 +60,15 @@
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/Point32.h>
 #include <std_srvs/Empty.h>
+#include <visualization_msgs/MarkerArray.h>
 
 // boost includes
 #include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
+
+//external includes
+#include <sensor_placement/PolygonStamped_array.h>
 
 //####################
 //#### node class ####
@@ -79,16 +83,20 @@ public:
   ros::Publisher AoI_pub_;
   ros::Publisher forbidden_area_pub_;
   ros::Publisher PoI_pub_;
+  ros::Publisher polygon_marker_array_pub_;
 
   // Data Types for Publishers
   geometry_msgs::PolygonStamped AoI_poly_;
-  geometry_msgs::PolygonStamped forbidden_area_poly_;
   geometry_msgs::Point32 PoI_;
+  sensor_placement::PolygonStamped_array forbidden_areas_poly_;
 
   // Services to trigger Publishing
   ros::ServiceServer ss_AoI_;
   ros::ServiceServer ss_forbidden_area_;
   ros::ServiceServer ss_PoI_;
+
+  //parameter for number of forbidden areas
+  int num_of_fa_;
 
   // Constructor
   NodeClass()
@@ -99,16 +107,23 @@ public:
 
     // initialize Publishers
     AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_AoI_polygon", 1);
-    forbidden_area_pub_ = 
-      nh_.advertise<geometry_msgs::PolygonStamped>("out_forbidden_area_polygon", 1);
+    forbidden_area_pub_ = nh_.advertise< sensor_placement::PolygonStamped_array >("out_forbidden_area_polygon", 1);
     PoI_pub_ = nh_.advertise<geometry_msgs::Point32>("out_PoI", 1);
+    polygon_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("polygons_MarkerArray",1,true);
 
     // initialize Datatypes
     AoI_poly_.polygon = loadPolygon("area_of_interest");
     AoI_poly_.header.frame_id = "/map";
 
-    forbidden_area_poly_.polygon = loadPolygon("forbidden_area");
-    forbidden_area_poly_.header.frame_id = "/map";
+    //intialize forbidden areas if found on Parameter Server
+    initializeFAs();
+
+    //load forbidden areas
+    for (unsigned int i=0; i<num_of_fa_; i++)
+    {
+      forbidden_areas_poly_.array.at(i).polygon = loadPolygon("forbidden_area" + boost::lexical_cast<std::string>(i)); //-b-
+      forbidden_areas_poly_.array.at(i).header.frame_id = "/map";
+    }
 
     PoI_.x = 100;
     PoI_.y = 100;
@@ -116,7 +131,7 @@ public:
 
     // Service Initializations
     ss_AoI_ = nh_.advertiseService("publish_AoI", &NodeClass::srvCB_AoI, this);
-    ss_forbidden_area_ = nh_.advertiseService("publish_forbidden_area", 
+    ss_forbidden_area_ = nh_.advertiseService("publish_forbidden_area",
                                               &NodeClass::srvCB_forbidden_area, this);
     ss_PoI_ = nh_.advertiseService("publish_PoI", &NodeClass::srvCB_PoI, this);
   }
@@ -144,9 +159,11 @@ public:
   bool srvCB_forbidden_area(std_srvs::Empty::Request &req,
                  std_srvs::Empty::Response &res)
   {
-    if(!forbidden_area_poly_.polygon.points.empty())
+
+    if(!forbidden_areas_poly_.array.empty())
     {
-      forbidden_area_pub_.publish(forbidden_area_poly_);
+      forbidden_area_pub_.publish(forbidden_areas_poly_);
+      polygon_marker_array_pub_.publish(getPolygonsVisualizationMarker(forbidden_areas_poly_));
       return true;
     }
     else
@@ -168,7 +185,7 @@ public:
   {
     geometry_msgs::Polygon polygon;
     geometry_msgs::Point32 pt;
-    
+
     // grab the polygon from the parameter server if possible
     XmlRpc::XmlRpcValue point_list;
     std::string polygon_param_name, point_list_string;
@@ -176,7 +193,7 @@ public:
     if(pnh_.searchParam(polygon_param, polygon_param_name))
     {
       pnh_.getParam(polygon_param_name, point_list);
-      
+
       // parse XmlRpc Value to std::string
       if(point_list.getType() == XmlRpc::XmlRpcValue::TypeString)
       {
@@ -195,9 +212,9 @@ public:
       }
 
       // make sure we have a list of lists
-      if( ! (point_list.getType() == XmlRpc::XmlRpcValue::TypeArray && 
-             point_list.size() > 2) && 
-          ! (point_list.getType() == XmlRpc::XmlRpcValue::TypeString && 
+      if( ! (point_list.getType() == XmlRpc::XmlRpcValue::TypeArray &&
+             point_list.size() > 2) &&
+          ! (point_list.getType() == XmlRpc::XmlRpcValue::TypeString &&
              point_string_vector.size() > 5) )
       {
         ROS_FATAL("The polygon %s must be specified as a list of lists on the parameter server, but it was specified as %s",
@@ -243,7 +260,7 @@ public:
           std::ostringstream oss;
           bool first = true;
 
-    
+
           BOOST_FOREACH(geometry_msgs::Point32 p, polygon.points)
           {
             if(first)
@@ -329,7 +346,61 @@ public:
     return polygon;
   }
 
+  // initialize forbidden areas if found on Parameter Server
+  void initializeFAs()
+  {
+    //get parameter for number of forbibben areas
+    if(!pnh_.hasParam("number_of_forbidden_areas"))
+    {
+      ROS_WARN("No parameter number_of_forbidden_areas on parameter server. Using default [0]");
+    }
+    pnh_.param("number_of_forbidden_areas",num_of_fa_,0);
 
+    // initialize forbidden area array
+    geometry_msgs::PolygonStamped dummy_poly;
+    forbidden_areas_poly_.array.assign(num_of_fa_,dummy_poly);
+  }
+
+  // returns the visualization markers of PolygonStamped_array
+  visualization_msgs::MarkerArray getPolygonsVisualizationMarker(sensor_placement::PolygonStamped_array polygons)
+  {
+    visualization_msgs::MarkerArray polygon_marker_array;
+    visualization_msgs::Marker line_strip;
+    geometry_msgs::Point p;
+
+    for (size_t j=0; j<polygons.array.size(); j++)
+    {
+      // setup standard stuff
+      line_strip.header.frame_id = "/map";
+      line_strip.header.stamp = ros::Time();
+      line_strip.ns = "forbidden_area" + boost::lexical_cast<std::string>(j);;
+      line_strip.action = visualization_msgs::Marker::ADD;
+      line_strip.pose.orientation.w = 1.0;
+      line_strip.id = 0;
+      line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+      line_strip.scale.x = 0.3;
+      line_strip.scale.y = 0.0;
+      line_strip.scale.z = 0.0;
+      line_strip.color.a = 1.0;
+      line_strip.color.r = 1.0;
+      line_strip.color.g = 0.1;
+      line_strip.color.b = 0.0;
+
+      for (size_t k=0; k<polygons.array.at(j).polygon.points.size(); k++)
+      {
+        p.x = polygons.array.at(j).polygon.points.at(k).x;
+        p.y = polygons.array.at(j).polygon.points.at(k).y;
+        line_strip.points.push_back(p);
+      }
+      //enter first point again to get a closed shape
+      line_strip.points.push_back(line_strip.points.at(0));
+      //save the marker
+      polygon_marker_array.markers.push_back(line_strip);
+      //clear line strip point for next polygon
+      line_strip.points.clear();
+    }
+    return polygon_marker_array;
+  }
 }; //NodeClass
 
 //######################
@@ -353,3 +424,4 @@ int main(int argc, char **argv)
   }
 
 }
+
