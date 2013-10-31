@@ -114,7 +114,7 @@ private:
   geometry_msgs::PolygonStamped area_of_interest_;
 
   // polygon array for forbidden area
-  sensor_placement::PolygonStamped_array forbidden_areas_;
+  std::vector<geometry_msgs::PolygonStamped> forbidden_area_vec_;
 
   // number of sensors
   int sensor_num_;
@@ -212,12 +212,14 @@ public:
   ros::Publisher map_pub_, map_meta_pub_;
   ros::Publisher nav_path_pub_;
   ros::Publisher offset_AoI_pub_;
+  ros::Publisher fa_marker_array_pub_;
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
   ros::ServiceServer ss_test_;
   ros::ServiceServer ss_start_GS_;
   ros::ServiceServer ss_start_GS_with_offset_;
+  ros::ServiceServer ss_clear_fa_vec_;
 
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
@@ -256,6 +258,9 @@ public:
   // function to create an offsetted polygon from area of interest
   geometry_msgs::PolygonStamped offsetAoI(double offset);
 
+  // returns the visualization markers of a vector of polygons
+  visualization_msgs::MarkerArray getPolygonVecVisualizationMarker(std::vector<geometry_msgs::PolygonStamped>, std::string );
+
 
   /* ----------------------------------- */
   /* --------- ROS Callbacks ----------- */
@@ -271,12 +276,15 @@ public:
   // callback function for the start GS service
   bool startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
+  // callback function for clearing all forbidden areas
+  bool clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+
   // callback function for the start GS service with offset parameter
   bool startGSCallback2(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res);
 
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
-  void forbiddenAreaCB(const sensor_placement::PolygonStamped_array::ConstPtr &forbidden_areas);
+  void forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_areas);
 
 };
 

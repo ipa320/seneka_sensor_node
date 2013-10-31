@@ -87,8 +87,9 @@ public:
 
   // Data Types for Publishers
   geometry_msgs::PolygonStamped AoI_poly_;
+  std::vector< geometry_msgs::PolygonStamped > forbidden_area_poly_vec_;
   geometry_msgs::Point32 PoI_;
-  sensor_placement::PolygonStamped_array forbidden_areas_poly_;
+ // sensor_placement::PolygonStamped_array forbidden_areas_poly_;
 
   // Services to trigger Publishing
   ros::ServiceServer ss_AoI_;
@@ -107,22 +108,35 @@ public:
 
     // initialize Publishers
     AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_AoI_polygon", 1);
-    forbidden_area_pub_ = nh_.advertise< sensor_placement::PolygonStamped_array >("out_forbidden_area_polygon", 1);
+    forbidden_area_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_forbidden_area_polygon", 1);
     PoI_pub_ = nh_.advertise<geometry_msgs::Point32>("out_PoI", 1);
-    polygon_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("polygons_MarkerArray",1,true);
+ //   polygon_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("polygons_MarkerArray",1,true);
 
     // initialize Datatypes
     AoI_poly_.polygon = loadPolygon("area_of_interest");
     AoI_poly_.header.frame_id = "/map";
 
+    geometry_msgs::PolygonStamped dummy_polygon;
+
     //intialize forbidden areas if found on Parameter Server
-    initializeFAs();
+//    initializeFAs();
+
+    //get parameter for number of forbibben areas
+    if(!pnh_.hasParam("number_of_forbidden_areas"))
+    {
+      ROS_WARN("No parameter number_of_forbidden_areas on parameter server. Using default [0]");
+    }
+    pnh_.param("number_of_forbidden_areas",num_of_fa_,0);
+
+
+
 
     //load forbidden areas
     for (unsigned int i=0; i<num_of_fa_; i++)
     {
-      forbidden_areas_poly_.array.at(i).polygon = loadPolygon("forbidden_area" + boost::lexical_cast<std::string>(i)); //-b-
-      forbidden_areas_poly_.array.at(i).header.frame_id = "/map";
+      dummy_polygon.polygon = loadPolygon("forbidden_area" + boost::lexical_cast<std::string>(i)); //-b-
+      dummy_polygon.header.frame_id = "/map";
+      forbidden_area_poly_vec_.push_back(dummy_polygon);
     }
 
     PoI_.x = 100;
@@ -159,18 +173,22 @@ public:
   bool srvCB_forbidden_area(std_srvs::Empty::Request &req,
                  std_srvs::Empty::Response &res)
   {
-
-    if(!forbidden_areas_poly_.array.empty())
+    for (size_t i=0; i<forbidden_area_poly_vec_.size(); i++)
     {
-      forbidden_area_pub_.publish(forbidden_areas_poly_);
-      polygon_marker_array_pub_.publish(getPolygonsVisualizationMarker(forbidden_areas_poly_));
-      return true;
+      if(!forbidden_area_poly_vec_.at(i).polygon.points.empty())
+      {
+        forbidden_area_pub_.publish(forbidden_area_poly_vec_.at(i));
+        ROS_INFO_STREAM("publishing forbidden area " << i);   //-b-
+        ros::Duration(0.5).sleep();
+    //    polygon_marker_array_pub_.publish(getPolygonsVisualizationMarker(forbidden_areas_poly_));
+      }
+      else
+      {
+        ROS_WARN_STREAM("No forbidden area specified at index " << i << "!");
+        return false;
+      }
     }
-    else
-    {
-      ROS_WARN("No forbidden area specified!");
-      return false;
-    }
+    return true;
   }
 
   bool srvCB_PoI(std_srvs::Empty::Request &req,
@@ -346,7 +364,7 @@ public:
     return polygon;
   }
 
-  // initialize forbidden areas if found on Parameter Server
+/*  // initialize forbidden areas if found on Parameter Server
   void initializeFAs()
   {
     //get parameter for number of forbibben areas
@@ -360,7 +378,7 @@ public:
     geometry_msgs::PolygonStamped dummy_poly;
     forbidden_areas_poly_.array.assign(num_of_fa_,dummy_poly);
   }
-
+*/
   // returns the visualization markers of PolygonStamped_array
   visualization_msgs::MarkerArray getPolygonsVisualizationMarker(sensor_placement::PolygonStamped_array polygons)
   {

@@ -116,8 +116,8 @@ private:
   // actual area of interest to be covered by the sensor nodes
   const geometry_msgs::PolygonStamped * pArea_of_interest_;
 
-  // forbidden area for the placement of sensors
-  const sensor_placement::PolygonStamped_array * pForbidden_poly_;
+  // forbidden area vector for the placement of sensors
+  const std::vector<geometry_msgs::PolygonStamped> * pForbidden_poly_;
 
   // actual map
   const nav_msgs::OccupancyGrid * pMap_;
@@ -181,8 +181,8 @@ public:
   // function that sets the area of interest
   void setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly);
 
-  // function that sets forbidden areas array
-  void setForbiddenAreas(const sensor_placement::PolygonStamped_array & new_forbidden_areas);
+  // function that sets forbidden areas vector
+  void setForbiddenAreaVec(const std::vector<geometry_msgs::PolygonStamped> & new_forbidden_area_vec_);
 
   // function that sets the opening angles for each sensor in the particle
   bool setOpenAngles(std::vector<double> new_angles);

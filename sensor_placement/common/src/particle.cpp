@@ -241,14 +241,16 @@ void particle::setAreaOfInterest(const geometry_msgs::PolygonStamped & new_poly)
 
 }
 
-// function that sets forbidden areas array
-void particle::setForbiddenAreas(const sensor_placement::PolygonStamped_array & new_forbidden_areas)
+
+// function that sets forbidden areas vector
+void particle::setForbiddenAreaVec(const std::vector<geometry_msgs::PolygonStamped> & new_forbidden_area_vec_)
 {
-  pForbidden_poly_ = & new_forbidden_areas;
+  pForbidden_poly_ = & new_forbidden_area_vec_;
   if (pForbidden_poly_ == NULL)
-    ROS_ERROR("Forbidden Areas array was not set correctly.");
+    ROS_ERROR("Forbidden Area vector was not set correctly.");
 
 }
+
 
 // function that sets the opening angles for each sensor in the particle
 bool particle::setOpenAngles(std::vector<double> new_angles)

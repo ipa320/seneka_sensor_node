@@ -670,12 +670,12 @@ void greedySearch::setAreaOfInterest(const geometry_msgs::PolygonStamped & new_p
 
 }
 
-// function that sets forbidden areas array
-void greedySearch::setForbiddenAreas(const sensor_placement::PolygonStamped_array & new_forbidden_areas)
+// function that sets forbidden areas vector
+void greedySearch::setForbiddenAreaVec(const std::vector<geometry_msgs::PolygonStamped> & new_forbidden_area_vec_)
 {
-  pForbidden_poly_ = & new_forbidden_areas;
+  pForbidden_poly_ = & new_forbidden_area_vec_;
   if (pForbidden_poly_ == NULL)
-    ROS_ERROR("Forbidden Areas array was not set correctly.");
+    ROS_ERROR("Forbidden Area vector was not set correctly.");
 
 }
 

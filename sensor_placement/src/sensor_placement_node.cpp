@@ -71,12 +71,15 @@ sensor_placement_node::sensor_placement_node()
   map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("out_cropped_map_metadata",1,true);
   offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("offset_AoI", 1,true);
   GS_targets_grid_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("GS_targets_grid",1,true);
+  fa_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("fa_marker_array",1,false);
+
 
   // ros service servers
   ss_start_PSO_ = nh_.advertiseService("StartPSO", &sensor_placement_node::startPSOCallback, this);
   ss_test_ = nh_.advertiseService("TestService", &sensor_placement_node::testServiceCallback, this);
-  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_node::startGSCallback2, this);
   ss_start_GS_ = nh_.advertiseService("StartGS", &sensor_placement_node::startGSCallback, this);
+  ss_start_GS_with_offset_ = nh_.advertiseService("StartGS_with_offset_polygon", &sensor_placement_node::startGSCallback2, this);
+  ss_clear_fa_vec_ = nh_.advertiseService("ClearForbiddenAreas", &sensor_placement_node::clearFACallback, this);
 
   // ros service clients
   sc_get_map_ = nh_.serviceClient<nav_msgs::GetMap>("static_map");
@@ -95,10 +98,6 @@ sensor_placement_node::sensor_placement_node()
 
   // initialize best particle index
   best_particle_index_ = 0;
-
-  // initialize fobidden_areas_
-  geometry_msgs::PolygonStamped dummy_poly;
-  forbidden_areas_.array.assign(5, dummy_poly);
 
   // initialize other variables
   map_received_ = false;
@@ -226,7 +225,7 @@ bool sensor_placement_node::getTargets()
   // initialize result
   bool result = false;
   // intialize local variable
-  size_t num_of_fa = forbidden_areas_.array.size();
+  size_t num_of_fa = forbidden_area_vec_.size();
 
   if(map_received_ == true)
   {
@@ -267,7 +266,7 @@ bool sensor_placement_node::getTargets()
             //check all forbidden areas
             for (size_t k=0; k<num_of_fa; k++)
             {
-              if((pointInPolygon(world_Coord, forbidden_areas_.array.at(k).polygon) >= 1) && (fa_received_==true))
+              if((pointInPolygon(world_Coord, forbidden_area_vec_.at(k).polygon) >= 1) && (fa_received_==true))
               {
                 // the given position is on the forbidden area
                 dummy_target_info_fix.forbidden = true;
@@ -317,7 +316,7 @@ bool sensor_placement_node::getTargets()
             //check all forbidden areas
             for (size_t k=0; k<num_of_fa; k++)
             {
-              if((pointInPolygon(world_Coord, forbidden_areas_.array.at(k).polygon) >= 1) && (fa_received_==true))
+              if((pointInPolygon(world_Coord, forbidden_area_vec_.at(k).polygon) >= 1) && (fa_received_==true))
               {
                 // the given position is on the forbidden area
                 dummy_target_info_fix.forbidden = true;
@@ -339,7 +338,7 @@ bool sensor_placement_node::getTargets()
             //check all forbidden areas
             for (size_t k=0; k<num_of_fa; k++)
             {
-              if((pointInPolygon(world_Coord, forbidden_areas_.array.at(k).polygon) >= 1) && (fa_received_==true))
+              if((pointInPolygon(world_Coord, forbidden_area_vec_.at(k).polygon) >= 1) && (fa_received_==true))
               {
                 // the given position is on the forbidden area
                 dummy_target_info_fix.forbidden = true;
@@ -382,7 +381,7 @@ void sensor_placement_node::initializePSO()
 
   dummy_particle.setMap(map_);
   dummy_particle.setAreaOfInterest(area_of_interest_);
-  dummy_particle.setForbiddenAreas(forbidden_areas_);
+  dummy_particle.setForbiddenAreaVec(forbidden_area_vec_);
   dummy_particle.setOpenAngles(open_angles_);
   dummy_particle.setRange(sensor_range_);
   dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
@@ -593,13 +592,136 @@ bool sensor_placement_node::startPSOCallback(std_srvs::Empty::Request& req, std_
 }
 
 
+// callback function for the test service
+bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+{
+  // call static_map-service from map_server to get the actual map
+  sc_get_map_.waitForExistence();
+
+  nav_msgs::GetMap srv_map;
+
+  if(sc_get_map_.call(srv_map))
+  {
+    ROS_INFO("Map service called successfully");
+
+    if(AoI_received_)
+    {
+      // get bounding box of area of interest
+      geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
+      // cropMap to boundingBox
+      cropMap(bound_box, srv_map.response.map, map_);
+      // publish cropped map
+      map_.header.stamp = ros::Time::now();
+      map_pub_.publish(map_);
+      map_meta_pub_.publish(map_.info);
+      map_received_ = true;
+    }
+    else
+    {
+      // if no AoI was specified, we consider the whole map to be the AoI
+      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
+      map_ = srv_map.response.map;
+      map_pub_.publish(map_);
+      map_meta_pub_.publish(map_.info);
+      map_received_ = true;
+    }
+  }
+  else
+  {
+    ROS_INFO("Failed to call map service");
+  }
+
+  if(map_received_)
+  {
+    ROS_INFO("Received a map");
+
+    // now create the lookup table based on the range of the sensor and the resolution of the map
+    int radius_in_cells = floor(5 / map_.info.resolution);
+    lookup_table_ = createLookupTableCircle(radius_in_cells);
+  }
+
+  ROS_INFO("getting targets from specified map and area of interest!");
+
+  targets_saved_ = getTargets();
+  if(targets_saved_)
+  {
+    ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
+
+    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
+
+  }
+
+  // initialize pointer to dummy sensor_model
+  FOV_2D_model dummy_2D_model;
+  dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
+
+  particle_num_ = 1;
+  sensor_num_ = 1;
+  open_angles_.at(0) = 1.5 * PI;
+
+  // initialize dummy particle
+  particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
+  // initialize particle swarm with given number of particles containing given number of sensors
+
+  dummy_particle.setMap(map_);
+  dummy_particle.setAreaOfInterest(area_of_interest_);
+  dummy_particle.setForbiddenAreaVec(forbidden_area_vec_);
+  dummy_particle.setOpenAngles(open_angles_);
+  dummy_particle.setRange(5);
+
+  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
+  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
+
+  ROS_INFO_STREAM("creating lookup tables for dummy particle..");
+  dummy_particle.setLookupTable(& lookup_table_);
+  ROS_INFO_STREAM("lookup tables created.");
+
+
+
+  particle_swarm_.assign(particle_num_,dummy_particle);
+
+  // initialze the global best solution
+  global_best_ = dummy_particle;
+
+  double actual_coverage = 0;
+
+  // initialize sensors randomly on perimeter for each particle with random velocities
+  if(AoI_received_)
+  {
+    for(size_t i = 0; i < particle_swarm_.size(); i++)
+    {
+      geometry_msgs::Pose test_pos = geometry_msgs::Pose();
+      test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
+      test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
+      test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
+
+      particle_swarm_.at(i).placeSensorsAtPos(test_pos);
+
+      global_best_ = particle_swarm_.at(i);
+
+      actual_coverage = global_best_.getActualCoverage();
+
+      ROS_INFO_STREAM("coverage: " << actual_coverage);
+
+      ROS_INFO_STREAM("orientation: " << test_pos.orientation);
+      ROS_INFO_STREAM("orientation-map: " << tf::getYaw(map_.info.origin.orientation));
+    }
+  }
+  // publish global best visualization
+  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
+
+  return true;
+}
+
+
+
 // get greedy search targets
 bool sensor_placement_node::getGSTargets()
 {
   // initialize result
   bool result = false;
   // intialize local variables
-  size_t num_of_fa = forbidden_areas_.array.size();
+  size_t num_of_fa = forbidden_area_vec_.size();
   // initialize flag to identify that a given point is in forbidden area
   bool fa_flag = false;
   // intialize cell offset (number of cells to be skipped)
@@ -648,7 +770,7 @@ bool sensor_placement_node::getGSTargets()
                 //check all forbidden areas
                 for (size_t k=0; k<num_of_fa; k++)
                 {
-                  if(pointInPolygon(world_Coord, forbidden_areas_.array.at(k).polygon) >= 1)
+                  if(pointInPolygon(world_Coord, forbidden_area_vec_.at(k).polygon) >= 1)
                   {
                     fa_flag=true;
                     break;
@@ -747,7 +869,7 @@ bool sensor_placement_node::getGSTargets()
                       //check all forbidden areas
                       for (size_t k=0; k<num_of_fa; k++)
                       {
-                        if(pointInPolygon(world_Coord, forbidden_areas_.array.at(k).polygon) >= 1)
+                        if(pointInPolygon(world_Coord, forbidden_area_vec_.at(k).polygon) >= 1)
                         {
                           fa_flag=true;
                           break;
@@ -799,7 +921,7 @@ bool sensor_placement_node::getGSTargets()
                       //check all forbidden areas
                       for (size_t k=0; k<num_of_fa; k++)
                       {
-                        if(pointInPolygon(world_Coord, forbidden_areas_.array.at(k).polygon) >= 1)
+                        if(pointInPolygon(world_Coord, forbidden_area_vec_.at(k).polygon) >= 1)
                         {
                           fa_flag=true;
                           break;
@@ -872,7 +994,7 @@ bool sensor_placement_node::getGSTargets()
                     //check all forbidden areas
                     for (size_t k=0; k<num_of_fa; k++)
                     {
-                      if(pointInPolygon(world_Coord, forbidden_areas_.array.at(k).polygon) >= 1)
+                      if(pointInPolygon(world_Coord, forbidden_area_vec_.at(k).polygon) >= 1)
                       {
                         fa_flag=true;
                         break;
@@ -920,7 +1042,7 @@ bool sensor_placement_node::getGSTargets()
                     //check all forbidden areas
                     for (size_t k=0; k<num_of_fa; k++)
                     {
-                      if(pointInPolygon(world_Coord, forbidden_areas_.array.at(k).polygon) >= 1)
+                      if(pointInPolygon(world_Coord, forbidden_area_vec_.at(k).polygon) >= 1)
                       {
                         fa_flag=true;
                         break;
@@ -1264,125 +1386,13 @@ bool sensor_placement_node::startGSCallback2(sensor_placement::polygon_offset::R
 
 }
 
-
-// callback function for the test service
-bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
+// callback function for clearing all forbidden areas
+bool sensor_placement_node::clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res)
 {
-  // call static_map-service from map_server to get the actual map
-  sc_get_map_.waitForExistence();
-
-  nav_msgs::GetMap srv_map;
-
-  if(sc_get_map_.call(srv_map))
-  {
-    ROS_INFO("Map service called successfully");
-
-    if(AoI_received_)
-    {
-      // get bounding box of area of interest
-      geometry_msgs::Polygon bound_box = getBoundingBox2D(area_of_interest_.polygon, srv_map.response.map);
-      // cropMap to boundingBox
-      cropMap(bound_box, srv_map.response.map, map_);
-      // publish cropped map
-      map_.header.stamp = ros::Time::now();
-      map_pub_.publish(map_);
-      map_meta_pub_.publish(map_.info);
-      map_received_ = true;
-    }
-    else
-    {
-      // if no AoI was specified, we consider the whole map to be the AoI
-      area_of_interest_.polygon = getBoundingBox2D(geometry_msgs::Polygon(), map_);
-      map_ = srv_map.response.map;
-      map_pub_.publish(map_);
-      map_meta_pub_.publish(map_.info);
-      map_received_ = true;
-    }
-  }
-  else
-  {
-    ROS_INFO("Failed to call map service");
-  }
-
-  if(map_received_)
-  {
-    ROS_INFO("Received a map");
-
-    // now create the lookup table based on the range of the sensor and the resolution of the map
-    int radius_in_cells = floor(5 / map_.info.resolution);
-    lookup_table_ = createLookupTableCircle(radius_in_cells);
-  }
-
-  ROS_INFO("getting targets from specified map and area of interest!");
-
-  targets_saved_ = getTargets();
-  if(targets_saved_)
-  {
-    ROS_INFO_STREAM("Saved " << target_num_ << " targets in std-vector");
-
-    ROS_INFO_STREAM("Saved " << targets_with_info_fix_.size() << " targets with info in std-vectors");
-
-  }
-
-  // initialize pointer to dummy sensor_model
-  FOV_2D_model dummy_2D_model;
-  dummy_2D_model.setMaxVelocity(max_lin_vel_, max_lin_vel_, max_lin_vel_, max_ang_vel_, max_ang_vel_, max_ang_vel_);
-
-  particle_num_ = 1;
-  sensor_num_ = 1;
-  open_angles_.at(0) = 1.5 * PI;
-
-  // initialize dummy particle
-  particle dummy_particle = particle(sensor_num_, target_num_, dummy_2D_model);
-  // initialize particle swarm with given number of particles containing given number of sensors
-
-  dummy_particle.setMap(map_);
-  dummy_particle.setAreaOfInterest(area_of_interest_);
-  dummy_particle.setForbiddenAreas(forbidden_areas_);
-  dummy_particle.setOpenAngles(open_angles_);
-  dummy_particle.setRange(5);
-
-  dummy_particle.setTargetsWithInfoFix(targets_with_info_fix_, target_num_);
-  dummy_particle.setTargetsWithInfoVar(targets_with_info_var_);
-
-  ROS_INFO_STREAM("creating lookup tables for dummy particle..");
-  dummy_particle.setLookupTable(& lookup_table_);
-  ROS_INFO_STREAM("lookup tables created.");
-
-
-
-  particle_swarm_.assign(particle_num_,dummy_particle);
-
-  // initialze the global best solution
-  global_best_ = dummy_particle;
-
-  double actual_coverage = 0;
-
-  // initialize sensors randomly on perimeter for each particle with random velocities
-  if(AoI_received_)
-  {
-    for(size_t i = 0; i < particle_swarm_.size(); i++)
-    {
-      geometry_msgs::Pose test_pos = geometry_msgs::Pose();
-      test_pos.position.x = area_of_interest_.polygon.points.at(0).x+5;
-      test_pos.position.y = area_of_interest_.polygon.points.at(0).y+5;
-      test_pos.orientation = tf::createQuaternionMsgFromYaw(PI/4);
-
-      particle_swarm_.at(i).placeSensorsAtPos(test_pos);
-
-      global_best_ = particle_swarm_.at(i);
-
-      actual_coverage = global_best_.getActualCoverage();
-
-      ROS_INFO_STREAM("coverage: " << actual_coverage);
-
-      ROS_INFO_STREAM("orientation: " << test_pos.orientation);
-      ROS_INFO_STREAM("orientation-map: " << tf::getYaw(map_.info.origin.orientation));
-    }
-  }
-  // publish global best visualization
-  marker_array_pub_.publish(global_best_.getVisualizationMarkers());
-
+  forbidden_area_vec_.clear();
+  visualization_msgs::MarkerArray empty_marker;
+  fa_marker_array_pub_.publish(empty_marker);
+  fa_received_=false;
   return true;
 }
 
@@ -1394,11 +1404,55 @@ void sensor_placement_node::AoICB(const geometry_msgs::PolygonStamped::ConstPtr 
 }
 
 // callback function saving the forbidden area received
-void sensor_placement_node::forbiddenAreaCB(const sensor_placement::PolygonStamped_array::ConstPtr &forbidden_areas)
+void sensor_placement_node::forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_area)
 {
-  forbidden_areas_ = *forbidden_areas;
+  forbidden_area_vec_.push_back(*forbidden_area);
   fa_received_ = true;
+  //NOTE: get visualization function called again when a polygon is received -b-
+  fa_marker_array_pub_.publish(getPolygonVecVisualizationMarker(forbidden_area_vec_, "forbidden_area"));
 }
+
+// returns the visualization markers of a vector of polygons
+visualization_msgs::MarkerArray sensor_placement_node::getPolygonVecVisualizationMarker(std::vector<geometry_msgs::PolygonStamped> polygons, std::string polygon_name)
+{
+  visualization_msgs::MarkerArray polygon_marker_array;
+  visualization_msgs::Marker line_strip;
+  geometry_msgs::Point p;
+
+  for (size_t j=0; j<polygons.size(); j++)
+  {
+    // setup standard stuff
+    line_strip.header.frame_id = "/map";
+    line_strip.header.stamp = ros::Time();
+    line_strip.ns = polygon_name + boost::lexical_cast<std::string>(j);;
+    line_strip.action = visualization_msgs::Marker::ADD;
+    line_strip.pose.orientation.w = 1.0;
+    line_strip.id = 0;
+    line_strip.type = visualization_msgs::Marker::LINE_STRIP;
+    line_strip.scale.x = 0.3;
+    line_strip.scale.y = 0.0;
+    line_strip.scale.z = 0.0;
+    line_strip.color.a = 1.0;
+    line_strip.color.r = 1.0;
+    line_strip.color.g = 0.1;
+    line_strip.color.b = 0.0;
+
+    for (size_t k=0; k<polygons.at(j).polygon.points.size(); k++)
+    {
+      p.x = polygons.at(j).polygon.points.at(k).x;
+      p.y = polygons.at(j).polygon.points.at(k).y;
+      line_strip.points.push_back(p);
+    }
+    //enter first point again to get a closed shape
+    line_strip.points.push_back(line_strip.points.at(0));
+    //save the marker
+    polygon_marker_array.markers.push_back(line_strip);
+    //clear line strip point for next polygon
+    line_strip.points.clear();
+  }
+  return polygon_marker_array;
+}
+
 
 //######################
 //#### main program ####
