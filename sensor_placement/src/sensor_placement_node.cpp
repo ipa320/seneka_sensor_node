@@ -713,8 +713,6 @@ bool sensor_placement_node::testServiceCallback(std_srvs::Empty::Request& req, s
   return true;
 }
 
-
-
 // get greedy search targets
 bool sensor_placement_node::getGSTargets()
 {
@@ -730,7 +728,7 @@ bool sensor_placement_node::getGSTargets()
   if(cell_offset==0)
   {
     cell_offset=1;
-    ROS_INFO("evaluated cell_offset = 0, forcing cell_offset = 1");
+    ROS_WARN("evaluated cell_offset = 0, forcing cell_offset = 1");
   }
 
   if(map_received_ == true)

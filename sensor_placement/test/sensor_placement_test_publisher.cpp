@@ -103,6 +103,9 @@ public:
     nh_ = ros::NodeHandle();
     pnh_ = ros::NodeHandle("~");
 
+    //dummy polygon
+    geometry_msgs::PolygonStamped dummy_polygon;
+
     // initialize Publishers
     AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_AoI_polygon", 1);
     forbidden_area_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_forbidden_area_polygon", 1);
@@ -111,8 +114,6 @@ public:
     // initialize Datatypes
     AoI_poly_.polygon = loadPolygon("area_of_interest");
     AoI_poly_.header.frame_id = "/map";
-
-    geometry_msgs::PolygonStamped dummy_polygon;
 
     //get parameter for number of forbibben areas
     if(!pnh_.hasParam("number_of_forbidden_areas"))
@@ -124,7 +125,7 @@ public:
     //load forbidden areas
     for (unsigned int i=0; i<num_of_fa_; i++)
     {
-      dummy_polygon.polygon = loadPolygon("forbidden_area" + boost::lexical_cast<std::string>(i)); //-b-
+      dummy_polygon.polygon = loadPolygon("forbidden_area" + boost::lexical_cast<std::string>(i));
       dummy_polygon.header.frame_id = "/map";
       forbidden_area_poly_vec_.push_back(dummy_polygon);
     }

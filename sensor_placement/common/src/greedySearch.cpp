@@ -182,7 +182,7 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
     new_pose.position.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
     new_pose.position.z = 0;
 
-    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //change loop index to int? -b-
+    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //-b-
     {
       //look around in all directions with resolution of the slice
       new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
@@ -213,9 +213,8 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   }
 
   //search complete, so reset the sensor open angles
-  //NOTE! if slices don't exactly fit, new open angles will be multiple of slices that does fit
+  //NOTE! if slices don't exactly fit, new open angles will be multiple of slices that do fit
   new_ang_r[0] = num_of_slices*gs_ang_r[0];
-  //ROS_INFO_STREAM("new open angle varying from original by: " << (orig_ang_r[0]-new_ang_r[0]));
 
   setOpenAngles(new_ang_r);
   //Get maximum coverage pose
