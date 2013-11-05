@@ -23,11 +23,6 @@ add_service_files(
   polygon_offset.srv
 )
 
-add_message_files(
-  FILES
-  PolygonStamped_array.msg
-)
-
 generate_messages(
   DEPENDENCIES
   std_msgs
@@ -47,7 +42,6 @@ catkin_package(
     rosconsole
     std_msgs
     nav_msgs
-    geometry_msgs
     visualization_msgs
     tf
     std_srvs

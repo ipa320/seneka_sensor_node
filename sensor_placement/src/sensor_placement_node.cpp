@@ -71,7 +71,7 @@ sensor_placement_node::sensor_placement_node()
   map_meta_pub_ = nh_.advertise<nav_msgs::MapMetaData>("out_cropped_map_metadata",1,true);
   offset_AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("offset_AoI", 1,true);
   GS_targets_grid_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("GS_targets_grid",1,true);
-  fa_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("fa_marker_array",1,false);
+  fa_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("fa_marker_array",1,true);
 
 
   // ros service servers

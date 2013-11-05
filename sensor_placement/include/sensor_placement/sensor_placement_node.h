@@ -82,7 +82,6 @@
 #include <greedySearch.h>
 #include <clipper.hpp>
 #include <sensor_placement/polygon_offset.h>
-#include <sensor_placement/PolygonStamped_array.h>
 
 using namespace std;
 using namespace seneka_utilities;

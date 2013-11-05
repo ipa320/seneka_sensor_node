@@ -67,8 +67,6 @@
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
 
-//external includes
-#include <sensor_placement/PolygonStamped_array.h>
 
 //####################
 //#### node class ####
@@ -83,7 +81,6 @@ public:
   ros::Publisher AoI_pub_;
   ros::Publisher forbidden_area_pub_;
   ros::Publisher PoI_pub_;
-  ros::Publisher polygon_marker_array_pub_;
 
   // Data Types for Publishers
   geometry_msgs::PolygonStamped AoI_poly_;
@@ -110,7 +107,6 @@ public:
     AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_AoI_polygon", 1);
     forbidden_area_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_forbidden_area_polygon", 1);
     PoI_pub_ = nh_.advertise<geometry_msgs::Point32>("out_PoI", 1);
- //   polygon_marker_array_pub_ = nh_.advertise<visualization_msgs::MarkerArray>("polygons_MarkerArray",1,true);
 
     // initialize Datatypes
     AoI_poly_.polygon = loadPolygon("area_of_interest");
@@ -118,18 +114,12 @@ public:
 
     geometry_msgs::PolygonStamped dummy_polygon;
 
-    //intialize forbidden areas if found on Parameter Server
-//    initializeFAs();
-
     //get parameter for number of forbibben areas
     if(!pnh_.hasParam("number_of_forbidden_areas"))
     {
       ROS_WARN("No parameter number_of_forbidden_areas on parameter server. Using default [0]");
     }
     pnh_.param("number_of_forbidden_areas",num_of_fa_,0);
-
-
-
 
     //load forbidden areas
     for (unsigned int i=0; i<num_of_fa_; i++)
@@ -179,8 +169,7 @@ public:
       {
         forbidden_area_pub_.publish(forbidden_area_poly_vec_.at(i));
         ROS_INFO_STREAM("publishing forbidden area " << i);   //-b-
-        ros::Duration(0.5).sleep();
-    //    polygon_marker_array_pub_.publish(getPolygonsVisualizationMarker(forbidden_areas_poly_));
+        ros::Duration(0.2).sleep();   //-b- NOTE: arbitrary delay between publishing polygons
       }
       else
       {
@@ -362,62 +351,6 @@ public:
                 polygon_param.c_str());
 
     return polygon;
-  }
-
-/*  // initialize forbidden areas if found on Parameter Server
-  void initializeFAs()
-  {
-    //get parameter for number of forbibben areas
-    if(!pnh_.hasParam("number_of_forbidden_areas"))
-    {
-      ROS_WARN("No parameter number_of_forbidden_areas on parameter server. Using default [0]");
-    }
-    pnh_.param("number_of_forbidden_areas",num_of_fa_,0);
-
-    // initialize forbidden area array
-    geometry_msgs::PolygonStamped dummy_poly;
-    forbidden_areas_poly_.array.assign(num_of_fa_,dummy_poly);
-  }
-*/
-  // returns the visualization markers of PolygonStamped_array
-  visualization_msgs::MarkerArray getPolygonsVisualizationMarker(sensor_placement::PolygonStamped_array polygons)
-  {
-    visualization_msgs::MarkerArray polygon_marker_array;
-    visualization_msgs::Marker line_strip;
-    geometry_msgs::Point p;
-
-    for (size_t j=0; j<polygons.array.size(); j++)
-    {
-      // setup standard stuff
-      line_strip.header.frame_id = "/map";
-      line_strip.header.stamp = ros::Time();
-      line_strip.ns = "forbidden_area" + boost::lexical_cast<std::string>(j);;
-      line_strip.action = visualization_msgs::Marker::ADD;
-      line_strip.pose.orientation.w = 1.0;
-      line_strip.id = 0;
-      line_strip.type = visualization_msgs::Marker::LINE_STRIP;
-      line_strip.scale.x = 0.3;
-      line_strip.scale.y = 0.0;
-      line_strip.scale.z = 0.0;
-      line_strip.color.a = 1.0;
-      line_strip.color.r = 1.0;
-      line_strip.color.g = 0.1;
-      line_strip.color.b = 0.0;
-
-      for (size_t k=0; k<polygons.array.at(j).polygon.points.size(); k++)
-      {
-        p.x = polygons.array.at(j).polygon.points.at(k).x;
-        p.y = polygons.array.at(j).polygon.points.at(k).y;
-        line_strip.points.push_back(p);
-      }
-      //enter first point again to get a closed shape
-      line_strip.points.push_back(line_strip.points.at(0));
-      //save the marker
-      polygon_marker_array.markers.push_back(line_strip);
-      //clear line strip point for next polygon
-      line_strip.points.clear();
-    }
-    return polygon_marker_array;
   }
 }; //NodeClass
 

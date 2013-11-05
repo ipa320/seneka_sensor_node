@@ -69,7 +69,6 @@
 // external includes
 #include <sensor_model.h>
 #include <seneka_utilities.h>
-#include <sensor_placement/PolygonStamped_array.h>
 
 
 using namespace seneka_utilities;
