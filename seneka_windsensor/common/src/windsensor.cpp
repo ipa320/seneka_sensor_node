@@ -115,15 +115,15 @@ bool windsensor::open(const char* pcPort, int iBaudRate) {
 int windsensor::direction(float* sensor_values)                                // read from serial and put values into
 {
 
-    unsigned char Buffer[1024] = {0};                                           // increased Buffer from 512 to 1024	// 31.10.2013 David:	buffer[512] too small to read  1020 bytes ..??
-    int bytesread;
+    unsigned char Buffer[102400] = {0};                                           // increased Buffer from 512 to 1024	// 31.10.2013 David:	buffer[512] too small to read  1020 bytes ..??
+    int bytesread;                                                                                // buffer increased to 102400 to analyze incoming data
     int iResultsFound = 0;
 
     //	SerialIO windsensor_serialConn;
     //	open = windsensor_serialConn.open();
     //bytesread = windsensor_serialConn.readNonBlocking((char*)Buffer,1020);
     
-    bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1024);
+    bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 102400);
 
 cout<<"Total number of bytes read: "<<bytesread<<"\n"<<endl;;
 cout<<"Buffer:"<<endl<< Buffer << endl;
