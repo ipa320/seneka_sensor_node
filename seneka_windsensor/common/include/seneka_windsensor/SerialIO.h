@@ -12,12 +12,22 @@
  * Description:
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ *
  * Author: Ciby Mathew, email:Ciby.Mathew@ipa.fhg.de
  * Supervised by: Christophe Maufroy
  *
- * Date of creation: Jan 2013
- * ToDo:
+ * modified by: David Bertram, David.Bertram@ipa.fhg.de
  *
+ * Date of creation: Jan 2013
+ * Date of modification: Oct 2013
+ *
+ * ToDo:
+ * -- clean up
+ * -- restructure code
+ * -- test
+ *
+ * ToDo - extra features:
+ * ++ writing to windsensor/ setting windsensor-internal parameters possible?
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *

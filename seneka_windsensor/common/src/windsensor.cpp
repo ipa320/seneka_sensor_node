@@ -13,13 +13,22 @@
  * Description:
  *								
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *			
+ *
  * Author: Ciby Mathew, email:Ciby.Mathew@ipa.fhg.de
  * Supervised by: Christophe Maufroy
  *
- * Date of creation: Jan 2013
- * ToDo:
+ * modified by: David Bertram, David.Bertram@ipa.fhg.de
  *
+ * Date of creation: Jan 2013
+ * Date of modification: Oct 2013
+ *
+ * ToDo:
+ * -- clean up
+ * -- restructure code
+ * -- test
+ *
+ * ToDo - extra features:
+ * ++ writing to windsensor/ setting windsensor-internal parameters possible?
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -59,109 +68,122 @@ using namespace std;
 typedef unsigned char BYTE;
 
 //-----------------------------------------------
-windsensor::windsensor()
-{
-	//set the units of wind sped and direction
-	//	speed=1;// to change to knot
-	//	angle=1; //to change to degree
+
+windsensor::windsensor() {
+    //set the units of wind sped and direction
+    //	speed=1;// to change to knot
+    //	angle=1; //to change to degree
 }
 
 //-------------------------------------------
-windsensor::~windsensor()
-{
-	m_SerialIO.close();
+
+windsensor::~windsensor() {
+    m_SerialIO.close();
 }
 
+void windsensor::close() {
+    m_SerialIO.close();
+}
 
 // ---------------------------------------------------------------------------
-bool windsensor::open(const char* pcPort, int iBaudRate)
-{
-	int bRetSerial;
-	// forwindsensor :default is 4800
-	if (iBaudRate != 4800)
-		return false;
-	// initialize Serial Interface
-	m_SerialIO.setBaudRate(iBaudRate);
-	m_SerialIO.setDeviceName(pcPort);
-	bRetSerial = m_SerialIO.open();
-	if(bRetSerial == 0)
-	{
-		// Clears the read and transmit buffer.
-		//	    m_iPosReadBuf2 = 0;
-		m_SerialIO.purge();
-		return true;
-	}
-	else
-	{
-		return false;
-	}
+
+bool windsensor::open(const char* pcPort, int iBaudRate) {
+    int bRetSerial;
+    // forwindsensor :default is 4800
+    if (iBaudRate != 4800)
+        return false;
+    // initialize Serial Interface
+    m_SerialIO.setBaudRate(iBaudRate);
+    m_SerialIO.setDeviceName(pcPort);
+    bRetSerial = m_SerialIO.open();
+    if (bRetSerial == 0) {
+        // Clears the read and transmit buffer.
+        //	    m_iPosReadBuf2 = 0;
+        m_SerialIO.purge();
+        return true;
+    } else {
+        return false;
+    }
 }
 
-void windsensor::direction(float* dir)
+
+
+            // TODO: David:     NMEA messages have max length of 80 bytes??
+            //              --> is that true?
+            //              --> can use smaller buffer??
+
+int windsensor::direction(float* sensor_values)                                // read from serial and put values into
 {
 
-	unsigned char Buffer[512] ={0};
-	int open,bytesread;
-	SerialIO windsensor;
-	open = windsensor.open();
-	int length;
-	//	sleep(2);
-	bytesread = windsensor.readNonBlocking((char*)Buffer,1020);
-	//	cout<<"Total number of bytes read"<<bytesread<<"\n"<<endl;;
+    unsigned char Buffer[1024] = {0};                                           // increased Buffer from 512 to 1024	// 31.10.2013 David:	buffer[512] too small to read  1020 bytes ..??
+    int bytesread;
+    int iResultsFound = 0;
 
-	for(int i=0; i < bytesread; i++) //the wind angle is in degrees and direction is in knots by default
-	{
-		if((Buffer[i])=='$')
-		{
-			//			printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
-			//			cout<<endl;
+    //	SerialIO windsensor_serialConn;
+    //	open = windsensor_serialConn.open();
+    //bytesread = windsensor_serialConn.readNonBlocking((char*)Buffer,1020);
+    
+    bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1024);
 
-			if((Buffer[i+1]=='I')&&(Buffer[i+2]=='I')&&(Buffer[i+3]=='M')&&(Buffer[i+4]=='W')&&(Buffer[i+14]==',')&&(Buffer[i+23]=='A'))
-			{
-				dir[0] = ((Buffer[i+7]-48)*100 + (Buffer[i+8]-48)*10 +(Buffer[i+9]-48) +.1*(Buffer[i+11]-48));// extracting the value for the angle and speed
-				dir[1] = ((Buffer[i+15]-48)*100 + (Buffer[i+16]-48)*10 +(Buffer[i+17]-48) +.1*(Buffer[i+19]-48));
-				if((dir[0] < 0.001) || (dir[0] > 360))// To check one more time is the value is in bounds
-					dir[0]=-1;
-				if(dir[1] < 0)
-					dir[1]=-1;
-				if((dir[0] != -1)||((dir[1] != -1)))
-				{
-					switch(speed)
-					{
-						case 1:
-							cout<<"knots"<<endl;
-							break;
-						case 2:
-							dir[1]=dir[1]* 0.514444;
-							cout<<"m/s"<<endl;
-							break;
-
-						default:
-							dir[1]=dir[1]*1.852;
-							cout<<"km/h"<<endl;
-							break;
-					}
-					switch(angle)
-					{
-						case 1:
-							cout<<"degree"<<endl;
-							break;
-
-						default:
-							dir[0]=dir[0]*0.0174532925;
-							cout<<"radian"<<endl;
-							break;
-					}
-				}else
-					cout<<"Incorrect values"<<endl;
-				cout<<"direction and angle"<<dir[0]<<"\t"<<dir[1]<<endl;
-			}
-
-			cout<<"\n";
-		}
-
-	}
+cout<<"Total number of bytes read: "<<bytesread<<"\n"<<endl;;
 
 
+
+// TODO: David:     review this loop! looks like it tries to find begin of command for each character in buffer..
+//                  this will overwrite if any "$" is found.. and use the later command..
+//      --> recode this loop! think about that before changing any code here..
+//          - maybe implement a stop after first successfull read, and pass rest of buffer into another read-Function.. or whatever other solution gets "defined"
+
+    for (int i = 0; i < bytesread; i++)                                         //the wind angle is in degrees and speed is in knots by default
+    {
+        if ((Buffer[i]) == '$') {
+//printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
+//cout<<endl;
+
+            if ((Buffer[i + 1] == 'I') && (Buffer[i + 2] == 'I') && (Buffer[i + 3] == 'M') && (Buffer[i + 4] == 'W') && (Buffer[i + 14] == ',') && (Buffer[i + 23] == 'A')) {
+                sensor_values[0] = ((Buffer[i + 7] - 48)*100 + (Buffer[i + 8] - 48)*10 + (Buffer[i + 9] - 48) + .1 * (Buffer[i + 11] - 48)); // extracting the value for the angle and speed
+                sensor_values[1] = ((Buffer[i + 15] - 48)*100 + (Buffer[i + 16] - 48)*10 + (Buffer[i + 17] - 48) + .1 * (Buffer[i + 19] - 48));
+                if ((sensor_values[0] < 0.001) || (sensor_values[0] > 360)) // To check one more time if the value is in bounds
+                    sensor_values[0] = -1;
+                if (sensor_values[1] < 0)
+                    sensor_values[1] = -1;
+                if ((sensor_values[0] != -1) || ((sensor_values[1] != -1))) {
+                    switch (speed) {
+                        case 1:
+                            cout << "Result #" <<  iResultsFound+1  << ": knots, ";
+                            break;
+                        case 2:
+                            sensor_values[1] = sensor_values[1]* 0.514444;
+                            cout << "m/s, ";
+                            break;
+
+                        default:
+                            sensor_values[1] = sensor_values[1]*1.852;
+                            cout << "km/h, ";
+                            break;
+                    }
+                    switch (angle) {
+                        case 1:
+                            cout << "degree: ";
+                            break;
+
+                        default:
+                            sensor_values[0] = sensor_values[0]*0.0174532925;
+                            cout << "radian: \t\t";
+                            break;
+                    }
+                } else{
+                    cout << "Incorrect values" << endl;
+                }
+                cout << "direction and angle: " << sensor_values[0] << "\t" << sensor_values[1] << endl;
+                iResultsFound++;
+            }
+
+            //cout << "\n";
+        }
+
+    }
+
+return iResultsFound;
 }
 

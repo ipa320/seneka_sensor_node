@@ -13,12 +13,22 @@
  * Description:
  *								
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *			
- * Author: Christian Connette, email:christian.connette@ipa.fhg.de
- * Supervised by: Christian Connette, email:christian.connette@ipa.fhg.de
  *
- * Date of creation: Jan 2009
+ * Author: Ciby Mathew, email:Ciby.Mathew@ipa.fhg.de
+ * Supervised by: Christophe Maufroy
+ *
+ * modified by: David Bertram, David.Bertram@ipa.fhg.de
+ *
+ * Date of creation: Jan 2013
+ * Date of modification: Oct 2013
+ *
  * ToDo:
+ * -- clean up
+ * -- restructure code
+ * -- test
+ *
+ * ToDo - extra features:
+ * ++ writing to windsensor/ setting windsensor-internal parameters possible?
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -85,7 +95,8 @@ public:
 	 */
 	bool open(const char* pcPort, int iBaudRate);
 	int speed,angle;
-	void direction(float* dir);
+	int direction(float* dir);
+        void close();
 
 private:
 	// Constants
@@ -93,11 +104,11 @@ private:
 	SerialIO m_SerialIO;
 	// Functions
 
-	unsigned int getUnsignedWord(unsigned char msb, unsigned char lsb)
-	{
-		return (msb << 8) | lsb;
-	}
-	unsigned int createCRC(unsigned char *ptrData, int Size);
+//	unsigned int getUnsignedWord(unsigned char msb, unsigned char lsb)
+//	{
+//		return (msb << 8) | lsb;
+//	}
+//	unsigned int createCRC(unsigned char *ptrData, int Size);
 
 };
 #endif //

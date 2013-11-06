@@ -15,11 +15,22 @@
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ *
  * Author: Ciby Mathew, email:Ciby.Mathew@ipa.fhg.de
  * Supervised by: Christophe Maufroy
  *
+ * modified by: David Bertram, David.Bertram@ipa.fhg.de
+ *
  * Date of creation: Jan 2013
+ * Date of modification: Oct 2013
+ *
  * ToDo:
+ * -- clean up
+ * -- restructure code
+ * -- test
+ *
+ * ToDo - extra features:
+ * ++ writing to windsensor/ setting windsensor-internal parameters possible?
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -60,7 +71,6 @@
 
 // ROS includes
 
-
 // ROS message includes
 #include <ros/ros.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
@@ -91,7 +101,7 @@ public:
 	// global variables
 	std::string port;
 	int baud;
-	int rate;
+	double rate;                    // David:  rate can use fractions of Hz to allow intervall bigger than 1 sec (rate=0.5 gives  intervall of 2 seconds)
 	ros::Time syncedROSTime;
 	// Constructor
 	NodeClass()
@@ -106,7 +116,7 @@ public:
 		nh.param("baud", baud, 4800);
 
 		if(!nh.hasParam("rate")) ROS_WARN("Used default parameter for rate");
-		nh.param("rate", rate, 10);
+		nh.param("rate", rate, 1.0);
 
 		syncedROSTime = ros::Time::now();
 		// implementation of topics to publish
@@ -140,7 +150,6 @@ public:
 		topicPub_wind.publish(value);
 
 		//	 ROS_INFO("...publishing wind of windsensor");
-
 		diagnostic_msgs::DiagnosticArray diagnostics;
 		diagnostics.status.resize(1);
 		diagnostics.status[0].level = 0;
@@ -148,6 +157,7 @@ public:
 		diagnostics.status[0].message = "Wind sensor running";
 		topicPub_Diagnostic_.publish(diagnostics);
 	}
+
 	void publishError(std::string error_str) {
 		diagnostic_msgs::DiagnosticArray diagnostics;
 		diagnostics.status.resize(1);
@@ -159,48 +169,64 @@ public:
 
 };
 
+
 //
 ////#######################
 //#### main programm ####
 int main(int argc, char** argv)
 {
-	// initialize ROS, spezify name of node
+	// initialize ROS, specify name of node
 	ros::init(argc, argv, "windsensor");
 
-	NodeClass nodeClass;
 	windsensor windsensor;
+	NodeClass nodeClass;
+	
 	int iBaudRate = nodeClass.baud;
-	int lrate = nodeClass.rate;
+	double lrate = nodeClass.rate;
 	bool bOpenwindsensor = false, bRecScan = false;
-	float dir[100]= {0};
-	while (!bOpenwindsensor)
+	float windsensor_values[100]= {0};
+
+	while (!bOpenwindsensor)                                                            // open connection to windsensor
 	{
 		ROS_INFO("Opening wind sensor... (port:%s)",nodeClass.port.c_str());
 		bOpenwindsensor = windsensor.open(nodeClass.port.c_str(), iBaudRate);
-		// check, if it is the first try to open scanner
-		if(!bOpenwindsensor)
+		if(!bOpenwindsensor)                                                        // check, connection was successfully opened
 		{
 			ROS_ERROR("...windsensor not available on port %s. Will retry every second.",nodeClass.port.c_str());
 			nodeClass.publishError("...windsensor not available on port");
 		}
-		sleep(1); // wait for Windsensorto get ready if successfull, or wait befor retrying
+		sleep(1);                                                           // wait for Windsensor to get ready if successfull, or wait before retrying
 	}
 	ROS_INFO("...Windsensor opened successfully on port %s",nodeClass.port.c_str());
-	// main loop
+	
 	ros::Rate loop_rate(lrate); // Hz
 
-	while(nodeClass.nh.ok())
+        int iResultsFound = 0;
+
+                                                                                 // read values from windsensor
+	while(nodeClass.nh.ok())                                                    // main loop
 	{
 		// read values
 		ROS_DEBUG("Reading windsensor...");
-		windsensor.direction(dir);
-		ROS_INFO("...publishing direction and speed of windsensor %1f, %1f",dir[0],dir[1]);
-		//     publish wind
-		nodeClass.publishwind(dir);
+		iResultsFound = windsensor.direction(windsensor_values);
+                if (iResultsFound > 0){
+                    ROS_INFO("  found %d sensor values in buffer",iResultsFound);
+                    ROS_INFO("...publishing direction and speed of windsensor %1f, %1f",windsensor_values[0],windsensor_values[1]);
+                    //     publish wind
+                    nodeClass.publishwind(windsensor_values);
+                }
+                else{
+                    ROS_INFO("sensor values not yet received, ...waiting..");
+                
+                }
 		//     sleep and waiting for messages, callbacks
 		ros::spinOnce();
 		loop_rate.sleep();
 	}
+
+        // close connection to windsensor
+        windsensor.close();
+
 	return 0;
 }
 
