@@ -116,7 +116,7 @@ public:
 		nh.param("baud", baud, 4800);
 
 		if(!nh.hasParam("rate")) ROS_WARN("Used default parameter for rate");
-		nh.param("rate", rate, 1.0);
+		nh.param("rate", rate, 0.1);        
 
 		syncedROSTime = ros::Time::now();
 		// implementation of topics to publish

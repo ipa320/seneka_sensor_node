@@ -126,6 +126,7 @@ int windsensor::direction(float* sensor_values)                                /
     bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1024);
 
 cout<<"Total number of bytes read: "<<bytesread<<"\n"<<endl;;
+cout<<"Buffer:"<<endl<< Buffer << endl;
 
 
 
@@ -175,7 +176,7 @@ cout<<"Total number of bytes read: "<<bytesread<<"\n"<<endl;;
                 } else{
                     cout << "Incorrect values" << endl;
                 }
-                cout << "direction and angle: " << sensor_values[0] << "\t" << sensor_values[1] << endl;
+                cout << "direction and speed: " << sensor_values[0] << "\t" << sensor_values[1] << endl;
                 iResultsFound++;
             }
 
