@@ -6,10 +6,8 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /ForbiddenArea1
-        - /Polygon1
-        - /MarkerArray1
-        - /MarkerArray1/Namespaces1
+        - /GS_Targets1/Namespaces1
+        - /ForbiddenAreas1
       Splitter Ratio: 0.585185
     Tree Height: 898
   - Class: rviz/Time
@@ -67,13 +65,6 @@ Visualization Manager:
       Value: true
     - Alpha: 1
       Class: rviz/Polygon
-      Color: 0; 0; 255
-      Enabled: true
-      Name: ForbiddenArea
-      Topic: /forbidden_area_polygon
-      Value: true
-    - Alpha: 1
-      Class: rviz/Polygon
       Color: 0; 255; 255
       Enabled: true
       Name: Polygon
@@ -82,15 +73,21 @@ Visualization Manager:
     - Class: rviz/MarkerArray
       Enabled: true
       Marker Topic: /GS_targets_grid
-      Name: MarkerArray
+      Name: GS_Targets
       Namespaces:
-        grid0: false
-        grid1: false
-        grid2: false
-        grid3: false
-        grid4: true
-        grid5: false
-        grid6: false
+        {}
+      Queue Size: 100
+      Value: true
+    - Class: rviz/MarkerArray
+      Enabled: true
+      Marker Topic: /fa_marker_array
+      Name: ForbiddenAreas
+      Namespaces:
+        forbidden_area0: true
+        forbidden_area1: true
+        forbidden_area2: true
+        forbidden_area3: true
+        forbidden_area4: true
       Queue Size: 100
       Value: true
   Enabled: true
@@ -112,15 +109,15 @@ Visualization Manager:
   Value: true
   Views:
     Current:
-      Angle: 0
+      Angle: 2.23517e-08
       Class: rviz/TopDownOrtho
       Name: Current View
       Near Clip Distance: 0.01
-      Scale: 5.79033
+      Scale: 5.72144
       Target Frame: <Fixed Frame>
       Value: TopDownOrtho (rviz)
-      X: 151.558
-      Y: 141.282
+      X: 145.441
+      Y: 138.383
     Saved: ~
 Window Geometry:
   Displays:

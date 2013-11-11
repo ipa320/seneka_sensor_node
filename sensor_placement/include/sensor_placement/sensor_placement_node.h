@@ -66,15 +66,14 @@
 #include <geometry_msgs/PolygonStamped.h>
 #include <geometry_msgs/Point32.h>
 #include <geometry_msgs/Pose2D.h>
+#include <visualization_msgs/Marker.h>
 #include <visualization_msgs/MarkerArray.h>
 #include <nav_msgs/OccupancyGrid.h>
 #include <nav_msgs/Path.h>
 #include <std_msgs/String.h>
 #include <std_srvs/Empty.h>
 #include <nav_msgs/GetMap.h>
-#include <sensor_placement/polygon_offset.h>
 
-#include <visualization_msgs/Marker.h>
 
 // external includes
 #include <sensor_model.h>
@@ -82,6 +81,7 @@
 #include <seneka_utilities.h>
 #include <greedySearch.h>
 #include <clipper.hpp>
+#include <sensor_placement/polygon_offset.h>
 
 using namespace std;
 using namespace seneka_utilities;
@@ -100,9 +100,11 @@ private:
   // bool variable to check if an AoI was already received
   bool AoI_received_;
 
-
   // bool variable to check if an forbidden area was already received
   bool fa_received_;
+
+  // bool variable to check if an offset_polygon was already received
+  bool polygon_offset_val_received_;
 
   // bool variable to check if the targets were already taken from the map
   bool targets_saved_;
@@ -110,8 +112,8 @@ private:
   // actual area of interest to be covered by the sensor nodes
   geometry_msgs::PolygonStamped area_of_interest_;
 
-  // polygon for forbidden area
-  geometry_msgs::PolygonStamped forbidden_area_;
+  // polygon array for forbidden area
+  std::vector<geometry_msgs::PolygonStamped> forbidden_area_vec_;
 
   // number of sensors
   int sensor_num_;
@@ -209,12 +211,14 @@ public:
   ros::Publisher map_pub_, map_meta_pub_;
   ros::Publisher nav_path_pub_;
   ros::Publisher offset_AoI_pub_;
+  ros::Publisher fa_marker_array_pub_;
 
   // declaration of ros service servers
   ros::ServiceServer ss_start_PSO_;
   ros::ServiceServer ss_test_;
   ros::ServiceServer ss_start_GS_;
   ros::ServiceServer ss_start_GS_with_offset_;
+  ros::ServiceServer ss_clear_fa_vec_;
 
   // declaration of ros service clients
   ros::ServiceClient sc_get_map_;
@@ -253,6 +257,9 @@ public:
   // function to create an offsetted polygon from area of interest
   geometry_msgs::PolygonStamped offsetAoI(double offset);
 
+  // returns the visualization markers of a vector of polygons
+  visualization_msgs::MarkerArray getPolygonVecVisualizationMarker(std::vector<geometry_msgs::PolygonStamped>, std::string );
+
 
   /* ----------------------------------- */
   /* --------- ROS Callbacks ----------- */
@@ -268,12 +275,15 @@ public:
   // callback function for the start GS service
   bool startGSCallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
 
+  // callback function for clearing all forbidden areas
+  bool clearFACallback(std_srvs::Empty::Request& req, std_srvs::Empty::Response& res);
+
   // callback function for the start GS service with offset parameter
   bool startGSCallback2(sensor_placement::polygon_offset::Request& req, sensor_placement::polygon_offset::Response& res);
 
   // callback functions
   void AoICB(const geometry_msgs::PolygonStamped::ConstPtr &AoI);
-  void forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_area);
+  void forbiddenAreaCB(const geometry_msgs::PolygonStamped::ConstPtr &forbidden_areas);
 
 };
 

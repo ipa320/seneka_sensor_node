@@ -98,65 +98,14 @@ greedySearch::greedySearch(int num_of_sensors, int num_of_targets, FOV_2D_model 
 greedySearch::~greedySearch(){}
 
 
-// OLD function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
-void greedySearch::greedyPlacement(size_t sensor_index)
-{
-  unsigned int angle_resolution = 15;         //define angle_resolution parameter
-  unsigned int cell_search_resolution = 200;  //define cell_search_resolution parameter
-  double num_of_steps;
-  bool update_covered_info;
-  int placement_point_id;
-  geometry_msgs::Pose new_pose;
-  geometry_msgs::Pose placement_pose;
-
-  //while searching, restrict updating of 'covered' info in updateGSpointsRaytracing
-  update_covered_info=false;
-  //reset previous max coverage information before searching for new position
-  resetMaxSensorCovInfo();
-  //reset max targets covered information
-  resetGSpool();
-
-  //place the current sensor on all points in GS pool one by one and calculate coverge
-  for (size_t point_id=0; point_id<GS_pool_.size(); point_id++)
-  {
-    //first calculate world position of current point id and place sensor at that position
-    new_pose.position.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
-    new_pose.position.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
-    new_pose.position.z = 0;
-
-    //check all orientations
-    for (int alpha=0; alpha<angle_resolution*num_of_steps; alpha=alpha+angle_resolution)
-    {
-      //look around at all angles and save only the orientation that gives max coverage
-      new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha*(PI/180));
-      sensors_.at(sensor_index).setSensorPose(new_pose);
-      updateGSpointsRaytracing(sensor_index, point_id, update_covered_info);    //updates targets covered and keeps only the pose info that gives max coverage
-    }
-  }
-  //Get maximum coverage pose
-  placement_pose = getMaxSensorCovPOSE();
-  //Get maximum coverage point ID
-  placement_point_id = getMaxSensorCovPointID();
-  //place the sensor at max coverage point
-  sensors_.at(sensor_index).setSensorPose(placement_pose);
-
-  //now actually mark the targets as covered
-  update_covered_info = true;
-  updateGSpointsRaytracing(sensor_index, placement_point_id, update_covered_info);
-
-}
-
-
 // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
 void greedySearch::newGreedyPlacement(size_t sensor_index)
 {
+  bool update_covered_info;
   unsigned int max_cov_ind;
-  double new_sum, max_sum;
-  double max_cov_orientation;
   int placement_point_id;
   int num_of_slices;
   int coverage;
-  bool update_covered_info;
   geometry_msgs::Pose new_pose;
   geometry_msgs::Pose placement_pose;
   std::vector<double> orig_ang_r(2,0);
@@ -164,6 +113,8 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   std::vector<double> new_ang_r(2,0);
   double slice_res_deg;
   double error_pos;
+  double new_sum, max_sum;
+  double max_cov_orientation;
 
 
   //************************* "slice" open angle adjustment ********************
@@ -182,13 +133,13 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
       {
         //new angle must be less than old one to get closest solution
         slice_res_deg = slice_res_deg - error_pos/ceil(360/slice_res_deg);
-        ROS_INFO_STREAM("Modified slice open anlges[in degrees]: " << slice_res_deg);
+        ROS_INFO_STREAM("Modified slice open angles[in degrees]: " << slice_res_deg);
       }
       else
       {
         //new angle must be greater than old one to get closest solution
         slice_res_deg = slice_res_deg + ((slice_res_deg-error_pos)/floor(360/slice_res_deg));
-        ROS_INFO_STREAM("Modified slice open anlges[in degrees]: " << slice_res_deg);
+        ROS_INFO_STREAM("Modified slice open angles[in degrees]: " << slice_res_deg);
       }
     }
   }
@@ -231,7 +182,7 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
     new_pose.position.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
     new_pose.position.z = 0;
 
-    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //change loop index to int -b-
+    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //-b-
     {
       //look around in all directions with resolution of the slice
       new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
@@ -262,9 +213,8 @@ void greedySearch::newGreedyPlacement(size_t sensor_index)
   }
 
   //search complete, so reset the sensor open angles
-  //NOTE! if slices don't exactly fit, new open angles will be multiple of slices that does fit
+  //NOTE! if slices don't exactly fit, new open angles will be multiple of slices that do fit
   new_ang_r[0] = num_of_slices*gs_ang_r[0];
-  //ROS_INFO_STREAM("new open angle varying from original by: " << (orig_ang_r[0]-new_ang_r[0]));
 
   setOpenAngles(new_ang_r);
   //Get maximum coverage pose
@@ -719,12 +669,12 @@ void greedySearch::setAreaOfInterest(const geometry_msgs::PolygonStamped & new_p
 
 }
 
-// function that sets forbidden area
-void greedySearch::setForbiddenArea(const geometry_msgs::PolygonStamped & new_forbidden_area)
+// function that sets forbidden areas vector
+void greedySearch::setForbiddenAreaVec(const std::vector<geometry_msgs::PolygonStamped> & new_forbidden_area_vec_)
 {
-  pForbidden_poly_ = & new_forbidden_area;
+  pForbidden_poly_ = & new_forbidden_area_vec_;
   if (pForbidden_poly_ == NULL)
-    ROS_ERROR("Forbidden Area was not set correctly.");
+    ROS_ERROR("Forbidden Area vector was not set correctly.");
 
 }
 
@@ -859,7 +809,7 @@ visualization_msgs::MarkerArray greedySearch::getGridVisualizationMarker()
     t_points.color.g = 0.0;
     t_points.color.b = 1.0;
 
-    for (size_t point_id=0; point_id<GS_poolsize; point_id=point_id++)  //modify to use iterators -b-
+    for (size_t point_id=0; point_id<GS_poolsize; point_id=point_id++)
     {
 
       p.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);

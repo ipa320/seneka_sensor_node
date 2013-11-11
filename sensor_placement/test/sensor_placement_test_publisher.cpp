@@ -60,11 +60,13 @@
 #include <geometry_msgs/Polygon.h>
 #include <geometry_msgs/Point32.h>
 #include <std_srvs/Empty.h>
+#include <visualization_msgs/MarkerArray.h>
 
 // boost includes
 #include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
 #include <boost/algorithm/string.hpp>
+
 
 //####################
 //#### node class ####
@@ -82,13 +84,17 @@ public:
 
   // Data Types for Publishers
   geometry_msgs::PolygonStamped AoI_poly_;
-  geometry_msgs::PolygonStamped forbidden_area_poly_;
+  std::vector< geometry_msgs::PolygonStamped > forbidden_area_poly_vec_;
   geometry_msgs::Point32 PoI_;
+ // sensor_placement::PolygonStamped_array forbidden_areas_poly_;
 
   // Services to trigger Publishing
   ros::ServiceServer ss_AoI_;
   ros::ServiceServer ss_forbidden_area_;
   ros::ServiceServer ss_PoI_;
+
+  //parameter for number of forbidden areas
+  int num_of_fa_;
 
   // Constructor
   NodeClass()
@@ -97,18 +103,32 @@ public:
     nh_ = ros::NodeHandle();
     pnh_ = ros::NodeHandle("~");
 
+    //dummy polygon
+    geometry_msgs::PolygonStamped dummy_polygon;
+
     // initialize Publishers
     AoI_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_AoI_polygon", 1);
-    forbidden_area_pub_ = 
-      nh_.advertise<geometry_msgs::PolygonStamped>("out_forbidden_area_polygon", 1);
+    forbidden_area_pub_ = nh_.advertise<geometry_msgs::PolygonStamped>("out_forbidden_area_polygon", 1);
     PoI_pub_ = nh_.advertise<geometry_msgs::Point32>("out_PoI", 1);
 
     // initialize Datatypes
     AoI_poly_.polygon = loadPolygon("area_of_interest");
     AoI_poly_.header.frame_id = "/map";
 
-    forbidden_area_poly_.polygon = loadPolygon("forbidden_area");
-    forbidden_area_poly_.header.frame_id = "/map";
+    //get parameter for number of forbibben areas
+    if(!pnh_.hasParam("number_of_forbidden_areas"))
+    {
+      ROS_WARN("No parameter number_of_forbidden_areas on parameter server. Using default [0]");
+    }
+    pnh_.param("number_of_forbidden_areas",num_of_fa_,0);
+
+    //load forbidden areas
+    for (unsigned int i=0; i<num_of_fa_; i++)
+    {
+      dummy_polygon.polygon = loadPolygon("forbidden_area" + boost::lexical_cast<std::string>(i));
+      dummy_polygon.header.frame_id = "/map";
+      forbidden_area_poly_vec_.push_back(dummy_polygon);
+    }
 
     PoI_.x = 100;
     PoI_.y = 100;
@@ -116,7 +136,7 @@ public:
 
     // Service Initializations
     ss_AoI_ = nh_.advertiseService("publish_AoI", &NodeClass::srvCB_AoI, this);
-    ss_forbidden_area_ = nh_.advertiseService("publish_forbidden_area", 
+    ss_forbidden_area_ = nh_.advertiseService("publish_forbidden_area",
                                               &NodeClass::srvCB_forbidden_area, this);
     ss_PoI_ = nh_.advertiseService("publish_PoI", &NodeClass::srvCB_PoI, this);
   }
@@ -144,16 +164,21 @@ public:
   bool srvCB_forbidden_area(std_srvs::Empty::Request &req,
                  std_srvs::Empty::Response &res)
   {
-    if(!forbidden_area_poly_.polygon.points.empty())
+    for (size_t i=0; i<forbidden_area_poly_vec_.size(); i++)
     {
-      forbidden_area_pub_.publish(forbidden_area_poly_);
-      return true;
+      if(!forbidden_area_poly_vec_.at(i).polygon.points.empty())
+      {
+        forbidden_area_pub_.publish(forbidden_area_poly_vec_.at(i));
+        ROS_INFO_STREAM("publishing forbidden area " << i);   //-b-
+        ros::Duration(0.2).sleep();   //-b- NOTE: arbitrary delay between publishing polygons
+      }
+      else
+      {
+        ROS_WARN_STREAM("No forbidden area specified at index " << i << "!");
+        return false;
+      }
     }
-    else
-    {
-      ROS_WARN("No forbidden area specified!");
-      return false;
-    }
+    return true;
   }
 
   bool srvCB_PoI(std_srvs::Empty::Request &req,
@@ -168,7 +193,7 @@ public:
   {
     geometry_msgs::Polygon polygon;
     geometry_msgs::Point32 pt;
-    
+
     // grab the polygon from the parameter server if possible
     XmlRpc::XmlRpcValue point_list;
     std::string polygon_param_name, point_list_string;
@@ -176,7 +201,7 @@ public:
     if(pnh_.searchParam(polygon_param, polygon_param_name))
     {
       pnh_.getParam(polygon_param_name, point_list);
-      
+
       // parse XmlRpc Value to std::string
       if(point_list.getType() == XmlRpc::XmlRpcValue::TypeString)
       {
@@ -195,9 +220,9 @@ public:
       }
 
       // make sure we have a list of lists
-      if( ! (point_list.getType() == XmlRpc::XmlRpcValue::TypeArray && 
-             point_list.size() > 2) && 
-          ! (point_list.getType() == XmlRpc::XmlRpcValue::TypeString && 
+      if( ! (point_list.getType() == XmlRpc::XmlRpcValue::TypeArray &&
+             point_list.size() > 2) &&
+          ! (point_list.getType() == XmlRpc::XmlRpcValue::TypeString &&
              point_string_vector.size() > 5) )
       {
         ROS_FATAL("The polygon %s must be specified as a list of lists on the parameter server, but it was specified as %s",
@@ -243,7 +268,7 @@ public:
           std::ostringstream oss;
           bool first = true;
 
-    
+
           BOOST_FOREACH(geometry_msgs::Point32 p, polygon.points)
           {
             if(first)
@@ -328,8 +353,6 @@ public:
 
     return polygon;
   }
-
-
 }; //NodeClass
 
 //######################
@@ -353,3 +376,4 @@ int main(int argc, char **argv)
   }
 
 }
+
