@@ -68,6 +68,7 @@
 // external includes
 #include <sensor_model.h>
 #include <seneka_utilities.h>
+#include <math.h>
 
 using namespace seneka_utilities;
 
@@ -82,12 +83,18 @@ private:
   std::vector<point_info> * pPoint_info_vec_;
   std::vector<GS_point_info> GS_pool_;
 
+  // opening angles of FOV slice
+  std::vector<double> slice_open_angles_;
+
   // number of sensors
   int sensor_num_;
 
   // number of targets
   int target_num_;
   int covered_targets_num_;
+
+  // coverage data for all specified orientations at fixed point (modified in updateGSpointsRaytracing)
+  std::vector<int> coverage_vec_;
 
   // actual coverage
   double coverage_;
@@ -96,10 +103,6 @@ private:
   int max_sensor_cov_;
   int max_sensor_cov_point_id_;
   geometry_msgs::Pose max_sensor_cov_pose_;
-
-  // angle and cell resolution for the Greedy Search
-  unsigned int angle_resolution_;
-  unsigned int cell_search_resolution_;
 
   // actual area of interest to be covered by the sensor nodes
   const geometry_msgs::PolygonStamped * pArea_of_interest_;
@@ -130,20 +133,20 @@ public:
   // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
   void greedyPlacement(size_t sensor_index);
 
+  // function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
+  void newGreedyPlacement(size_t sensor_index);
+
   // function to update the GS_point_info with raytracing
   void updateGSpointsRaytracing(size_t sensor_index, int point_id, bool update_covered_info);
+
+  //function to get the coverage done by the sensor
+  int getCoverageRaytracing(size_t sensor_index);
 
   // function to calculate coverage achieved
   double calGScoverage();
 
 
   // ************************ getter functions ************************
-
-  // function to get angle resolution for Greedy Placement function
-  unsigned int getAngleResolution();
-
-  // function to get cell search resolution for Greedy Placement function
-  unsigned int getCellSearchResolution();
 
   // function to get maximum sensor coverage
   int getMaxSensorCov();
@@ -153,6 +156,9 @@ public:
 
   // function to get maximum sensor coverage pose
   geometry_msgs::Pose getMaxSensorCovPOSE();
+
+  // function to get sensor's FOV slice open angles
+  std::vector<double> getSliceOpenAngles();
 
 
   // ************************ setter functions ************************
@@ -190,6 +196,9 @@ public:
   // function that sets the opening angles for each sensor
   bool setOpenAngles(std::vector<double> new_angles);
 
+  // function that sets sensor's FOV slice open anlges
+  bool setSliceOpenAngles(std::vector<double> new_angles);
+
   // function that sets the range for each sensor
   void setRange(double new_range);
 
@@ -207,6 +216,9 @@ public:
 
   // returns all visualization markers of the Greedy Search solution
   visualization_msgs::MarkerArray getVisualizationMarkers();
+
+  // returns the visualization markers of points in GS_pool_
+  visualization_msgs::MarkerArray getGridVisualizationMarker();
 
 
 };

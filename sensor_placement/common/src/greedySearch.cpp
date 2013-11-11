@@ -98,21 +98,16 @@ greedySearch::greedySearch(int num_of_sensors, int num_of_targets, FOV_2D_model 
 greedySearch::~greedySearch(){}
 
 
-// function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
+// OLD function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
 void greedySearch::greedyPlacement(size_t sensor_index)
 {
-  unsigned int angle_resolution;
-  unsigned int cell_search_resolution;
+  unsigned int angle_resolution = 15;         //define angle_resolution parameter
+  unsigned int cell_search_resolution = 200;  //define cell_search_resolution parameter
   double num_of_steps;
   bool update_covered_info;
   int placement_point_id;
   geometry_msgs::Pose new_pose;
   geometry_msgs::Pose placement_pose;
-
-  //initializations
-  angle_resolution = getAngleResolution();
-  cell_search_resolution = getCellSearchResolution();
-  num_of_steps = ceil(360/angle_resolution);
 
   //while searching, restrict updating of 'covered' info in updateGSpointsRaytracing
   update_covered_info=false;
@@ -122,7 +117,7 @@ void greedySearch::greedyPlacement(size_t sensor_index)
   resetGSpool();
 
   //place the current sensor on all points in GS pool one by one and calculate coverge
-  for (size_t point_id=0; point_id<GS_pool_.size(); point_id=point_id+cell_search_resolution)
+  for (size_t point_id=0; point_id<GS_pool_.size(); point_id++)
   {
     //first calculate world position of current point id and place sensor at that position
     new_pose.position.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
@@ -132,13 +127,10 @@ void greedySearch::greedyPlacement(size_t sensor_index)
     //check all orientations
     for (int alpha=0; alpha<angle_resolution*num_of_steps; alpha=alpha+angle_resolution)
     {
-      //look around at all angles and save only the max coverage angle
+      //look around at all angles and save only the orientation that gives max coverage
       new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha*(PI/180));
-
       sensors_.at(sensor_index).setSensorPose(new_pose);
-
-      //now update targets/points covered and save the maximum coverage information
-      updateGSpointsRaytracing(sensor_index, point_id, update_covered_info);
+      updateGSpointsRaytracing(sensor_index, point_id, update_covered_info);    //updates targets covered and keeps only the pose info that gives max coverage
     }
   }
   //Get maximum coverage pose
@@ -148,10 +140,310 @@ void greedySearch::greedyPlacement(size_t sensor_index)
   //place the sensor at max coverage point
   sensors_.at(sensor_index).setSensorPose(placement_pose);
 
+  //now actually mark the targets as covered
+  update_covered_info = true;
+  updateGSpointsRaytracing(sensor_index, placement_point_id, update_covered_info);
+
+}
+
+
+// function for finding maximum coverage position (using Greedy Search Algorithm) and placing sensor at that position
+void greedySearch::newGreedyPlacement(size_t sensor_index)
+{
+  unsigned int max_cov_ind;
+  double new_sum, max_sum;
+  double max_cov_orientation;
+  int placement_point_id;
+  int num_of_slices;
+  int coverage;
+  bool update_covered_info;
+  geometry_msgs::Pose new_pose;
+  geometry_msgs::Pose placement_pose;
+  std::vector<double> orig_ang_r(2,0);
+  std::vector<double> gs_ang_r(2,0);
+  std::vector<double> new_ang_r(2,0);
+  double slice_res_deg;
+  double error_pos;
+
+
+  //************************* "slice" open angle adjustment ********************
+
+  gs_ang_r = getSliceOpenAngles();
+
+  slice_res_deg = (gs_ang_r[0]-gs_ang_r[1])*(180/PI);
+
+  if (slice_res_deg > 0 || slice_res_deg < 360)
+  {
+    if (fmod(360,slice_res_deg)!=0)
+    {
+      //**given angle does not fit exactly into 360deg, computing closest angle that does fit**
+      error_pos = ceil(360/slice_res_deg)*slice_res_deg - 360;  //value by which (total_slices*slice_resolution) exceeds 360
+      if (error_pos<(slice_res_deg/2))
+      {
+        //new angle must be less than old one to get closest solution
+        slice_res_deg = slice_res_deg - error_pos/ceil(360/slice_res_deg);
+        ROS_INFO_STREAM("Modified slice open anlges[in degrees]: " << slice_res_deg);
+      }
+      else
+      {
+        //new angle must be greater than old one to get closest solution
+        slice_res_deg = slice_res_deg + ((slice_res_deg-error_pos)/floor(360/slice_res_deg));
+        ROS_INFO_STREAM("Modified slice open anlges[in degrees]: " << slice_res_deg);
+      }
+    }
+  }
+  else
+  {
+    ROS_ERROR("Invalid evaluation of slice open angles ");
+  }
+
+  //save calculated slice resolution
+  gs_ang_r[0] = slice_res_deg*(PI/180);
+
+  //get original open angles
+  orig_ang_r = sensors_.at(sensor_index).getOpenAngles();
+
+  //calculate number of slices that fit into original FOV of sensor [note slices may not fit exactly!]
+  num_of_slices = floor((orig_ang_r[0]-orig_ang_r[1])/gs_ang_r[0]);
+
+  //******************************
+
+  //change the sensor open angles for search
+  setOpenAngles(gs_ang_r);
+  //while searching, restrict updating of 'covered' info in updateGSpointsRaytracing
+  update_covered_info=false;
+  //reset previous max coverage information before searching for new position
+  resetMaxSensorCovInfo();
+  //reset max targets covered information
+  resetGSpool();
+
+  max_cov_ind=0;
+  max_sum=0;
+
+  //place the current sensor on all points in GS pool one by one and calculate coverge
+  for (size_t point_id=0; point_id<GS_pool_.size(); point_id=point_id++)
+  {
+    //clear data
+    coverage_vec_.clear();
+
+    //calculate world position of current point id and place sensor at that position
+    new_pose.position.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
+    new_pose.position.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
+    new_pose.position.z = 0;
+
+    for (double alpha=0; alpha<2*PI; alpha=alpha+gs_ang_r[0]) //change loop index to int -b-
+    {
+      //look around in all directions with resolution of the slice
+      new_pose.orientation = tf::createQuaternionMsgFromYaw(alpha);
+      sensors_.at(sensor_index).setSensorPose(new_pose);
+      coverage = getCoverageRaytracing(sensor_index);         //get coverage at new_pose
+      coverage_vec_.push_back(coverage);                      //save in coverage in coverage_vec_
+    }
+
+    //now find N consecutive slices that give maximum coverage. (N: num_of_slices)
+    for (size_t cov_vec_ind=0; cov_vec_ind<coverage_vec_.size(); cov_vec_ind++)
+    {
+      //calculate all possible consecutive sums
+      new_sum=0;
+      for (size_t k = 0; k<num_of_slices; k++)
+      {
+        new_sum = new_sum + coverage_vec_.at( (cov_vec_ind+k) % (coverage_vec_.size()) );
+      }
+
+      //if new sum is larger than max sum then update max pose info
+      if (new_sum>max_sum)
+      {
+        max_sum = new_sum;
+        new_pose.orientation = tf::createQuaternionMsgFromYaw((cov_vec_ind*gs_ang_r[0] + (num_of_slices*gs_ang_r[0])/2)-gs_ang_r[0]/2);
+        setMaxSensorCovPOSE(new_pose);
+        setMaxSensorCovPointID(point_id);
+      }
+    }
+  }
+
+  //search complete, so reset the sensor open angles
+  //NOTE! if slices don't exactly fit, new open angles will be multiple of slices that does fit
+  new_ang_r[0] = num_of_slices*gs_ang_r[0];
+  //ROS_INFO_STREAM("new open angle varying from original by: " << (orig_ang_r[0]-new_ang_r[0]));
+
+  setOpenAngles(new_ang_r);
+  //Get maximum coverage pose
+  placement_pose = getMaxSensorCovPOSE();
+  //Get maximum coverage point ID
+  placement_point_id = getMaxSensorCovPointID();
+  //place the sensor at max coverage point
+  sensors_.at(sensor_index).setSensorPose(placement_pose);
   //now update the 'covered' info
   update_covered_info = true;
   updateGSpointsRaytracing(sensor_index, placement_point_id, update_covered_info);
 
+}
+
+
+//function to get the coverage done by the sensor
+int greedySearch::getCoverageRaytracing(size_t sensor_index)
+{
+  //clear vector of ray end points
+  sensors_.at(sensor_index).clearRayEndPoints();
+
+  unsigned int max_number_of_rays = sensors_.at(sensor_index).getLookupTable()->size();
+  geometry_msgs::Pose sensor_pose = sensors_.at(sensor_index).getSensorPose();
+
+  std::vector<double> open_ang = sensors_.at(sensor_index).getOpenAngles();
+  double orientation = tf::getYaw(sensor_pose.orientation);
+
+  //get angles of sensor and keep them between 0 and 2*PI
+  double angle1 = orientation - (open_ang.front() / 2.0);
+  if(angle1 >= 2.0*PI)
+    angle1 -= 2.0*PI;
+  else if(angle1 < 0)
+    angle1 += 2.0*PI;
+
+  double angle2 = orientation + (open_ang.front() / 2.0);
+  if(angle2 >= 2.0*PI)
+    angle2 -= 2.0*PI;
+  else if(angle2 < 0)
+    angle2 += 2.0*PI;
+
+  unsigned int ray_start = sensors_.at(sensor_index).rayOfAngle(angle1);
+  unsigned int ray_end = sensors_.at(sensor_index).rayOfAngle(angle2);
+
+  unsigned int number_of_rays_to_check;
+
+  //are the rays in between the beginning and end of the lookup table?
+  if(ray_end >= ray_start)
+    number_of_rays_to_check = ray_end - ray_start + 1;
+  else
+    number_of_rays_to_check = max_number_of_rays - ray_start + ray_end + 1;
+
+  unsigned int rays_checked = 0;
+  unsigned int ray = ray_start;
+
+  // initialize coverage by old and new orientaion of the sensor on the current position
+  int coverage_by_new_orientation = 0;
+
+  //go through all rays
+  while(rays_checked < number_of_rays_to_check)
+  {
+    geometry_msgs::Point ray_end_point;
+    ray_end_point.x = 0;
+    ray_end_point.y = 0;
+
+    int x, y;
+    int cell;
+    int lookup_table_x, lookup_table_y;
+
+    //go through ray
+    for(cell=0; cell < sensors_.at(sensor_index).getLookupTable()->at(ray).size(); cell++)
+    {
+      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell).x;
+      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(cell).y;
+
+      //absolute x and y map coordinates of the current cell
+      x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;
+      y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
+
+      int cell_in_vector_coordinates = y * pMap_->info.width + x;
+
+
+      //cell coordinates are valid (not outside of the area of interest)
+      if(((y >= 0) && (x >= 0) && (y < pMap_->info.height) && (x < pMap_->info.width)) && (cell_in_vector_coordinates < pPoint_info_vec_->size()))
+      {
+        //cell not on the perimeter
+        if(pPoint_info_vec_->at(cell_in_vector_coordinates).potential_target != 0)
+        {
+          //cell a potential target and not occupied
+          if((pPoint_info_vec_->at(cell_in_vector_coordinates).potential_target == 1) &&
+             (pPoint_info_vec_->at(cell_in_vector_coordinates).occupied == false))
+          {
+            //cell not already covered
+            if(pPoint_info_vec_->at(cell_in_vector_coordinates).covered == false)
+            {
+              coverage_by_new_orientation++;
+            }
+          }
+          //cell not a potential target or occupied -> skip rest of this ray
+          else
+          {
+            break;
+          }
+        }
+        else
+        {
+          //cell on perimeter and not occupied -> continue with the next cell on the ray (no coverage)
+          if(pPoint_info_vec_->at(cell_in_vector_coordinates).occupied == false)
+          {
+            //continue with next cell without (no coverage)
+            continue;
+          }
+          else
+          //cell on perimeter and occupied -> skip rest of this ray
+          {
+            break;
+          }
+        }
+      }
+      else
+      //cell coordinates not valid (outside the area of interest) -> skip rest of this ray
+      {
+        break;
+      }
+    }
+
+
+    //skipped some part of the ray -> get coordinates of the last non-occupied cell
+    if((cell != sensors_.at(sensor_index).getLookupTable()->at(ray).size()-1) && (cell != 0))
+    {
+      lookup_table_x = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).x;
+      lookup_table_y = sensors_.at(sensor_index).getLookupTable()->at(ray).at(std::max(0,cell-1)).y;
+    }
+
+    //absolute x and y map coordinates of the last non-occupied cell
+    x = worldToMapX(sensor_pose.position.x, *pMap_) + lookup_table_x;
+    y = worldToMapY(sensor_pose.position.y, *pMap_) + lookup_table_y;
+
+    //update endpoint
+    if(lookup_table_x <= 0)
+      //point is left of sensor
+    {
+      ray_end_point.x = mapToWorldX(x, *pMap_) - sensor_pose.position.x;
+    }
+    else
+      //cell is right of sensor
+    {
+      ray_end_point.x = mapToWorldX(x, *pMap_) - sensor_pose.position.x + pMap_->info.resolution; //add one cell for visualization
+    }
+
+    if(lookup_table_y <= 0)
+      //cell is below sensor
+    {
+      ray_end_point.y = mapToWorldY(y, *pMap_) - sensor_pose.position.y;
+    }
+    else
+      //cell is over sensor
+    {
+      ray_end_point.y = mapToWorldY(y, *pMap_) - sensor_pose.position.y + pMap_->info.resolution; //add one cell for visualization
+    }
+
+    //add endpoint to the vector of endpoints
+    sensors_.at(sensor_index).addRayEndPoint(ray_end_point);
+
+    //increase counter
+    rays_checked++;
+
+    //reached end of circle -> set ray to 0
+    if(ray == (max_number_of_rays -1))
+    {
+      ray = 0;
+    }
+    else
+    {
+      ray++;
+    }
+  }
+  //all rays checked
+
+  return coverage_by_new_orientation;
 }
 
 
@@ -370,16 +662,10 @@ geometry_msgs::Pose greedySearch::getMaxSensorCovPOSE()
   return max_sensor_cov_pose_;
 }
 
-// function to get angle resolution for Greedy Placement function
-unsigned int greedySearch::getAngleResolution()
+// function to get sensor's FOV slice open angles
+std::vector<double> greedySearch::getSliceOpenAngles()
 {
-  return angle_resolution_;
-}
-
-// function to get cell search resolution for Greedy Placement function
-unsigned int greedySearch::getCellSearchResolution()
-{
-  return cell_search_resolution_;
+  return slice_open_angles_;
 }
 
 // function to set maximum coverage by a sensor
@@ -462,6 +748,24 @@ bool greedySearch::setOpenAngles(std::vector<double> new_angles)
   }
 }
 
+
+// function that sets sensor's FOV slice open anlges
+bool greedySearch::setSliceOpenAngles(std::vector<double> new_angles)
+{
+  bool result = false;
+  if(new_angles.empty() || (new_angles.size() != 2) )
+  {
+    ROS_WARN("wrong input in greedySearch::setSliceOpenAngles!");
+    return result;
+  }
+  else
+  {
+    slice_open_angles_ = new_angles;
+    result = true;
+    return result;
+  }
+}
+
 // function that sets the range for each sensor
 void greedySearch::setRange(double new_range)
 {
@@ -483,23 +787,6 @@ void greedySearch::setLookupTable(const std::vector< std::vector<geometry_msgs::
   }
   else
     ROS_ERROR("LookupTable not set correctly");
-}
-
-// function to set angle resolution while doing Greedy Search
-void greedySearch::setAngleResolution(unsigned int angle_resolution_param)
-{
-  if ((angle_resolution_param > 0) && (angle_resolution_param < 360))
-  {
-    angle_resolution_=angle_resolution_param;
-  }
-  else
-    ROS_ERROR("Wrong input in angle_resolution parameter for Greedy Search");
-}
-
-// function to set the cell search resolution while doing Greedy Search
-void greedySearch::setCellSearchResolution(unsigned int cell_search_resolution_param)
-{
-  cell_search_resolution_=cell_search_resolution_param;
 }
 
 // function to reset maximum coverage information for new sensor placement
@@ -546,5 +833,42 @@ visualization_msgs::MarkerArray greedySearch::getVisualizationMarkers()
 }
 
 
+// returns the visualization markers of points in GS_pool_
+visualization_msgs::MarkerArray greedySearch::getGridVisualizationMarker()
+{
+  visualization_msgs::MarkerArray grids_array;
+  visualization_msgs::Marker t_points;
+  geometry_msgs::Point p;
+  size_t GS_poolsize = GS_pool_.size();
+  unsigned int num_of_grids = 7;
 
+  for (unsigned int i=0; i<num_of_grids; i++)
+  {
+    // setup standard stuff
+    t_points.header.frame_id = "/map";
+    t_points.header.stamp = ros::Time();
+    t_points.ns = "grid" + boost::lexical_cast<std::string>(i);;
+    t_points.action = visualization_msgs::Marker::ADD;
+    t_points.pose.orientation.w = 1.0;
+    t_points.id = 0;
+    t_points.type = visualization_msgs::Marker::POINTS;
+    t_points.scale.x = 0.2+0.1*i;
+    t_points.scale.y = 0.2+0.1*i;
+    t_points.color.a = 1.0;
+    t_points.color.r = 0.0;
+    t_points.color.g = 0.0;
+    t_points.color.b = 1.0;
 
+    for (size_t point_id=0; point_id<GS_poolsize; point_id=point_id++)  //modify to use iterators -b-
+    {
+
+      p.x = mapToWorldX(GS_pool_[point_id].p.x, *pMap_);
+      p.y = mapToWorldY(GS_pool_[point_id].p.y, *pMap_);
+
+      t_points.points.push_back(p);
+
+    }
+    grids_array.markers.push_back(t_points);
+  }
+  return grids_array;
+}

@@ -122,6 +122,9 @@ private:
   // opening angles for sensors
   std::vector<double> open_angles_;
 
+  // opening angles of FOV slice for greedy search
+  std::vector<double> slice_open_angles_;
+
   // maximal allowed linear velocity for each sensor in particles
   double max_lin_vel_;
 
@@ -170,9 +173,8 @@ private:
   // offset value for offsetAoI function
   double clipper_offset_value_;
 
-  // parameters for angle and cell resolution in Greedy Search
-  int angle_resolution_;
-  int cell_search_resolution_;
+  // GS_target_offset_[in meters] parameters for Greedy Search
+  double GS_target_offset_;
 
   // PSO parameter constants
   double PSO_param_1_;
@@ -203,6 +205,7 @@ public:
 
   // declaration of ros publishers
   ros::Publisher marker_array_pub_;
+  ros::Publisher GS_targets_grid_pub_;
   ros::Publisher map_pub_, map_meta_pub_;
   ros::Publisher nav_path_pub_;
   ros::Publisher offset_AoI_pub_;
