@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>seneka_bringup</name>
+  <name>seneka_node_bringup</name>
   <version>0.0.0</version>
-  <description>The seneka_bringup package holds launch files for the SENEKA project at Fraunhofer IPA.</description>
+  <description>The seneka_node_bringup package holds launch files for the senor nodes of the SENEKA project at Fraunhofer IPA.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <maintainer email="mig@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
@@ -20,7 +20,7 @@
   <!-- The *_depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
   <buildtool_depend>catkin</buildtool_depend>
-  <run_depend>seneka_config</run_depend>
+  <run_depend>seneka_node_config</run_depend>
   <run_depend>seneka_sony_camera</run_depend>
   <run_depend>seneka_video_manager</run_depend>
   <run_depend>seneka_termo_video_manager</run_depend>

@@ -19,7 +19,7 @@ At the moment the seneka_termo_video_manager offers three ROS services which cou
 ## Getting started
 - roslaunch optris_drivers optris_drivers.launch 
  - publishes input stream (raw data)
-- roslaunch seneka_bringup termo_video_manager.launch
+- roslaunch seneka_node_bringup termo_video_manager.launch
 - rosrun seneka_termo_video_manager termo_video_tester
  - ROS test node for termo_video_manager
 

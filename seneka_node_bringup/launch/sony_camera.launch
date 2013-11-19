@@ -2,6 +2,6 @@
 <launch>
 
   <!--- start seneka_sony_camera node -->
-  <include file="$(find seneka_bringup)/components/sony_camera.xml" />
+  <include file="$(find seneka_node_bringup)/components/sony_camera.xml" />
 
 </launch>

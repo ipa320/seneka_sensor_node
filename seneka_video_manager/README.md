@@ -18,7 +18,7 @@ At the moment the seneka_video_manager offers three ROS services which could be 
 ## Getting started
 - roslaunch/rosrun XX, which provides input topic
  - publishes input stream (BGR8 coded sensor_msgs::image)
-- roslaunch seneka_bringup video_manager.launch
+- roslaunch seneka_node_bringup video_manager.launch
 - rosrun seneka_video_manager video_tester
  - ROS test node for seneka_video_manager
 

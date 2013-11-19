@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(seneka_config)
+project(seneka_node_bringup)
 
 ## Find catkin macros and libraries
 ## if COMPONENTS list like find_package(catkin REQUIRED COMPONENTS xyz)
@@ -7,9 +7,9 @@ project(seneka_config)
 find_package(catkin REQUIRED)
 
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES seneka
-#  CATKIN_DEPENDS other_catkin_pkg
-#  DEPENDS system_lib
+  #INCLUDE_DIRS include
+  #LIBRARIES seneka
+  #CATKIN_DEPENDS
+  #DEPENDS system_lib
 )
 

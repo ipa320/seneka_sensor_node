@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <package>
-  <name>seneka_config</name>
+  <name>seneka_node_config</name>
   <version>0.0.0</version>
-  <description>The seneka_config package holds config files for the SENEKA project at Fraunhofer IPA.</description>
+  <description>The seneka_node_config package holds config files for the sensor nodes of the SENEKA project at Fraunhofer IPA.</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag --> 
   <maintainer email="mig@ipa.fraunhofer.de">Matthias Gruhler</maintainer>

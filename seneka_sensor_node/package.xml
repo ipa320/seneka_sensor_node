@@ -23,9 +23,9 @@
   <!-- Dependencies can be catkin packages or system dependencies -->
   <buildtool_depend>catkin</buildtool_depend>
 
-  <run_depend>seneka_bringup</run_depend>
-  <run_depend>seneka_config</run_depend>
   <run_depend>seneka_dgps</run_depend>
+  <run_depend>seneka_node_bringup</run_depend>
+  <run_depend>seneka_node_config</run_depend>
   <run_depend>seneka_srv</run_depend>
   <run_depend>seneka_termo_video_manager</run_depend>
   <run_depend>seneka_video_manager</run_depend>
