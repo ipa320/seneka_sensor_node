@@ -12,11 +12,4 @@ catkin_package(
   #CATKIN_DEPENDS
   #DEPENDS system_lib
 )
-## Mark other files for installation (e.g. launch and bag files, etc.)
- install(FILES
-   launch/rviz.launch
-   launch/sensor_placement.launch
-   components/sensor_placement.xml
-   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
- )
 

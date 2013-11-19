@@ -20,12 +20,9 @@
   <!-- The *_depend tags are used to specify dependencies -->
   <!-- Dependencies can be catkin packages or system dependencies -->
   <buildtool_depend>catkin</buildtool_depend>
-  <run_depend>map_server</run_depend>
   <run_depend>seneka_config</run_depend>
-  <run_depend>seneka_environments</run_depend>
+  <run_depend>seneka_sony_camera</run_depend>
   <run_depend>seneka_video_manager</run_depend>
   <run_depend>seneka_termo_video_manager</run_depend>
-  <run_depend>sensor_placement</run_depend>
-  <run_depend>rviz</run_depend>
 
 </package>

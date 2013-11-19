@@ -12,10 +12,4 @@ catkin_package(
 #  CATKIN_DEPENDS other_catkin_pkg
 #  DEPENDS system_lib
 )
-## Mark other files for installation (e.g. launch and bag files, etc.)
- install(FILES
-   config/sensor_placement.yaml
-   config/seneka_rviz_groovy_config.rviz
-   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
- )
 
