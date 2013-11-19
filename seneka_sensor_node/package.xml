@@ -26,12 +26,10 @@
   <run_depend>seneka_bringup</run_depend>
   <run_depend>seneka_config</run_depend>
   <run_depend>seneka_dgps</run_depend>
-  <run_depend>seneka_environments</run_depend>
   <run_depend>seneka_srv</run_depend>
   <run_depend>seneka_termo_video_manager</run_depend>
   <run_depend>seneka_video_manager</run_depend>
   <run_depend>seneka_windsensor</run_depend>
-  <run_depend>sensor_placement</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
