@@ -1,0 +1,17 @@
+#http://wiki.ros.org/laser_assembler#Parameters
+
+#~fixed_frame (string)
+#[Required] Stationary frame into which received scans (or clouds) are transformed.
+fixed_frame: '/laser'
+
+#~tf_cache_time_secs (double, default: 10.0)
+#The cache time (seconds) to store past transforms. 
+#tf_cache_time_secs:
+
+#~max_scans (int, default: 400)
+#The number of scans to store in the assembler's rolling buffer.
+#max_scans:
+
+#~ignore_laser_skew (bool, default: true)
+#If true, pretend that all hits in a single scan correspond to the same tf transforms. If false, individually transform each hit to the fixed_frame (this is a fairly cpu intensive operation). 
+#ignore_laser_skew:
