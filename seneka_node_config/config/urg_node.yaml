@@ -1,27 +1,60 @@
 #http://wiki.ros.org/urg_node#Parameters
 
+#~ip_address (string, default: "")
+#Location of the device on the network (only valid for ethernet devices).
+#If this is left blank or is the empty string, the driver assumes the device is serial and will only attempt to connect using the '~serial_port' and '~serial_baud' parameters. 
 ip_address: '192.168.0.10'
 
+#~ip_port (int, default: 10940)
+#IP port number. (1 to 65535) 
 #ip_port:
 
-#serial_port:
-
-#serial_baud:
-
+#~frame_id (string, default: laser)
+#The frame in which laser scans will be returned.
+#This frame should be at the optical center of the laser, with the x-axis along the zero degree ray, and the y-axis along the 90 degree ray. 
 #frame_id:
 
+#~calibrate_time (bool, default: false)
+#Whether the node should calibrate the device's time offset on startup.
+#If true, the node will exchange of series of messages with the device in order to determine the time delay in the connection.
+#This calibration step is necessary to produce accurate timestamps on scans. 
 #calibrate_time:
 
+#~time_offset (double, default: 0.0)
+#A manually calibrated offset (in seconds) to add to the timestamp before publication of a message. 
 #time_offset:
 
+#~publish_intensity (bool, default: false)
+#If true, the laser will publish intensity.
+#If false, the laser will not publish intensity to save bandwidth.
+#Should be implemented in hardware if possible, but otherwise may be implemented in software. 
 #publish_intensity:
 
+#~publish_multiecho (bool, default: false)
+#If true, a multiecho laserscanner will publish sensor_msgs/MultiEchoLaserScan.
+#If false, the laser will publish sensor_msgs/LaserScan.
+#(If supported by the hardware; otherwise, please use a support library to convert MultiEchoLaserScans to LaserScans.)
+#This parameter is only valid for multiecho laserscanners. 
 #publish_multiecho:
 
+#~angle_min (double, default: -&pi)
+#Controls the angle of the first range measurement in radians.
+#(If supported by the hardware; it is not recommended to implement this feature in software.) 
 #angle_min:
 
+#~angle_max (double, default: &pi)
+#Controls the angle of the last range measurement in radians.
+#(If supported by the hardware; it is not recommended to implement this feature in software.) 
 #angle_max:
 
+#~cluster (int, default: 1)
+#The number of adjacent range measurements to cluster into a single reading; the shortest reading from the cluster is reported.
+#(If supported by the hardware; it is not recommended to implement this feature in software.) 
 #cluster:
 
+#~skip (int, default: 0)
+#The number of input messages to skip between each output message.
+#The device will publish 1 message for every N skipped messages.
+#Example: if skip is set to '2', the device will publish 1 message and then 'drop' the following 2 message - a 66.7% reduction in output rate. 
+#(If supported by the hardware; it is not recommended to implement this feature in software.)
 #skip:
