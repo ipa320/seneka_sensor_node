@@ -135,19 +135,20 @@ bool getVideoCallback(seneka_termo_video_manager::getVideo::Request &req, seneka
 
 int main(int argc, char **argv)
 {
-	ros::init(argc, argv, "TERMO_VIDEO_MANAGER");
+	ros::init(argc, argv, "termo_video_manager");
 	// attributes
-	ros::NodeHandle nHandler("TERMO_VIDEO_MANAGER");
+	ros::NodeHandle nHandler("");
+	ros::NodeHandle pnHandler("~");
 	fManager = new FrameManager(nHandler);
 
 	std::string inputTopic;
 
-	if(!nHandler.hasParam("inputTopic")){
+	if(!pnHandler.hasParam("inputTopic")){
 		ROS_ERROR("No input topic in launch-file defined!!\n\n");
 		return -1;
 	}
 	else{
-		nHandler.getParam("inputTopic", inputTopic);
+		pnHandler.getParam("inputTopic", inputTopic);
 	}
 
 	ROS_INFO("advertising getVideo service ...");
