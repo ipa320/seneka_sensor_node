@@ -1,0 +1,27 @@
+#http://wiki.ros.org/urg_node#Parameters
+
+ip_address: '192.168.0.10'
+
+#ip_port:
+
+#serial_port:
+
+#serial_baud:
+
+#frame_id:
+
+#calibrate_time:
+
+#time_offset:
+
+#publish_intensity:
+
+#publish_multiecho:
+
+#angle_min:
+
+#angle_max:
+
+#cluster:
+
+#skip:

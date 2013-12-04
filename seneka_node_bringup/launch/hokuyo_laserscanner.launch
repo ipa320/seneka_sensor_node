@@ -1,0 +1,7 @@
+<launch>
+
+	<node name="urg_node" pkg="urg_node" type="urg_node" output="screen" >
+		<rosparam file="$(find seneka_node_config)/config/urg_node.yaml" command="load" />
+	</node>
+
+</launch>
