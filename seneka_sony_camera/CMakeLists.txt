@@ -9,6 +9,13 @@ else(NOT "$ENV{PUREGEV_ROOT}" STREQUAL "/opt/pleora/ebus_sdk")
   message(STATUS "+++++++++ Did find PUREGEV_ROOT, building seneka_sony_camera +++++++++")
 endif(NOT "$ENV{PUREGEV_ROOT}" STREQUAL "/opt/pleora/ebus_sdk")
 
+## Check which architecture we have
+if(“${CMAKE_SYSTEM_PROCESSOR}” STREQUAL “x86_64”)
+  set(MYARCH "x86_64")
+else(“${CMAKE_SYSTEM_PROCESSOR}” STREQUAL “x86_64”)
+  set(MYARCH "i386")
+endif(“${CMAKE_SYSTEM_PROCESSOR}” STREQUAL “x86_64”)
+
 
 ## Find catkin macros and libraries
 find_package(catkin REQUIRED COMPONENTS
@@ -61,7 +68,11 @@ include_directories(
 
 # find Pleora Libraries
 LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib)
-LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib/genicam/bin/Linux64_x64)
+if(“${MYARCH}” STREQUAL “x86_64”)
+  LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib/genicam/bin/Linux64_x64)
+else(“${MYARCH}” STREQUAL “x86_64”)
+  LINK_DIRECTORIES(/opt/pleora/ebus_sdk/lib/genicam/bin/Linux32_i86)
+endif(“${MYARCH}” STREQUAL “x86_64”)
 
 # set library collections for easier linking
 set(EBUS_LIB
