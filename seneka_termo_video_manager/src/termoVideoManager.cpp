@@ -137,27 +137,27 @@ int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "termo_video_manager");
 	// attributes
-	ros::NodeHandle nHandler("");
-	ros::NodeHandle pnHandler("~");
-	fManager = new FrameManager(nHandler);
+	ros::NodeHandle nHandle("");
+	ros::NodeHandle pnHandle("~");
+	fManager = new FrameManager(pnHandle);
 
 	std::string inputTopic;
 
-	if(!pnHandler.hasParam("inputTopic")){
+	if(!pnHandle.hasParam("inputTopic")){
 		ROS_ERROR("No input topic in launch-file defined!!\n\n");
 		return -1;
 	}
 	else{
-		pnHandler.getParam("inputTopic", inputTopic);
+		pnHandle.getParam("inputTopic", inputTopic);
 	}
 
 	ROS_INFO("advertising getVideo service ...");
-	ros::ServiceServer videoService = nHandler.advertiseService("getVideo", getVideoCallback);
-	ros::ServiceServer snapShotService = nHandler.advertiseService("getSnapShots", getSnapShotCallback);
-	ros::ServiceServer liveStreamService = nHandler.advertiseService("getLiveStream", getLiveStreamCallback);
+	ros::ServiceServer videoService = nHandle.advertiseService("getVideo", getVideoCallback);
+	ros::ServiceServer snapShotService = nHandle.advertiseService("getSnapShots", getSnapShotCallback);
+	ros::ServiceServer liveStreamService = nHandle.advertiseService("getLiveStream", getLiveStreamCallback);
 	ROS_INFO("subscribing for thermal_image ...");
 	// subscribed on topic THERMAL_IMAGE
-	ros::Subscriber sub = nHandler.subscribe(inputTopic, 2, processFrameCallback);
+	ros::Subscriber sub = nHandle.subscribe(inputTopic, 2, processFrameCallback);
 
 	ros::spin();
 	return 0;
