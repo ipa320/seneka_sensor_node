@@ -1,6 +1,6 @@
 <launch>
 <group ns="seneka">
-  <node name="TERMO_VIDEO_MANAGER" pkg="termoVideoManager" type="termoVideoManager">
+  <node name="termo_video_manager" pkg="seneka_termo_video_manager" type="termo_video_manager">
   
   	<param name="inputTopic"	    type="string" value="/optris/thermal_image"/>
 	<param name="framesPerVideo"        type="int"    value="200"/>
