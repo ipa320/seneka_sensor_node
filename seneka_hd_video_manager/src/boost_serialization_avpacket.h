@@ -87,15 +87,25 @@ namespace boost {
 		for (int i = 0; i < m.size; i++) {
 			ar & m.data[i];
 		}
-
+//		std::cout << "stream index" << m.stream_index << std::endl;
 		ar & m.stream_index;
 		ar & m.flags;
 //		ar & m.side_data;
+
+		// soltutions for correct serialization:
+		//TODO: serialize the struct like this:
+		//TODO: what is destruct variable or method ??
+		// data is an pointer which has to be serialized like data above
+//		ar & m.side_data->data;
+//		ar & m.side_data->size;
+//		ar & (int) m.side_data->type;
+		// while loading this info it has to be loaded into the struct
+
 //		ar & m.side_data_elems;
 		ar & m.duration;
 //		ar & m.priv;
 		ar & m.pos;
-//  	ar & m.convergence_duration;
+		ar & m.convergence_duration;
 
 	}
 
@@ -116,12 +126,12 @@ namespace boost {
 
 		ar & m.stream_index;
 		ar & m.flags;
-		//			ar & m.side_data;
-		//			ar & m.side_data_elems;
+//			ar & m.side_data;
+//			ar & m.side_data_elems;
 		ar & m.duration;
-		//			ar & m.priv;
+//			ar & m.priv;
 		ar & m.pos;
-		//			ar & m.convergence_duration;
+		ar & m.convergence_duration;
 
 	}
 

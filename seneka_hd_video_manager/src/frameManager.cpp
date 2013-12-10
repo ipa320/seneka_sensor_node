@@ -86,6 +86,13 @@
 
 namespace io = boost::iostreams;
 
+extern "C"{
+#include <libavcodec/avcodec.h>
+#include <libavformat/avformat.h>
+#include <libswscale/swscale.h>
+#include <libavutil/mathematics.h>
+}
+
 // public member functions
 FrameManager::FrameManager() {
 
@@ -203,22 +210,19 @@ FrameManager::~FrameManager() {
 }
 
 void FrameManager::cacheFrame(AVPacket* packet){
-	//ROS_INFO("cacheFrame ... ");
 
 	std::vector<AVPacket>* currentCache = getCurrentCache();
 	currentCache->push_back(*packet);
-	//	std::cout << "caching packet" << currentCache->size() << std::endl;
 
+	// manual tigger, just for testing issues
 	ausloeser++;
-
 	if(ausloeser == 500)
 		createVideo();
 }
 
 std::vector<AVPacket>* FrameManager::getCurrentCache(){
-	//ROS_INFO("getCurrentCache ... ");
 
-	// verifying the sizes of memory buffers
+	// checks the sizes of memory buffers
 	// and if necessary it will schedule further tasks
 	verifyCacheSize();
 
@@ -259,7 +263,6 @@ void FrameManager::verifyCacheSize(){
 		storingThreadA.join();
 		storingThreadB = boost::thread(boost::bind(&FrameManager::storeCache, this, cacheB, &storingCacheB));
 	}
-
 }
 
 void FrameManager::storeCache(std::vector<AVPacket>* cache, bool* threadActive){
@@ -277,10 +280,6 @@ void FrameManager::storeCache(std::vector<AVPacket>* cache, bool* threadActive){
 	// scope is required to ensure archive and filtering stream buffer go out of scope
 	// before stream
 	{
-		//		 	 //compressing frame size
-		//		      io::filtering_streambuf<io::output> out;
-		//		      out.push(io::zlib_compressor(io::zlib::best_speed));
-		//		      out.push(ofs);
 
 		boost::archive::binary_oarchive oa(ofs);
 
@@ -309,33 +308,9 @@ void FrameManager::storeCache(std::vector<AVPacket>* cache, bool* threadActive){
 }
 
 int FrameManager::getVideo(){
-
-	if(stateMachine == ON_DEMAND){
-		// a full video is available if the minimal count of frames is reached (minimal count = frame per video)
-		if(fullVideoAvailable == true){
-			// it is only possible to create one video at a time
-			if(createVideoActive == false){
-				// starts creating the video in a separate thread
-				creatingVideoThread = boost::thread(boost::bind(&FrameManager::createVideo, this));
-				return 1;
-			}
-			else
-				return -1;	// return -1 if video creation is still active
-		}
-		else
-			return -2;	// return -2 if no full video is available
-	}
-	else if(stateMachine == LIVE_STREAM){
-		// videoOnDemand isn't available in LIVE_STREAM state
-		ROS_WARN("This function is in LIVE_STREAM state not available!");
-		return -3;
-	}
-	else{
-		ROS_ERROR("Unknown state for the state machine");
-		return 0;
-	}
-
-
+	// TODO: could be implemented like in ThermoVideoManger or general VideoManager
+	ROS_ERROR("Unknown state for the state machine");
+	return 0;
 }
 
 int FrameManager::createVideo(){
@@ -350,14 +325,131 @@ int FrameManager::createVideo(){
 	 */
 	int currentIndex = binaryFileIndex + 1;
 	int numBinaries = fpv/fpb;
-	FILE *outputFile;
-	char *outputFilename = "/tmp/output.mp4";
-	outputFile = fopen(outputFilename, "wb");
-	if (!outputFile) {
-		fprintf(stderr, "Could not open %s\n", outputFilename);
-		exit(1);
+
+	// ffmpeg - libav output parameters
+	char *outputFilename = "output.mp4";
+	AVOutputFormat *fmt;
+	AVFormatContext *oc;
+	AVStream *video_st;
+	double video_pts;
+
+	//ffmpeg - libav output initialization
+	fmt = av_guess_format(NULL, outputFilename, NULL);
+	if (!fmt) {
+		fprintf(stderr, "Could not find suitable output format\n");
+		return 1;
 	}
-	uint8_t endcode[] = { 0, 0, 1, 0xb7 };
+
+	/* allocate the output media context */
+	oc = avformat_alloc_context();
+	if (!oc) {
+		fprintf(stderr, "Memory error\n");
+		return 1;
+	}
+
+	oc->oformat = fmt;
+	snprintf(oc->filename, sizeof(oc->filename), "%s", outputFilename);
+
+	video_st = NULL;
+
+	if (fmt->video_codec != CODEC_ID_NONE) {
+		video_st = avformat_new_stream(oc, 0);
+
+		AVCodec *codec;
+
+		if (!video_st) {
+			fprintf(stderr, "Could not alloc stream\n");
+			exit(1);
+		}
+
+		//video_st->codec = avcodec_alloc_context();
+
+		AVCodecContext *c = video_st->codec;
+		c = avcodec_alloc_context();
+		c->codec_type = pCodecCtx->codec_type; //AVMEDIA_TYPE_VIDEO;
+		c->codec_id = pCodecCtx->codec_id; //fmt->video_codec;
+		c->bit_rate = pCodecCtx->bit_rate;
+		c->width = pCodecCtx->width;
+		c->height = pCodecCtx->height;
+		c->time_base.den = pCodecCtx->time_base.den;
+		c->time_base.num = pCodecCtx->time_base.num;
+		c->gop_size = pCodecCtx->gop_size;
+		c->pix_fmt = pCodecCtx->pix_fmt;
+
+
+		c->bit_rate_tolerance = pCodecCtx->bit_rate_tolerance;
+		c->rc_max_rate = pCodecCtx->rc_max_rate;
+		c->rc_buffer_size = pCodecCtx->rc_buffer_size;
+		c->max_b_frames = 100;//pCodecCtx->max_b_frames;
+		c->b_frame_strategy = pCodecCtx->b_frame_strategy;
+		c->coder_type = pCodecCtx->coder_type;
+		c->me_cmp = pCodecCtx->me_cmp;
+		c->me_range = pCodecCtx->me_range;
+		c->qmin = 10;
+		c->qmax = 51;
+		c->scenechange_threshold = 40;
+		c->profile = pCodecCtx->profile;//FF_PROFILE_H264_BASELINE;
+		c->flags = CODEC_FLAG_GLOBAL_HEADER;
+		c->me_method = ME_HEX;
+		c->me_subpel_quality = 5;
+		c->i_quant_factor = 0.71;
+		c->qcompress = 0.6;
+		c->max_qdiff = 4;
+		c->directpred = 1;
+		c->flags2 |= CODEC_FLAG2_FASTPSKIP;
+
+
+		std::cout << "here" << std::endl;
+//		c->max_b_frames = pCodecCtx->max_b_frames;
+//		c->mb_decision = pCodecCtx->mb_decision;
+//
+//		if (c->codec_id == CODEC_ID_MPEG2VIDEO) {
+//			/* just for testing, we also add B frames */
+//			c->max_b_frames = 2;
+//		}
+//		if (c->codec_id == CODEC_ID_MPEG1VIDEO){
+//			/* Needed to avoid using macroblocks in which some coeffs overflow.
+//					This does not happen with normal video, it just happens here as
+//					the motion of the chroma plane does not match the luma plane. */
+//			c->mb_decision=2;
+//		}
+//		// some formats want stream headers to be separate
+//		if(oc->oformat->flags & AVFMT_GLOBALHEADER){
+//			c->flags |= CODEC_FLAG_GLOBAL_HEADER;
+//		}
+//
+//		/* find the video encoder */
+//		codec = avcodec_find_encoder(c->codec_id);
+//		if (!codec) {
+//			fprintf(stderr, "codec not found\n");
+//			exit(1);
+//		}
+
+		/* open the codec */
+		if (avcodec_open2(c, codec, NULL) < 0) {
+			fprintf(stderr, "could not open codec\n");
+			exit(1);
+		}
+	}
+
+	/* set the output parameters (must be done even if no parameters). */
+	if (av_set_parameters(oc, NULL) < 0) {
+		fprintf(stderr, "Invalid output format parameters\n");
+		return 1;
+	}
+
+	av_dump_format(oc, 0, outputFilename, 1);
+
+	/* open the output file, if needed */
+	if (!(fmt->flags & AVFMT_NOFILE)) {
+		if (avio_open(&oc->pb, outputFilename, AVIO_FLAG_WRITE) < 0) {
+			fprintf(stderr, "Could not open '%s'\n", outputFilename	);
+			return 1;
+		}
+	}
+
+	/* write the stream header, if any */
+	av_write_header(oc);
 
 	// add all binaries which are required (numBinaries) into a video
 	for(int i=0; i < numBinaries; i++){
@@ -386,30 +478,44 @@ int FrameManager::createVideo(){
 		// scope is required to ensure archive and filtering stream buffer go out of scope
 		// before stream
 		{
-			//			// decompressing frame size
-			//			io::filtering_streambuf<io::input> in;
-			//			in.push(io::zlib_decompressor());
-			//			in.push(ifs);
-
 			boost::archive::binary_iarchive ia(ifs);
 			bool hasContent = true;
 			while (hasContent)
 			{
+				int ret;
 				AVPacket loadedPacket;
+				AVPacket refactoredPacked;
+				av_init_packet(&loadedPacket);
+				av_init_packet(&refactoredPacked);
+
 				if(firstFrame){
 					// try to read image from binary file
 					hasContent = boost::serialization::try_stream_next(ia, ifs, loadedPacket);
-					if (hasContent == true){
-						// TODO: firstframe variable isnt needed any more because no videorecoder is used
+
+					// for video creation it is necessary that the first frame is a key frame
+					if (hasContent == true && loadedPacket.flags == 1 ){
+
+						// its the first frame
 						firstFrame = false;
 
-						// TODO: Add loaddedFrame to videoContainer or cache it in a vector
-						fwrite(loadedPacket.data, 1, loadedPacket.size, outputFile);
-
-						// display current frame
-						if(showFrame){
-							// TODO: if requiered add visualization
+						if (loadedPacket.pts != AV_NOPTS_VALUE){
+							//packet.pts= av_rescale_q(video_st->codec->coded_frame->pts, video_st->codec->time_base, video_st->time_base);
+							refactoredPacked.pts = av_rescale_q(loadedPacket.pts, pCodecCtx->time_base, video_st->time_base);
+							refactoredPacked.dts = av_rescale_q(loadedPacket.dts, pCodecCtx->time_base, video_st->time_base);
 						}
+						if(loadedPacket.flags == 1)
+							refactoredPacked.flags |= AV_PKT_FLAG_KEY;
+
+						refactoredPacked.stream_index= video_st->index;
+						refactoredPacked.data= loadedPacket.data;
+						refactoredPacked.size= loadedPacket.size;
+
+
+						// Add loaddedFrame to videoContainer or cache it in a vector
+						ret = av_interleaved_write_frame(oc, &refactoredPacked);
+//						ret = av_write_frame(oc, &refactoredPacked);oc
+
+						std::cout << "add first frame, pts: " << loadedPacket.pts << " dts: " << loadedPacket.dts << " duration: " << loadedPacket.duration << " returnValue: " << ret << std::endl;
 
 					}
 				}
@@ -420,13 +526,22 @@ int FrameManager::createVideo(){
 					// add frame to video
 					if (hasContent == true){
 
-						// TODO: Add loaddedFrame to videoContainer or cache it in a vector
-						fwrite(loadedPacket.data, 1, loadedPacket.size, outputFile);
-
-						// display current frame
-						if(showFrame){
-							// TODO: if requiered add visualization
+						if (loadedPacket.pts != AV_NOPTS_VALUE){
+							//packet.pts= av_rescale_q(video_st->codec->coded_frame->pts, video_st->codec->time_base, video_st->time_base);
+							refactoredPacked.pts = av_rescale_q(loadedPacket.pts, pCodecCtx->time_base, video_st->time_base);
+							refactoredPacked.dts = av_rescale_q(loadedPacket.dts, pCodecCtx->time_base, video_st->time_base);
 						}
+						if(loadedPacket.flags == 1)
+							refactoredPacked.flags |= AV_PKT_FLAG_KEY;
+
+						refactoredPacked.stream_index= video_st->index;
+						refactoredPacked.data= loadedPacket.data;
+						refactoredPacked.size= loadedPacket.size;
+
+						// Add loaddedFrame to videoContainer or cache it in a vector
+						ret = av_interleaved_write_frame(oc, &refactoredPacked);
+//						ret = av_write_frame(oc, &refactoredPacked);oc
+						std::cout << "add further frame, pts: " << loadedPacket.pts << " dts: " << loadedPacket.dts << " duration: " << loadedPacket.duration << " returnValue: " << ret << std::endl;
 					}
 
 				}
@@ -436,11 +551,9 @@ int FrameManager::createVideo(){
 			binaryFileMutexes[mutexID]->unlock();
 		}
 	}
-
-	// TODO: release video
-    /* add sequence end code to have a real mpeg file */
-    fwrite(endcode, 1, sizeof(endcode), outputFile);
-    fclose(outputFile);
+	 av_write_trailer(oc);
+    /* close the output file */
+    avio_close(oc->pb);
 
 	createVideoActive = false;
 	ROS_INFO("finished createVideo ...");
@@ -449,81 +562,29 @@ int FrameManager::createVideo(){
 }
 
 void FrameManager::displayFrame(AVPacket* mat){
-	//	cv::namedWindow( "Display window", CV_WINDOW_AUTOSIZE );
-	//	cv::imshow( "Display window", *mat );
-	//	cv::waitKey(1);
+	// TODO: could be implemented like in ThermoVideoManger or general VideoManager
 }
 
 void FrameManager::startSnapshots(int interval){
-
-	//	if(!isSnapShotRunning()){
-	//		snapshotThread = boost::thread(boost::bind(&FrameManager::createSnapshots, this, interval));
-	//		snapshotRunning = true;
-	//	}
+	// TODO: could be implemented like in ThermoVideoManger or general VideoManager
 }
 
 void FrameManager::stopSnapshots(){
-	// call interrupt point of snapshotThread
-	//	snapshotThread.interrupt();
+	// TODO: could be implemented like in ThermoVideoManger or general VideoManager
 }
 
 void FrameManager::createSnapshots(int interval){
-	//	ROS_INFO("Starting creating snapshots ...");
-	//	while(true){
-	//
-	//		std::stringstream imgFile;
-	//		std::vector<AVPacket>* currentCache = getCurrentCache();
-	//
-	//		if(currentCache->size() > 0){
-	//			AVPacket img = currentCache->at(currentCache->size()-1);
-	//
-	//			// file name and path to the image files
-	//			// file name is the current system time stamp
-	//			imgFile << outputFolder << ros::Time::now() << ".jpg";
-	//
-	//			// create JPEG image
-	//			cv::imwrite(imgFile.str(), img);
-	//
-	//			// display current frame
-	//			if(showFrame && stateMachine != LIVE_STREAM)
-	//				displayFrame(&img);
-	//
-	//			// try to set thread to sleep or if an interrupt occurred stop thread
-	//			try{
-	//				// set thread sleeping for the chosen interval
-	//				boost::this_thread::sleep(boost::posix_time::milliseconds(interval*1000));
-	//			}
-	//			catch(boost::thread_interrupted const& )
-	//			{
-	//				// defined actions if an interrupt occurred
-	//				snapshotRunning = false;
-	//				ROS_INFO("Stopped creating snapshots ...");
-	//				break;
-	//			}
-	//		}
-	//	}
+	// TODO: could be implemented like in ThermoVideoManger or general VideoManager
 }
 
 void FrameManager::startLiveStream(){
-	//	ROS_INFO("Starting live stream mode ...");
-	//
-	//	if(createVideoActive){
-	//		ROS_WARN("State change not possible ... creating video at the moment !!");
-	//	}
-	//	else{
-	//		// initialize the LIVE_STREAM state
-	//		stateMachine = LIVE_STREAM;
-	//		liveStreamRunning = true;
-	//
-	//		// TODO: Impl. video coding for live stream
-	//	}
+	// TODO: could be implemented like in ThermoVideoManger or general VideoManager
 }
 
 void FrameManager::stopLiveStream(){
-	//	ROS_INFO("Stopped live stream mode ...");
-	//
-	//	stateMachine = ON_DEMAND;
-	//	liveStreamRunning = false;
+	// TODO: could be implemented like in ThermoVideoManger or general VideoManager
 }
 
-
+void FrameManager::saveAVFormatContext(AVCodecContext fc){
+	this->pCodecCtx = &fc;
+}

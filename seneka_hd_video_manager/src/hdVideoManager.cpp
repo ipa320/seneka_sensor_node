@@ -133,6 +133,9 @@ int connectToVideoStream(int argc, char **argv){
 	SDL_Event       event;
 
 
+
+	av_log_set_level(AV_LOG_DEBUG);
+
 	if(argc < 2) {
 		printf("Please provide a movie file\n");
 		return -1;
@@ -225,8 +228,6 @@ int connectToVideoStream(int argc, char **argv){
 	// Read frames and save first five frames to disk
 	i=0;
 
-
-
 	while(av_read_frame(pFormatCtx, &packet)>=0) {
 
 		// Is this a packet from the video stream?
@@ -234,6 +235,9 @@ int connectToVideoStream(int argc, char **argv){
 
 			if(cachingPacket){
 				fManager->cacheFrame(&packet);
+				fManager->saveAVFormatContext(*pCodecCtx);
+
+//				std::cout << "add further frame, pts: " << packet.pts << " dts: " << packet.dts << " duration: " << packet.duration << " returnValue: " << ret << std::endl;
 			}
 
 			// Decode video frame

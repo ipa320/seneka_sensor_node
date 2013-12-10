@@ -98,6 +98,7 @@ public:
 	bool isLiveStreamRunning(){return liveStreamRunning;};
 	void startLiveStream();
 	void stopLiveStream();
+	void saveAVFormatContext(AVCodecContext fc);
 
 private:
 
@@ -151,6 +152,8 @@ private:
 	bool liveStreamRunning;
 
 	int ausloeser;
+	AVCodecContext* pCodecCtx;
+
 };
 
 #endif /* FRAMEMANAGERH_ */
