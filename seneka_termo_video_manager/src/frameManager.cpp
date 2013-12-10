@@ -537,10 +537,11 @@ cv::Mat FrameManager::convertTemperatureValuesToRGB(sensor_msgs::Image* frame, u
 
 	unsigned char* buffer = NULL;
 	buffer = new unsigned char[frame->width * frame->height * 3];
+	
+	unsigned short* data = (unsigned short*)&frame->data[0];
 
-	iBuilder.setSize(frame->width, frame->height, false);
-	const unsigned char* data = &(*frame).data[0];
-	iBuilder.convertTemperatureToPaletteImage((unsigned short*)data, buffer);
+	iBuilder.setData(frame->width, frame->height, data);	
+	iBuilder.convertTemperatureToPaletteImage(buffer, true);
 
 	// create RGB sensor_msgs::image
 	sensor_msgs::Image rgb_img;
