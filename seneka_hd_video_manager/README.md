@@ -6,6 +6,8 @@ Not all of the functionalities of hd_video_manager are completely implemented at
 
 There had been problems with ffmpeg while developing the create video functionality. The problem could be located while initializing the AVCodecContext which has to be specific for h.264. The required parameters couldn't be figured out.
 
+For more detailed information have a look into the source code and the included comments.
+
 These functions are running:
  - reading Frames/Packets for an input-stream (could be a network session or file)
  - buffering the input-stream with boost serialization
