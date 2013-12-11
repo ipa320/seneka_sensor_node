@@ -286,7 +286,7 @@ bool windsensor::extract_sensordata_from_buffer(unsigned char *input, float sens
         ROS_DEBUG("extracted all values from windsensor");
         success = true;
     }else{
-        ROS_WARN("could not extract windsensor values (publish_rate too high?)");
+        ROS_WARN("could not extract windsensor values (publishrate too high?)");
     }
     return success;
 }
