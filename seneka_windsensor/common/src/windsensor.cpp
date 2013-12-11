@@ -20,15 +20,10 @@
  * modified by: David Bertram, David.Bertram@ipa.fhg.de
  *
  * Date of creation: Jan 2013
- * Date of modification: Oct 2013
+ * Date of modification: Dec 2013
  *
  * ToDo:
- * -- clean up
- * -- restructure code
  * -- test
- *
- * ToDo - extra features:
- * ++ writing to windsensor/ setting windsensor-internal parameters possible?
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -61,35 +56,35 @@
  *
  ****************************************************************/
 #include <seneka_windsensor/windsensor.h>
+#include <ros/ros.h>
 using namespace std;
-
-//-----------------------------------------------
 
 typedef unsigned char BYTE;
 
-//-----------------------------------------------
+int sensor_port = 0;
+int sensor_baudrate = 0;
+bool connected = false;
+int speed_unit = 0;         // knots = 0
+                            // m/s   = 1
+                            // km/h  = 2
+int direction_unit = 0;     // degree = 0
+                            // radian = 1
+int temperature_unit = 0;   // centigrade = 0
+                            // fahrenheit = 1
 
-windsensor::windsensor() {
-    //set the units of wind sped and direction
-    //	speed=1;// to change to knot
-    //	angle=1; //to change to degree
+windsensor::windsensor(int in_speed_unit, int in_direction_unit, int in_temperature_unit) {
+    speed_unit = in_speed_unit;
+    direction_unit = in_direction_unit;
+    temperature_unit = in_temperature_unit;
 }
-
-//-------------------------------------------
 
 windsensor::~windsensor() {
     m_SerialIO.close();
 }
 
-void windsensor::close() {
-    m_SerialIO.close();
-}
-
-// ---------------------------------------------------------------------------
-
 bool windsensor::open(const char* pcPort, int iBaudRate) {
     int bRetSerial;
-    // forwindsensor :default is 4800
+    // for windsensor :default is 4800
     if (iBaudRate != 4800)
         return false;
     // initialize Serial Interface
@@ -100,91 +95,260 @@ bool windsensor::open(const char* pcPort, int iBaudRate) {
         // Clears the read and transmit buffer.
         //	    m_iPosReadBuf2 = 0;
         m_SerialIO.purge();
+        connected = true;
+        ROS_DEBUG("serial connection opened successfully");
         return true;
     } else {
+        connected = false;
+        ROS_ERROR("could not connect to serial device");
         return false;
     }
 }
 
-
-
-            // TODO: David:     NMEA messages have max length of 80 bytes??
-            //              --> is that true?
-            //              --> can use smaller buffer??
-
-int windsensor::direction(float* sensor_values)                                // read from serial and put values into
-{
-
-    unsigned char Buffer[102400] = {0};                                           // increased Buffer from 512 to 1024	// 31.10.2013 David:	buffer[512] too small to read  1020 bytes ..??
-    int bytesread;                                                                                // buffer increased to 102400 to analyze incoming data
-    int iResultsFound = 0;
-
-    //	SerialIO windsensor_serialConn;
-    //	open = windsensor_serialConn.open();
-    //bytesread = windsensor_serialConn.readNonBlocking((char*)Buffer,1020);
-    
-    bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 102400);
-
-cout<<"Total number of bytes read: "<<bytesread<<"\n"<<endl;;
-cout<<"Buffer:"<<endl<< Buffer << endl;
-
-
-
-// TODO: David:     review this loop! looks like it tries to find begin of command for each character in buffer..
-//                  this will overwrite if any "$" is found.. and use the later command..
-//      --> recode this loop! think about that before changing any code here..
-//          - maybe implement a stop after first successfull read, and pass rest of buffer into another read-Function.. or whatever other solution gets "defined"
-
-    for (int i = 0; i < bytesread; i++)                                         //the wind angle is in degrees and speed is in knots by default
-    {
-        if ((Buffer[i]) == '$') {
-//printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
-//cout<<endl;
-
-            if ((Buffer[i + 1] == 'I') && (Buffer[i + 2] == 'I') && (Buffer[i + 3] == 'M') && (Buffer[i + 4] == 'W') && (Buffer[i + 14] == ',') && (Buffer[i + 23] == 'A')) {
-                sensor_values[0] = ((Buffer[i + 7] - 48)*100 + (Buffer[i + 8] - 48)*10 + (Buffer[i + 9] - 48) + .1 * (Buffer[i + 11] - 48)); // extracting the value for the angle and speed
-                sensor_values[1] = ((Buffer[i + 15] - 48)*100 + (Buffer[i + 16] - 48)*10 + (Buffer[i + 17] - 48) + .1 * (Buffer[i + 19] - 48));
-                if ((sensor_values[0] < 0.001) || (sensor_values[0] > 360)) // To check one more time if the value is in bounds
-                    sensor_values[0] = -1;
-                if (sensor_values[1] < 0)
-                    sensor_values[1] = -1;
-                if ((sensor_values[0] != -1) || ((sensor_values[1] != -1))) {
-                    switch (speed) {
-                        case 1:
-                            cout << "Result #" <<  iResultsFound+1  << ": knots, ";
-                            break;
-                        case 2:
-                            sensor_values[1] = sensor_values[1]* 0.514444;
-                            cout << "m/s, ";
-                            break;
-
-                        default:
-                            sensor_values[1] = sensor_values[1]*1.852;
-                            cout << "km/h, ";
-                            break;
-                    }
-                    switch (angle) {
-                        case 1:
-                            cout << "degree: ";
-                            break;
-
-                        default:
-                            sensor_values[0] = sensor_values[0]*0.0174532925;
-                            cout << "radian: \t\t";
-                            break;
-                    }
-                } else{
-                    cout << "Incorrect values" << endl;
-                }
-                cout << "direction and speed: " << sensor_values[0] << "\t" << sensor_values[1] << endl;
-                iResultsFound++;
-            }
-
-            //cout << "\n";
-        }
-
-    }
-
-return iResultsFound;
+void windsensor::close() {
+    m_SerialIO.close();
 }
+
+float convert_speed_from_knots(float knots, int unit=speed_unit){
+    float result = 0;
+    switch (unit) {
+        case 0:
+            ROS_DEBUG("converting speed to knots");
+            result = knots;
+            break;
+        case 1:
+            ROS_DEBUG("converting speed to m/s");
+            result = knots* 0.514444;
+            break;
+        case 2:
+            ROS_DEBUG("converting speed to km/h");
+            result = knots *1.852;
+            break;            
+        default:
+            ROS_ERROR("wrong value for speed unit [0= knots, 1= m/s, 2= km/h]");
+        }
+    return result;
+
+}
+
+float convert_direction_from_degree(float degree, int unit=direction_unit){
+    float result = 0;
+    switch (unit) {
+        case 0:
+            ROS_DEBUG("converting direction to degree");
+            result = degree;
+            break;
+        case 1:
+            ROS_DEBUG("converting direction to radian");
+            result = degree* 0.514444;
+            break;
+        default:
+            ROS_ERROR("wrong value for direction unit [0= degree, 1= radian]");
+        }
+    return result;
+}
+
+float convert_temperature_from_centigrade(float centigrade, int unit=temperature_unit){
+    float result = 0;
+    switch (unit) {
+        case 0:
+            ROS_DEBUG("converting temperature to centigrade");
+            result = centigrade;
+            break;
+        case 1:
+            ROS_DEBUG("converting temperature to fahrenheit");
+            result = (centigrade* 1.8000) + 32.00;
+            break;
+        default:
+            ROS_ERROR("wrong value for temperature unit [0= centigrade, 1= fahrenheit]");
+        }
+    return result;
+}
+
+bool windsensor::compare_checksum(string fields[], std::string line_for_checksum){
+            bool checksum_ok = false;
+            // calculate checksum and verify message
+            /*      A sentence may contain up to 80 characters plus "$" and CR/LF.
+             *       If data for a field is not available, the
+             *       field is omitted, but the delimiting commas are still sent, with no space between them. The checksum
+             *       field consists of a "*" and two hex digits representing the exclusive OR of all characters between, but not
+             *       including, the "$" and "*"
+             */
+            std::string checksum = fields[5].substr(fields[5].length()-2, fields[5].length());
+            // calculate checksum (XOR over int-values of all characters between $ and *
+            std::string message = line_for_checksum.substr(1,line_for_checksum.length()-4);
+            // calculate XOR
+            int bitwise_xor = 0;
+            for (int i = 0; i<message.length(); i++){
+                bitwise_xor ^= message[i];
+            }
+            // convert received checksum value (hex) to int
+            int checksum_int;
+            checksum_int = (int)strtol(checksum.c_str(), NULL, 16);
+            // compare checksums
+            if (checksum_int == bitwise_xor){
+                ROS_DEBUG("checksum verfied for message from windsensor");
+                checksum_ok = true;
+            }else {
+                ROS_ERROR("checksum error on message from windsensor");
+                checksum_ok = false;
+            }
+            return checksum_ok;
+}
+
+bool windsensor::extract_sensordata_from_buffer(unsigned char *input, float sensor_values[]){
+    // bool for return value
+    bool success = false;
+    // other variables
+    float wind_speed = 0;
+    bool got_wind_speed = false;
+    float wind_direction = 0;
+    bool got_wind_direction = false;
+    float temperature = 0;
+    bool got_temperature = false;
+    bool wind_checksum_ok = false;
+    bool temperature_checksum_ok = false;
+    // convert char* to string
+    std::string fields[6] = {""};
+    std::string s = reinterpret_cast<const char*>(input);
+
+    // extract values
+    std::string delimiter = "\r\n";             // line endings
+    std::string second_delimiter = ",";          // field delimiter
+    size_t pos = 0;
+    std::string line;
+    // find lines in buffer
+    while ((pos = s.find(delimiter)) != std::string::npos) {
+        line = s.substr(0, pos);
+        std::string line_for_checksum = s.substr(0, line.length());
+        // check if message starts with '$'  (start character for NMEA0183)
+        if (line[0] == '$'){
+        // extract fields
+        size_t second_pos = 0;
+        std::string field;
+        int field_counter = 0;
+        // find fields in line
+        while ((second_pos = line.find(second_delimiter)) != std::string::npos) {
+            // get substring between delimiters (',')
+            field = line.substr(0, second_pos);
+            // put field value into fields array
+            fields[field_counter] = field;
+            field_counter++;
+            // delete processed data from line-buffer
+            line.erase(0, second_pos + second_delimiter.length());
+        }
+        // add the last field to fields array ( to allow comparing data to received checksum )
+        fields[field_counter] = line.substr(0, line.length());
+        // now analyze values
+        // if line is wind_data (starts with "$IIMWV")
+        if (fields[0] == "$IIMWV"){
+            // extract wind direction
+            char * direction_char = new char[fields[1].length()];
+            strcpy(direction_char,fields[1].c_str());
+            wind_direction = strtof(direction_char, NULL);
+            // extract wind speed
+            char * speed_char = new char[fields[3].length()];
+            strcpy(speed_char,fields[3].c_str());
+            wind_speed = strtof(speed_char, NULL);
+            // verify checksum
+            if (compare_checksum(fields, line_for_checksum) == true){
+                got_wind_direction = true;
+                got_wind_speed = true;
+                wind_checksum_ok = true;
+            }
+        // else if line is temperature_data (starts with "$WIXDR")
+        }else if (fields[0] == "$WIXDR"){
+            // extract temperature value
+            char * temperature_char = new char[fields[2].length()];
+            strcpy(temperature_char,fields[2].c_str());
+            temperature = strtof(temperature_char, NULL);
+            // verify checksum
+            if (compare_checksum(fields, line_for_checksum) == true){
+                got_temperature = true;
+                temperature_checksum_ok = true;
+            }
+        }
+        // remove processed line from 'buffer'
+        s.erase(0, pos + delimiter.length());
+        }
+        else{
+            // clean 'buffer' after failed extraction
+            int start_index = s.find("$");
+            s.erase(0, start_index);
+            ROS_DEBUG("message from windsensor did not start with \'$\'. skipping some bytes and retrying.");
+        }
+    }
+    // check if all values were ok
+    if (got_wind_speed && got_wind_direction && got_temperature && wind_checksum_ok && temperature_checksum_ok){
+        sensor_values[0] = wind_speed;
+        sensor_values[1] = wind_direction;
+        sensor_values[2] = temperature;
+        ROS_DEBUG("extracted all values from windsensor");
+        success = true;
+    }else{
+        ROS_WARN("could not extract windsensor values (publish_rate too high?)");
+    }
+    return success;
+}
+
+bool windsensor::read(float sensor_values[], string sensor_units[]){
+    bool success = false;
+    if (connected != true){
+        success = false;
+        ROS_ERROR("could not read from windsensor: %i, %i", sensor_port, sensor_baudrate);
+    }
+    else{
+        unsigned char Buffer[1024] = {0};                                           // increased Buffer from 512 to 1024	// 31.10.2013 David:	buffer[512] too small to read  1020 bytes ..??
+        int bytesread;
+        int iResultsFound = 0;
+        // read from serial
+        bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1024);
+        success = true;
+        ROS_DEBUG("read %i bytes from windsensor: %i, %i", bytesread, sensor_port, sensor_baudrate);
+        // extract sensor values and set sensor units
+        if (extract_sensordata_from_buffer(Buffer, sensor_values)){
+            switch(speed_unit){
+                case 0:
+                    sensor_units[0] = "knots";
+                    break;
+                case 1:
+                    sensor_units[0] = "m/s";
+                    break;
+                case 2:
+                    sensor_units[0] = "km/h";
+                    break;
+                default:
+                    success = false;
+                    ROS_ERROR("bad speed unit");
+            }
+            switch(direction_unit){
+                case 0:
+                    sensor_units[1] = "degree";
+                    break;
+                case 1:
+                    sensor_units[1] = "radian";
+                    break;
+                default:
+                    success = false;
+                    ROS_ERROR("bad direction unit");
+            }
+            switch(temperature_unit){
+                case 0:
+                    sensor_units[2] = "centigrade";
+                    break;
+                case 1:
+                    sensor_units[2] = "fahrenheit";
+                    break;
+                default:
+                    success = false;
+                    ROS_ERROR("bad temperature unit");
+            }
+        }
+    }
+    return success;
+}
+
+
+
+
 

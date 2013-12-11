@@ -20,15 +20,10 @@
  * modified by: David Bertram, David.Bertram@ipa.fhg.de
  *
  * Date of creation: Jan 2013
- * Date of modification: Oct 2013
+ * Date of modification: Dec 2013
  *
  * ToDo:
- * -- clean up
- * -- restructure code
  * -- test
- *
- * ToDo - extra features:
- * ++ writing to windsensor/ setting windsensor-internal parameters possible?
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -81,34 +76,37 @@ using namespace std;
 class windsensor
 {
 public:
-
-
 	// Constructor
-	windsensor();
+	windsensor(int in_speed_unit, int in_direction_unit, int in_temperature_unit);
 
 	// Destructor
 	~windsensor();
-	/**
-	 * Opens serial port.
-	 * @param pcPort used "COMx" or "/dev/ttyUSB0"
-	 * @param iBaudRate baud rate
-	 */
-	bool open(const char* pcPort, int iBaudRate);
-	int speed,angle;
-	int direction(float* dir);
+
+        int sensor_port;
+        int sensor_baudrate;
+        bool connected;
+        int speed_unit;         // knots = 0
+                                // m/s   = 1
+                                // km/h  = 2
+        int direction_unit;     // degree = 0
+                                // radian = 1
+        int temperature_unit;   // centigrade = 0
+                                // fahrenheit = 1
+
+        float convert_speed_from_knots(float knots, int unit);
+        float convert_direction_from_degree(float degree, int unit);
+        float convert_temperature_from_centigrade(float centigrade, int unit);
+
+        bool compare_checksum(string fields[], std::string line_for_checksum);
+        bool extract_sensordata_from_buffer(unsigned char *input, float sensor_values[]);
+        
+        bool read(float sensor_values[], string sensor_units[]);
+        bool open(const char* pcPort, int iBaudRate);
         void close();
 
 private:
-	// Constants
-	// Components
-	SerialIO m_SerialIO;
-	// Functions
 
-//	unsigned int getUnsignedWord(unsigned char msb, unsigned char lsb)
-//	{
-//		return (msb << 8) | lsb;
-//	}
-//	unsigned int createCRC(unsigned char *ptrData, int Size);
+	SerialIO m_SerialIO;
 
 };
 #endif //

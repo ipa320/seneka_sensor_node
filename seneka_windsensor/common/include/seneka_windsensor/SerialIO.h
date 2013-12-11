@@ -126,7 +126,7 @@ public:
 
 	/**
 	 * Changes the baudrate.
-	 * The serial port is allready open.
+	 * The serial port is already open.
 	 * @param BaudRate new baudrate.
 	 */
 	void changeBaudRate(int BaudRate);

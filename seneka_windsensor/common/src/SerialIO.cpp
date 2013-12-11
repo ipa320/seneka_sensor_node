@@ -21,15 +21,10 @@
  * modified by: David Bertram, David.Bertram@ipa.fhg.de
  *
  * Date of creation: Jan 2013
- * Date of modification: Oct 2013
+ * Date of modification: Dec 2013
  *
  * ToDo:
- * -- clean up
- * -- restructure code
  * -- test
- *
- * ToDo - extra features:
- * ++ writing to windsensor/ setting windsensor-internal parameters possible?
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -66,7 +61,6 @@
  *
  */
 
-//#include "stdafx.h"
 #include "seneka_windsensor/SerialIO.h"
 #include <math.h>
 #include <iostream>
@@ -76,17 +70,8 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/serial.h>
+#include <ros/ros.h>
 using namespace std;
-
-//#define _PRINT_BYTES
-
-/*
-#ifdef _DEBUG
-#define new DEBUG_NEW
-#undef THIS_FILE
-static char THIS_FILE[] = __FILE__;
-#endif
- */
 
 char str[10];
 char value[1000], lat[64], longt[64];
@@ -108,10 +93,6 @@ bool getBaudrateCode(int iBaudrate, int* iBaudrateCode)                         
         B460800, B500000, B576000, B921600, B1000000
     };
     const int iBaudsLen = sizeof (baudTable) / sizeof (int);
-
-// debug
-//*iBaudrateCode = B4800;                                                       // overwrite input parameter??
-
     bool bReturn = false;
     for (int i = 0; i < iBaudsLen; i++) {
         if (baudTable[i] == iBaudrate) {
@@ -122,7 +103,6 @@ bool getBaudrateCode(int iBaudrate, int* iBaudrateCode)                         
     }
     return bReturn;
 }
-
 
 //////////////////////////////////////////////////////////////////////
 // Konstruktion/Destruktion
@@ -141,8 +121,8 @@ m_ReadBufSize(1024),
 m_WriteBufSize(m_ReadBufSize),
 m_Timeout(0),
 m_ShortBytePeriod(false) {
-    m_BytePeriod.tv_sec = 0;
-    m_BytePeriod.tv_usec = 0;
+m_BytePeriod.tv_sec = 0;
+m_BytePeriod.tv_usec = 0;
 }
 
 SerialIO::~SerialIO() {
@@ -152,35 +132,26 @@ SerialIO::~SerialIO() {
 int SerialIO::open()                                                            // open serial connection
 {
     int iResult;
-cout<<"testing open\n";
     m_Device = ::open(m_DeviceName.c_str(),                                     // open device
             O_RDWR | O_NOCTTY | O_NONBLOCK);
     if (m_Device < 0) {
         //RF_ERR("Open " << m_DeviceName << " failed, error code " << errno);
-std::cout << "Trying to open " << m_DeviceName << " failed: "
-        << strerror(errno) << " (Error code " << errno << ")" << std::endl;
+        ROS_ERROR("Trying to open %s failed: %s (Error code: %i )", m_DeviceName.c_str(), strerror(errno), errno);
         return -1;
     }
-
     iResult = tcgetattr(m_Device, &m_tio); // get parameters
-
     if (iResult == -1) {
-std::cout << "tcgetattr of " << m_DeviceName << " failed: "<< strerror(errno)
-        << " (Error code " << errno << ")" << std::endl;
+
+        ROS_ERROR("tcgetattr %s failed: %s (Error code: %i )", m_DeviceName.c_str(), strerror(errno), errno);
+
         ::close(m_Device);
         m_Device = -1;
         return -1;
     }
-
     m_tio.c_iflag = 0;                                                          // set Default values
     m_tio.c_oflag = 0;
     m_tio.c_cflag = B38400 | CS8 | CREAD | HUPCL | CLOCAL;
     m_tio.c_lflag = 0;
-
-    // debug
-    // cfsetispeed(&m_tio, B4800);                                             // set input baudrate
-    // cfsetospeed(&m_tio, B4800);                                             // set output baudrate
-
     m_tio.c_cc[VINTR] = 3; // Interrupt
     m_tio.c_cc[VQUIT] = 28; // Quit
     m_tio.c_cc[VERASE] = 127; // Erase
@@ -198,27 +169,21 @@ std::cout << "tcgetattr of " << m_DeviceName << " failed: "<< strerror(errno)
     m_tio.c_cc[VWERASE] = 23;
     m_tio.c_cc[VLNEXT] = 22;
     m_tio.c_cc[VEOL2] = 0; // Second end-of-line
-
     int iNewBaudrate = int(m_BaudRate * m_Multiplier + 0.5);
     int iBaudrateCode = 0;
     bool bBaudrateValid = getBaudrateCode(iNewBaudrate, &iBaudrateCode);
-
-// debug
-std::cout << "Setting Baudrate to " << iNewBaudrate << std::endl;
-
+    ROS_DEBUG("Setting Baudrate to %i", iNewBaudrate);
     if (bBaudrateValid) {                                                       // if baudrateCode was  found -> set via ctlset..
         cfsetispeed(&m_tio, iBaudrateCode);                                         // set input baudrate
         cfsetospeed(&m_tio, iBaudrateCode);                                         // set output baudrate
     } else {                                                                    // else -> set directly via "ioctl"
-std::cout << "Baudrate code not available - setting baudrate directly"
-      << std::endl;
+        ROS_WARN("Baudrate code not available - setting baudrate directly");
         struct serial_struct ss;
         ioctl(m_Device, TIOCGSERIAL, &ss);
         ss.flags |= ASYNC_SPD_CUST;
         ss.custom_divisor = ss.baud_base / iNewBaudrate;
         ioctl(m_Device, TIOCSSERIAL, &ss);
     }
-
     m_tio.c_cflag &= ~CSIZE;                                                    // set data format
     switch (m_ByteSize)                                                         // set ByteSize
     {
@@ -235,9 +200,7 @@ std::cout << "Baudrate code not available - setting baudrate directly"
         default:
             m_tio.c_cflag |= CS8;
     }
-
     m_tio.c_cflag &= ~(PARENB | PARODD);
-
     switch (m_Parity)                                                           // set ParityBits
     {
         case PA_ODD:
@@ -251,7 +214,6 @@ std::cout << "Baudrate code not available - setting baudrate directly"
         {
         }
     }
-
     switch (m_StopBits)                                                         // set StopBits
     {
         case SB_TWO:
@@ -261,7 +223,6 @@ std::cout << "Baudrate code not available - setting baudrate directly"
         default:
             m_tio.c_cflag &= ~CSTOPB;
     }
-
     switch (m_Handshake)                                                        // configure hardware handshake
     {
         case HS_NONE:
@@ -277,36 +238,27 @@ std::cout << "Baudrate code not available - setting baudrate directly"
             m_tio.c_iflag |= (IXON | IXOFF | IXANY);
             break;
     }
-
     m_tio.c_oflag &= ~OPOST;
     m_tio.c_lflag &= ~ICANON;
-
     iResult = tcsetattr(m_Device, TCSANOW, &m_tio);                             // write parameters via tcsetattr
-
     if (iResult == -1) {
-std::cout << "tcsetattr " << m_DeviceName << " failed: "
-      << strerror(errno) << " (Error code " << errno << ")" << std::endl;
+        ROS_ERROR("tcsetattr %s failed: %s (Error code: %i )", m_DeviceName.c_str(), strerror(errno), errno);
         ::close(m_Device);
         m_Device = -1;
         return -1;
     }
-                                                                                // set buffer sizes
-                                                                                    // TODO: ..where is the code about this comment?
-
     setTimeout(m_Timeout);                                                      // set timeout
     return 0;
 }
 
-void SerialIO::close()                                                          // close serial connection
-{
+void SerialIO::close(){                                                          // close serial connection
     if (m_Device != -1) {
         ::close(m_Device);
         m_Device = -1;
     }
 }
 
-void SerialIO::setTimeout(double Timeout)                                       // set serialIO timeout
-{
+void SerialIO::setTimeout(double Timeout){                                       // set serialIO timeout
     m_Timeout = Timeout;
     if (m_Device != -1) {
         m_tio.c_cc[VTIME] = cc_t(ceil(m_Timeout * 10.0));
@@ -314,8 +266,7 @@ void SerialIO::setTimeout(double Timeout)                                       
     }
 }
 
-int SerialIO::readNonBlocking(char *Buffer, int Length)                         // read from serial into Buffer
-{
+int SerialIO::readNonBlocking(char *Buffer, int Length){                         // read from serial into Buffer
     int iAvailableBytes = getSizeRXQueue();
     int iBytesToRead = (Length < iAvailableBytes) ? Length : iAvailableBytes;
     ssize_t BytesRead;
@@ -323,8 +274,7 @@ int SerialIO::readNonBlocking(char *Buffer, int Length)                         
     return BytesRead;
 }
 
-int SerialIO::getSizeRXQueue()                                                  // check how many bytes are waiting in RX queue
-{
+int SerialIO::getSizeRXQueue(){                                                  // check how many bytes are waiting in RX queue
     int cbInQue;
     int Res = ioctl(m_Device, FIONREAD, &cbInQue);
     if (Res == -1) {
@@ -336,34 +286,8 @@ int SerialIO::getSizeRXQueue()                                                  
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 // ################################################################################################################################
-// stuff below is NOT USED!!   (..yet)
+// stuff below is NOT USED for windsensor   (..yet)
 // ################################################################################################################################
 
 void SerialIO::setBytePeriod(double Period) {
@@ -399,7 +323,8 @@ int SerialIO::write(const char *Buffer, int Length) {
 }
 
 int SerialIO::readBlocking(char *Buffer, int Length) {
-    ssize_t BytesRead;
+    //ssize_t
+    int BytesRead;
     BytesRead = ::read(m_Device, Buffer, Length);
 
     printf("%2d Bytes read:", BytesRead);
