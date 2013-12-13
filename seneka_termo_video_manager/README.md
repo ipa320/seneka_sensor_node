@@ -2,11 +2,9 @@ Seneka - seneka_termo_video_manager
 ======
 
 ## Description
-The seneka_termo_video_manager works with Optris termo cameras as input device. 
-The seneka_termo_video_manager subscribes on the /optris/thermal_image topic which is provided by the optirs ROS driver. 
-This topics publishes a ROS sensor_msgs::image which contains the termo information. The mapping from termo information to RGB8 is done inside this ROS node.
+This ROS node manages the video data of an Optris IR-Camera. This node is able to import IR-frames from the ROS topic /optris/thermal_image and to cache the frames. This topic will be published by optris_imager_node. The topic data includes a ROS sensor_msgs::image which contains the IR-information. The mapping from IR-information to RGB8 is done inside this ROS node. So you don't have to run optris_colorconvert_node or you shouldn't run it because of performance issues. 
 
-At the moment the seneka_termo_video_manager offers three ROS services which could be call from remote. But the output of this ROS node is just locally because the communication interfaces aren't defined yet. 
+To manage this ROS node there exists three ROS services (see below). But the output of this ROS node is just locally because the communication interfaces aren't defined yet. 
 
 ## ROS Services 
 - (1) create VideoOnDemand (seneka_termo_video_manager::getVideo) 
@@ -17,11 +15,15 @@ At the moment the seneka_termo_video_manager offers three ROS services which cou
  - manuel selection 
 
 ## Getting started
+- connect the optis IR-Camera and initialize the camera:
+ - sudo rmmod uvcvideo
+ - sudo modprobe uvcvideo nodrop=1
+- roscore
 - roslaunch optris_drivers optris_drivers.launch 
- - publishes input stream (raw data)
+ - publishes input stream (raw data), you have to remove the configuration for optris_colorconvert_node. 
 - roslaunch seneka_node_bringup termo_video_manager.launch
 - rosrun seneka_termo_video_manager termo_video_tester
- - ROS test node for termo_video_manager
+ - ROS test node for termo_video_manager, simulates the remote comand center functionalities. 
 
 ## Launch file configuration
 
@@ -42,7 +44,3 @@ At the moment the seneka_termo_video_manager offers three ROS services which cou
 - maxTemperature
 - PaletteScalingMethod
 - Palette
-
-## Commands to start and restart the Optris kernel module:
-- sudo rmmod uvcvideo
-- sudo modprobe uvcvideo nodrop=1
