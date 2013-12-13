@@ -23,7 +23,7 @@ To manage this ROS node there exists three ROS services (see below). But the out
  - publishes input stream (raw data), you have to remove the configuration for optris_colorconvert_node. 
 - roslaunch seneka_node_bringup termo_video_manager.launch
 - rosrun seneka_termo_video_manager termo_video_tester
- - ROS test node for termo_video_manager, simulates the remote comand center functionalities. 
+ - ROS test node for termo_video_manager, simulates the remote command center functionalities. 
 
 ## Launch file configuration
 
