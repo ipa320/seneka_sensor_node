@@ -19,7 +19,7 @@ To manage this ROS node there exists three ROS services (see below). But the out
  - sudo rmmod uvcvideo
  - sudo modprobe uvcvideo nodrop=1
 - roscore
-- roslaunch optris_drivers optris_drivers.launch (Important: set frame rate in launch file )
+- roslaunch optris_drivers optris_drivers.launch (**Important**: Set frame rate to 15 fps. For other frame rates it is necessary to adapted the source code of frameManager class)
  - publishes input stream (raw data), you have to remove the configuration for optris_colorconvert_node. 
 - roslaunch seneka_node_bringup termo_video_manager.launch
 - rosrun seneka_termo_video_manager termo_video_tester
@@ -46,5 +46,5 @@ To manage this ROS node there exists three ROS services (see below). But the out
 - Palette
 
 #### Open tasks (TODOs)
-- Impl. of network interfaces for videoOnDemand, snapShots(quick fix via ros messages), liveStream
-- vTester: configuration option for changing the interval of videoOnDemand
+- Impl. of interfaces to the remote control center for videoOnDemand, snapShots(quick fix via ros messages), liveStream
+- vTester: configuration option for changing the interval of videoOnDemand via ros service 
