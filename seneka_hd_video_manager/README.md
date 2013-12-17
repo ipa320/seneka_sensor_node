@@ -20,5 +20,5 @@ These functions aren't running:
 ## Starting/Testing the seneka_hd_video_manager
 
 - roscore
-- rosrun seneka_hd_video_manager hd_video_manager_node <videoFile or url>
+- rosrun seneka_hd_video_manager hd_video_manager_node <videoFile or url-of-hardware-encoder>
 
