@@ -35,3 +35,7 @@ To manage this ROS node there exists three ROS services (see below). But the out
 - videoFrameRate
 - binaryFilePath
 - videoFilePath
+
+#### Open tasks (TODOs)
+- Impl. of interfaces to the remote control center for videoOnDemand, snapShots(quick fix via ros messages), liveStream
+- vTester: configuration option for changing the interval of videoOnDemand via ros service 
