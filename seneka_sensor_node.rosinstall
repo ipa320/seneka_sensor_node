@@ -17,3 +17,8 @@
    uri: 'git://github.com/ros-perception/laser_assembler'
    local-name: laser_assembler
    version: hydro-devel
+
+- git:
+   uri: 'git://github.com/ros/filters'
+   local-name: filters
+   version: hydro-devel
