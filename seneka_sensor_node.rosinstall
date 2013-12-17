@@ -1,7 +1,7 @@
 - git:
-    uri: 'git://github.com/ohm-ros-pkg/optris_drivers.git'
-    local-name: optris_drivers
-    version: groovy-devel
+   uri: 'git://github.com/ohm-ros-pkg/optris_drivers.git'
+   local-name: optris_drivers
+   version: groovy-devel
 
 - git:
    uri: 'git://github.com/ros-drivers/urg_c'
@@ -9,6 +9,11 @@
    version: master
 
 - git:
-    uri: 'git://github.com/ros-drivers/urg_node'
-    local-name: urg_node
-    version: groovy-devel
+   uri: 'git://github.com/ros-drivers/urg_node'
+   local-name: urg_node
+   version: groovy-devel
+
+- git:
+   uri: 'git://github.com/ros-perception/laser_assembler'
+   local-name: laser_assembler
+   version: hydro-devel
