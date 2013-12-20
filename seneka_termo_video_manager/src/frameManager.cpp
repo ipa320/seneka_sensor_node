@@ -94,10 +94,10 @@ FrameManager::FrameManager() {
 	outputFolder = "/tmp/";
 	binaryFilePath = outputFolder + "container";
 	videoFilePath = outputFolder + "termoVideoOnDemand.avi";
-	fpv = 400;	 	// frame per video -> 40 sec * 10 frames = 400 frames
-	fpc = 100;		// frames per cache -> 10 sec * 10 frames = 100 frames
+	fpv = 400;	 	// example: frame per video -> 40 sec * 10 frames = 400 frames
+	fpc = 100;		// example: frames per cache -> 10 sec * 10 frames = 100 frames
 	fpb = fpc;		// frames per binary
-	vfr = 10;
+	vfr = 15;
 	videoCodec = CV_FOURCC('D','I','V','X');
 	binaryFileIndex = 0;
 	fullVideoAvailable = false;
@@ -164,7 +164,7 @@ FrameManager::FrameManager(ros::NodeHandle &pnHandle) {
 
 	if(!pnHandle.hasParam("videoFrameRate") || tmp_vfr<=0){
 		ROS_WARN("Used default parameter for videoFrameRate [10]");
-		vfr = 10;
+		vfr = 15;
 	}
 	else
 		vfr=(u_int)tmp_vfr;
@@ -537,10 +537,11 @@ cv::Mat FrameManager::convertTemperatureValuesToRGB(sensor_msgs::Image* frame, u
 
 	unsigned char* buffer = NULL;
 	buffer = new unsigned char[frame->width * frame->height * 3];
+	
+	unsigned short* data = (unsigned short*)&frame->data[0];
 
-	iBuilder.setSize(frame->width, frame->height, false);
-	const unsigned char* data = &(*frame).data[0];
-	iBuilder.convertTemperatureToPaletteImage((unsigned short*)data, buffer);
+	iBuilder.setData(frame->width, frame->height, data);	
+	iBuilder.convertTemperatureToPaletteImage(buffer, true);
 
 	// create RGB sensor_msgs::image
 	sensor_msgs::Image rgb_img;
