@@ -62,7 +62,7 @@
 VideoRecorder::VideoRecorder(){
 	codec = CV_FOURCC('D','I','V','X');
 	//codec = CV_FOURCC('X','2','6','4');
-	fps = 10;
+	fps = 15;
 	frameWidth = 0;
 	frameHeight = 0;
 }
