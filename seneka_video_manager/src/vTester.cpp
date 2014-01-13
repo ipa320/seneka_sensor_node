@@ -66,7 +66,7 @@
 int main(int argc, char **argv)
 {
 	ros::init(argc, argv, "vTester");
-	ros::NodeHandle n;
+	ros::NodeHandle n("");
 	seneka_video_manager::getVideo videoService;
 	seneka_video_manager::getSnapShots snapShotService;
 	seneka_video_manager::getLiveStream liveStreamService;
@@ -89,7 +89,7 @@ int main(int argc, char **argv)
 	switch(mode){
 	case 1:
 		ROS_INFO("MODE VideoOnDemand");
-		client = n.serviceClient<seneka_video_manager::getVideo>("seneka/VIDEO_MANAGER/getVideo");
+		client = n.serviceClient<seneka_video_manager::getVideo>("getVideo");
 		ROS_INFO("Connecting to VIDEO_MANAGER ...");
 		// set request to 1 -> will create a video
 		videoService.request.createVideo = 1;
@@ -118,7 +118,7 @@ int main(int argc, char **argv)
 		break;
 	case 2:
 		ROS_INFO("MODE SnapShot");
-		client = n.serviceClient<seneka_video_manager::getSnapShots>("seneka/VIDEO_MANAGER/getSnapShots");
+		client = n.serviceClient<seneka_video_manager::getSnapShots>("getSnapShots");
 		ROS_INFO("Connecting to VIDEO_MANAGER ...");
 		// value 1 starts / value -1 stops service
 		snapShotService.request.start = true;
@@ -135,7 +135,7 @@ int main(int argc, char **argv)
 		break;
 	case 3:
 		ROS_INFO("MODE LiveStream");
-		client = n.serviceClient<seneka_video_manager::getLiveStream>("seneka/VIDEO_MANAGER/getLiveStream");
+		client = n.serviceClient<seneka_video_manager::getLiveStream>("getLiveStream");
 		ROS_INFO("Connecting to VIDEO_MANAGER ...");
 		liveStreamService.request.start = true;
 		client.call(liveStreamService);
