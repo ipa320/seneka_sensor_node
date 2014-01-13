@@ -26,22 +26,22 @@ find_package(catkin REQUIRED COMPONENTS
 ## To declare and build messages, services or actions from within this
 ## package, follow these steps:
 ## * Let MSG_DEP_SET be the set of packages whose message types you use in
-##   your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
+## your messages/services/actions (e.g. std_msgs, actionlib_msgs, ...).
 ## * In the file package.xml:
-##   * add a build_depend and a run_depend tag for each package in MSG_DEP_SET
-##   * If MSG_DEP_SET isn't empty the following dependencies might have been
-##     pulled in transitively but can be declared for certainty nonetheless:
-##     * add a build_depend tag for "message_generation"
-##     * add a run_depend tag for "message_runtime"
+## * add a build_depend and a run_depend tag for each package in MSG_DEP_SET
+## * If MSG_DEP_SET isn't empty the following dependencies might have been
+## pulled in transitively but can be declared for certainty nonetheless:
+## * add a build_depend tag for "message_generation"
+## * add a run_depend tag for "message_runtime"
 ## * In this file (CMakeLists.txt):
-##   * add "message_generation" and every package in MSG_DEP_SET to
-##     find_package(catkin REQUIRED COMPONENTS ...)
-##   * add "message_runtime" and every package in MSG_DEP_SET to
-##     catkin_package(CATKIN_DEPENDS ...)
-##   * uncomment the add_*_files sections below as needed
-##     and list every .msg/.srv/.action file to be processed
-##   * uncomment the generate_messages entry below
-##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
+## * add "message_generation" and every package in MSG_DEP_SET to
+## find_package(catkin REQUIRED COMPONENTS ...)
+## * add "message_runtime" and every package in MSG_DEP_SET to
+## catkin_package(CATKIN_DEPENDS ...)
+## * uncomment the add_*_files sections below as needed
+## and list every .msg/.srv/.action file to be processed
+## * uncomment the generate_messages entry below
+## * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ################################################
 ## Declare ROS messages, services and actions ##
@@ -49,23 +49,23 @@ find_package(catkin REQUIRED COMPONENTS
 
 ## Generate messages in the 'msg' folder
 # add_message_files(FILES
-#   Message.msg
+# Message.msg
 # )
 
 ## Generate services in the 'srv' folder
 # add_service_files(FILES
-#   Service.srv
+# Service.srv
 # )
 
 ## Generate actions in the 'action' folder
 # add_action_files(FILES
-#   Action.action
+# Action.action
 # )
 
 ## Generate added messages and services with any dependencies listed here
 # generate_messages(DEPENDENCIES
-#   std_msgs  
-#   Or other packages containing msgs
+# std_msgs
+# Or other packages containing msgs
 # )
 
 ###################################
@@ -78,10 +78,10 @@ find_package(catkin REQUIRED COMPONENTS
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-#  INCLUDE_DIRS include
-#  LIBRARIES ${PROJECT_NAME}
+# INCLUDE_DIRS include
+# LIBRARIES ${PROJECT_NAME}
   CATKIN_DEPENDS roscpp laser_assembler
-#  DEPENDS
+# DEPENDS
 )
 
 ###########
@@ -94,7 +94,7 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 ## Declare a cpp library
 # add_library(seneka_hokuyo_laserscanner
-#   src/${PROJECT_NAME}/seneka_hokuyo_laserscanner.cpp
+# src/${PROJECT_NAME}/seneka_hokuyo_laserscanner.cpp
 # )
 
 ## Declare a cpp executable
@@ -106,7 +106,7 @@ add_dependencies(${PROJECT_NAME} ${PROJECT_NAME}_gencpp)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(seneka_hokuyo_laserscanner_node
-#   ${catkin_LIBRARIES}
+# ${catkin_LIBRARIES}
 # )
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 
@@ -120,29 +120,29 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 ## Mark executable scripts (Python etc.) for installation
 ## in contrast to setup.py, you can choose the destination
 # install(PROGRAMS
-#   scripts/my_python_script
-#   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# scripts/my_python_script
+# DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
 ## Mark executables and/or libraries for installation
 # install(TARGETS seneka_hokuyo_laserscanner seneka_hokuyo_laserscanner_node
-#   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
-#   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+# ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+# LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
+# RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 # )
 
 ## Mark cpp header files for installation
 # install(DIRECTORY include/${PROJECT_NAME}/
-#   DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
-#   FILES_MATCHING PATTERN "*.h"
-#   PATTERN ".svn" EXCLUDE
+# DESTINATION ${CATKIN_PACKAGE_INCLUDE_DESTINATION}
+# FILES_MATCHING PATTERN "*.h"
+# PATTERN ".svn" EXCLUDE
 # )
 
 ## Mark other files for installation (e.g. launch and bag files, etc.)
 # install(FILES
-#   # myfile1
-#   # myfile2
-#   DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
+# # myfile1
+# # myfile2
+# DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}
 # )
 
 #############
@@ -152,7 +152,7 @@ target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
 ## Add gtest based cpp test target and link libraries
 # catkin_add_gtest(${PROJECT_NAME}-test test/test_seneka_hokuyo_laserscanner.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
-#   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
+# target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()
 
 ## Add folders to be run by python nosetests
