@@ -7,7 +7,7 @@
   <license>LGPL</license>
 
   <description>
-  The seneka_laser_scan package triggers a Hokuyo laser scanner to take a 3D scan of its environement
+  The seneka_laser_scan package triggers a Hokuyo laser scanner to take a 3D scan of its environement.
   </description>
 
   <maintainer email="Matthias.Gruhler@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
