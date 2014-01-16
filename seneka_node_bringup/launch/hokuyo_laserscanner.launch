@@ -8,7 +8,7 @@
 		<rosparam file="$(find seneka_node_config)/config/laser_assembler.yaml" command="load"/>
 	</node>
 
-	<node name="seneka_hokuyo_laserscanner" pkg="seneka_hokuyo_laserscanner" type"seneka_hokuyo_laserscanner" output="screen">
+	<node name="seneka_hokuyo_laserscanner" pkg="seneka_hokuyo_laserscanner" type="seneka_hokuyo_laserscanner" output="screen">
 	</node>
 
 </launch>
