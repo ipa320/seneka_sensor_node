@@ -94,10 +94,10 @@ FrameManager::FrameManager() {
 	outputFolder = "/tmp/";
 	binaryFilePath = outputFolder + "container";
 	videoFilePath = outputFolder + "termoVideoOnDemand.avi";
-	fpv = 400;	 	// frame per video -> 40 sec * 10 frames = 400 frames
-	fpc = 100;		// frames per cache -> 10 sec * 10 frames = 100 frames
+	fpv = 400;	 	// example: frame per video -> 40 sec * 10 frames = 400 frames
+	fpc = 100;		// example: frames per cache -> 10 sec * 10 frames = 100 frames
 	fpb = fpc;		// frames per binary
-	vfr = 10;
+	vfr = 15;
 	videoCodec = CV_FOURCC('D','I','V','X');
 	binaryFileIndex = 0;
 	fullVideoAvailable = false;
@@ -130,24 +130,24 @@ FrameManager::FrameManager() {
 	}
 }
 
-FrameManager::FrameManager(ros::NodeHandle &nHandler) {
+FrameManager::FrameManager(ros::NodeHandle &pnHandle) {
 
 	// initialize configurable parameters
 	int tmp_fpv, tmp_fpc, tmp_fpb, tmp_vfr, tmp_PaletteScalingMethod, tmp_Palette, minTemperature, maxTemperature;
 
-	nHandler.getParam("framesPerVideo", tmp_fpv);
-	nHandler.getParam("framesPerCache", tmp_fpc);
-	nHandler.getParam("framesPerBinary", tmp_fpb);
-	nHandler.getParam("videoFrameRate", tmp_vfr);
+	pnHandle.getParam("framesPerVideo", tmp_fpv);
+	pnHandle.getParam("framesPerCache", tmp_fpc);
+	pnHandle.getParam("framesPerBinary", tmp_fpb);
+	pnHandle.getParam("videoFrameRate", tmp_vfr);
 
-	if(!nHandler.hasParam("framesPerVideo") || tmp_fpv<=0){
+	if(!pnHandle.hasParam("framesPerVideo") || tmp_fpv<=0){
 		ROS_WARN("Used default parameter for framesPerVideo [200]");
 		fpv = 200;
 	}
 	else
 		fpv=(u_int)tmp_fpv;
 
-	if(!nHandler.hasParam("framesPerCache") || tmp_fpc<=0){
+	if(!pnHandle.hasParam("framesPerCache") || tmp_fpc<=0){
 		ROS_WARN("Used default parameter for framesPerCache [100]");
 		fpc = 100;
 	}
@@ -155,66 +155,66 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 		fpc=(u_int)tmp_fpc;
 
 
-	if(!nHandler.hasParam("framesPerBinary") || tmp_fpb<=0){
+	if(!pnHandle.hasParam("framesPerBinary") || tmp_fpb<=0){
 		ROS_WARN("Used default parameter for framesPerBinary [100]");
 		fpb = 100;
 	}
 	else
 		fpb=(u_int)tmp_fpb;
 
-	if(!nHandler.hasParam("videoFrameRate") || tmp_vfr<=0){
+	if(!pnHandle.hasParam("videoFrameRate") || tmp_vfr<=0){
 		ROS_WARN("Used default parameter for videoFrameRate [10]");
-		vfr = 10;
+		vfr = 15;
 	}
 	else
 		vfr=(u_int)tmp_vfr;
 
-	if(!nHandler.hasParam("outputFolder")){
+	if(!pnHandle.hasParam("outputFolder")){
 		ROS_WARN("Used default parameter for outputFolder [/tmp]");
 		outputFolder = "/tmp/";
 		binaryFilePath = outputFolder + "container";
 		videoFilePath = outputFolder + "termoVideoOnDemand.avi";
 	}
 	else{
-		nHandler.getParam("outputFolder", outputFolder);
+		pnHandle.getParam("outputFolder", outputFolder);
 		binaryFilePath = outputFolder + "container";
 		videoFilePath = outputFolder + "termoVideoOnDemand.avi";
 	}
 
-	if(!nHandler.hasParam("showFrame")){
+	if(!pnHandle.hasParam("showFrame")){
 		ROS_WARN("Used default parameter for showFrame [true]");
 		showFrame = true;
 	}
 	else
-		nHandler.getParam("showFrame", showFrame);
+		pnHandle.getParam("showFrame", showFrame);
 
-	if(!nHandler.hasParam("minTemperature")){
+	if(!pnHandle.hasParam("minTemperature")){
 		ROS_WARN("Used default parameter for minTemperature [20]");
 		minTemperature = 20;
 	}
 	else
-		nHandler.getParam("minTemperature", minTemperature);
+		pnHandle.getParam("minTemperature", minTemperature);
 
-	if(!nHandler.hasParam("maxTemperature")){
+	if(!pnHandle.hasParam("maxTemperature")){
 		ROS_WARN("Used default parameter for maxTemperature [40]");
 		maxTemperature = 40;
 	}
 	else
-		nHandler.getParam("maxTemperature", maxTemperature);
+		pnHandle.getParam("maxTemperature", maxTemperature);
 
-	if(!nHandler.hasParam("PaletteScalingMethod")){
+	if(!pnHandle.hasParam("PaletteScalingMethod")){
 		ROS_WARN("Used default parameter for PaletteScalingMethod [2]");
 		tmp_PaletteScalingMethod = 2;
 	}
 	else
-		nHandler.getParam("PaletteScalingMethod", tmp_PaletteScalingMethod);
+		pnHandle.getParam("PaletteScalingMethod", tmp_PaletteScalingMethod);
 
-	if(!nHandler.hasParam("Palette")){
+	if(!pnHandle.hasParam("Palette")){
 		ROS_WARN("Used default parameter for Palette [6]");
 		tmp_Palette = 6;
 	}
 	else
-		nHandler.getParam("Palette", tmp_Palette);
+		pnHandle.getParam("Palette", tmp_Palette);
 
 	iBuilder.setPaletteScalingMethod((optris::EnumOptrisPaletteScalingMethod)tmp_PaletteScalingMethod);
 	iBuilder.setPalette((optris::EnumOptrisColoringPalette)tmp_Palette);
@@ -537,10 +537,11 @@ cv::Mat FrameManager::convertTemperatureValuesToRGB(sensor_msgs::Image* frame, u
 
 	unsigned char* buffer = NULL;
 	buffer = new unsigned char[frame->width * frame->height * 3];
+	
+	unsigned short* data = (unsigned short*)&frame->data[0];
 
-	iBuilder.setSize(frame->width, frame->height, false);
-	const unsigned char* data = &(*frame).data[0];
-	iBuilder.convertTemperatureToPaletteImage((unsigned short*)data, buffer);
+	iBuilder.setData(frame->width, frame->height, data);	
+	iBuilder.convertTemperatureToPaletteImage(buffer, true);
 
 	// create RGB sensor_msgs::image
 	sensor_msgs::Image rgb_img;

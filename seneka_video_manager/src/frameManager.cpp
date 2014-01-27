@@ -93,10 +93,10 @@ FrameManager::FrameManager() {
 	outputFolder = "/tmp/";
 	binaryFilePath = outputFolder + "container";
 	videoFilePath = outputFolder + "videoOnDemand.avi";
-	fpv = 400;	 	// frame per video -> 40 sec * 10 frames = 400 frames
-	fpc = 100;		// frames per cache -> 10 sec * 10 frames = 100 frames
+	fpv = 400;	 	// example: frame per video -> 40 sec * 10 frames = 400 frames
+	fpc = 100;		// example: frames per cache -> 10 sec * 10 frames = 100 frames
 	fpb = fpc;		// frames per binary
-	vfr = 10;
+	vfr = 15;
 	videoCodec = CV_FOURCC('D','I','V','X');
 	binaryFileIndex = 0;
 	fullVideoAvailable = false;
@@ -117,24 +117,24 @@ FrameManager::FrameManager() {
 	}
 }
 
-FrameManager::FrameManager(ros::NodeHandle &nHandler) {
+FrameManager::FrameManager(ros::NodeHandle &pnHandle) {
 
 	// initialize configurable parameters
 	int tmp_fpv, tmp_fpc, tmp_fpb, tmp_vfr;
 
-	nHandler.getParam("framesPerVideo", tmp_fpv);
-	nHandler.getParam("framesPerCache", tmp_fpc);
-	nHandler.getParam("framesPerBinary", tmp_fpb);
-	nHandler.getParam("videoFrameRate", tmp_vfr);
+	pnHandle.getParam("framesPerVideo", tmp_fpv);
+	pnHandle.getParam("framesPerCache", tmp_fpc);
+	pnHandle.getParam("framesPerBinary", tmp_fpb);
+	pnHandle.getParam("videoFrameRate", tmp_vfr);
 
-	if(!nHandler.hasParam("framesPerVideo") || tmp_fpv<=0){
+	if(!pnHandle.hasParam("framesPerVideo") || tmp_fpv<=0){
 		ROS_WARN("Used default parameter for framesPerVideo [200]");
 		fpv = 200;
 	}
 	else
 		fpv=(u_int)tmp_fpv;
 
-	if(!nHandler.hasParam("framesPerCache") || tmp_fpc<=0){
+	if(!pnHandle.hasParam("framesPerCache") || tmp_fpc<=0){
 		ROS_WARN("Used default parameter for framesPerCache [100]");
 		fpc = 100;
 	}
@@ -142,38 +142,38 @@ FrameManager::FrameManager(ros::NodeHandle &nHandler) {
 		fpc=(u_int)tmp_fpc;
 
 
-	if(!nHandler.hasParam("framesPerBinary") || tmp_fpb<=0){
+	if(!pnHandle.hasParam("framesPerBinary") || tmp_fpb<=0){
 		ROS_WARN("Used default parameter for framesPerBinary [100]");
 		fpb = 100;
 	}
 	else
 		fpb=(u_int)tmp_fpb;
 
-	if(!nHandler.hasParam("videoFrameRate") || tmp_vfr<=0){
+	if(!pnHandle.hasParam("videoFrameRate") || tmp_vfr<=0){
 		ROS_WARN("Used default parameter for videoFrameRate [10]");
-		vfr = 10;
+		vfr = 15;
 	}
 	else
 		vfr=(u_int)tmp_vfr;
 
-	if(!nHandler.hasParam("outputFolder")){
+	if(!pnHandle.hasParam("outputFolder")){
 		ROS_WARN("Used default parameter for outputFolder [/tmp]");
 		outputFolder = "/tmp/";
 		binaryFilePath = outputFolder + "container";
 		videoFilePath = outputFolder + "videoOnDemand.avi";
 	}
 	else{
-		nHandler.getParam("outputFolder", outputFolder);
+		pnHandle.getParam("outputFolder", outputFolder);
 		binaryFilePath = outputFolder + "container";
 		videoFilePath = outputFolder + "videoOnDemand.avi";
 	}
 
-	if(!nHandler.hasParam("showFrame")){
+	if(!pnHandle.hasParam("showFrame")){
 		ROS_WARN("Used default parameter for showFrame [true]");
 		showFrame = true;
 	}
 	else
-		nHandler.getParam("showFrame", showFrame);
+		pnHandle.getParam("showFrame", showFrame);
 
 	// initialize fixed parameters
 	videoCodec = CV_FOURCC('D','I','V','X');

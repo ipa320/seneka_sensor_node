@@ -2,10 +2,10 @@ Seneka - seneka_video_manager (generic)
 ======
 
 ## Description
-The seneka_video_manager works with any camera as input device, which provides a BGR8 coded sensor_msgs::image as output. 
-The seneka_video_manager subscribes on configurable ROS topic, which provides the video input. 
+This ROS node manages the video data of any camera as input device, which provides a BGR8 encoded sensor_msgs::image. This node imports the sensor_msgs::images by a configurable ROS topic. The topic could be configurated in the launch-file. 
 
-At the moment the seneka_video_manager offers three ROS services which could be call from remote. But the output of this ROS node is just locally because the communication interfaces aren't defined yet. 
+To manage this ROS node there exists three ROS services (see below). But the output of this ROS node is just locally because the communication interfaces aren't defined yet.
+
 
 ## ROS Services 
 - (1) create VideoOnDemand (seneka_video_manager::getVideo) 
@@ -16,11 +16,11 @@ At the moment the seneka_video_manager offers three ROS services which could be 
  - manuel selection 
 
 ## Getting started
-- roslaunch/rosrun XX, which provides input topic
- - publishes input stream (BGR8 coded sensor_msgs::image)
-- roslaunch seneka_bringup video_manager.launch
+- roslaunch/rosrun <ROS node>, which provides the input topic
+ - publishes input stream (BGR8 encoded sensor_msgs::image)
+- roslaunch seneka_node_bringup video_manager.launch
 - rosrun seneka_video_manager video_tester
- - ROS test node for seneka_video_manager
+ - ROS test node for seneka_video_manager, simulates the remote command center functionalities.
 
 ## Launch file configuration
 
@@ -36,3 +36,6 @@ At the moment the seneka_video_manager offers three ROS services which could be 
 - binaryFilePath
 - videoFilePath
 
+#### Open tasks (TODOs)
+- Impl. of interfaces to the remote control center for videoOnDemand, snapShots(quick fix via ros messages), liveStream
+- vTester: configuration option for changing the interval of videoOnDemand via ros service 
