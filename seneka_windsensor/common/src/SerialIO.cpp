@@ -280,12 +280,6 @@ int SerialIO::getSizeRXQueue(){                                                 
     return cbInQue;
 }
 
-
-
-// ################################################################################################################################
-// stuff below is NOT USED for windsensor   (..yet)
-// ################################################################################################################################
-
 void SerialIO::setBytePeriod(double Period) {
     m_ShortBytePeriod = false;
     m_BytePeriod.tv_sec = time_t(Period);
