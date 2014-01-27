@@ -139,6 +139,7 @@ public:
 };
 
 int main(int argc, char** argv) {
+
     // set default parameters
     string topic = "/wind"; // ros topic
     string serial_port = "/dev/ttyUSB0"; // serial device/port
