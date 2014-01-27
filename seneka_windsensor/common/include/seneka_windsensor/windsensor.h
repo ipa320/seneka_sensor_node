@@ -22,9 +22,6 @@
  * Date of creation: Jan 2013
  * Date of modification: Dec 2013
  *
- * ToDo:
- * -- test
- *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
  * Redistribution and use in source and binary forms, with or without

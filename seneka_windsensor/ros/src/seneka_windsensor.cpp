@@ -24,13 +24,6 @@
  * Date of creation: Jan 2013
  * Date of modification: Dec 2013
  *
- * ToDo:
- * -- test
- *
- * ToDo - extra features:
- * ++ writing to windsensor/ setting windsensor-internal parameters possible?
- * --> possible but needs to turn off and on power to the windsensor
- *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
  * Redistribution and use in source and binary forms, with or without
@@ -166,7 +159,7 @@ int main(int argc, char** argv) {
     // fahrenheit = 1
 
 
-    // read parameters from rosNode to have following priorities:
+    // reading parameters has following priorities:
     //  highest:    - command line
     //              - parameter server
     //              - default values

@@ -21,14 +21,6 @@
  * Date of creation: Jan 2013
  * Date of modification: Oct 2013
  *
- * ToDo:
- * -- clean up
- * -- restructure code
- * -- test
- *
- * ToDo - extra features:
- * ++ writing to windsensor/ setting windsensor-internal parameters possible?
- *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
  * Redistribution and use in source and binary forms, with or without
