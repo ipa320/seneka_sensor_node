@@ -12,12 +12,14 @@
  * Description:
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ *
  * Author: Ciby Mathew, email:Ciby.Mathew@ipa.fhg.de
  * Supervised by: Christophe Maufroy
  *
- * Date of creation: Jan 2013
- * ToDo:
+ * modified by: David Bertram, David.Bertram@ipa.fhg.de
  *
+ * Date of creation: Jan 2013
+ * Date of modification: Oct 2013
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -116,7 +118,7 @@ public:
 
 	/**
 	 * Changes the baudrate.
-	 * The serial port is allready open.
+	 * The serial port is already open.
 	 * @param BaudRate new baudrate.
 	 */
 	void changeBaudRate(int BaudRate);
