@@ -30,6 +30,7 @@
   <run_depend>seneka_termo_video_manager</run_depend>
   <run_depend>seneka_video_manager</run_depend>
   <run_depend>seneka_windsensor</run_depend>
+  <run_depend>seneka_laser_scan</run_depend>
 
   <!-- The export tag contains other, unspecified, tags -->
   <export>
