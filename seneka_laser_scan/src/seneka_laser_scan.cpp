@@ -64,14 +64,15 @@
 bool scanEnvironment(std_srvs::Empty::Request& cRequest, std_srvs::Empty::Response& cResponse);
 bool driveRequest(float fTarget_position);
 bool getCloud(ros::Time cTime_flag_begin, ros::Time cTime_flag_end);
- 
+
+ros::NodeHandle nh_("");
+
 int main(int argc, char **argv)
 {
 
   ros::init(argc, argv, "laser_scan");
 
-  ros::NodeHandle nh1;
-  ros::ServiceServer service = nh1.advertiseService("scan_environment", scanEnvironment);
+  ros::ServiceServer service = nh_.advertiseService("scan_environment", scanEnvironment);
 
   //ros::service::waitForService("MOTOR_DRIVER_SERVICE");
   ros::service::waitForService("assemble_scans");
@@ -86,9 +87,8 @@ bool scanEnvironment(std_srvs::Empty::Request& cRequest, std_srvs::Empty::Respon
 {
   ROS_INFO("Scanning environment...\n");
 
-  typedef float degrees;
-  const degrees fStart_position	= 0.0;
-  const degrees fEnd_position	= 360.0;
+  const float fStart_position	= 0.0;
+  const float fEnd_position	= 360.0;
 
   ros::Time cTime_flag_begin, cTime_flag_end;
 
@@ -135,8 +135,8 @@ bool scanEnvironment(std_srvs::Empty::Request& cRequest, std_srvs::Empty::Respon
 bool driveRequest(float fTarget_position)
 {
   /*
-  ros::NodeHandle nh2;
-  ros::ServiceClient client = nh2.serviceClient<MOTOR_DRIVER_PACKAGE::MOTOR_DRIVER_SERVICE>("MOTOR_DRIVER_SERVICE");
+
+  ros::ServiceClient client = nh_.serviceClient<MOTOR_DRIVER_PACKAGE::MOTOR_DRIVER_SERVICE>("MOTOR_DRIVER_SERVICE");
 
   MOTOR_DRIVER_PACKAGE::MOTOR_DRIVER_SERVICE srv;
   srv.request.SOMETHING = target_position
@@ -153,8 +153,7 @@ bool driveRequest(float fTarget_position)
 
 bool getCloud(ros::Time cStarting_time, ros::Time cEnd_time)
 {
-  ros::NodeHandle nh3;
-  ros::ServiceClient client = nh3.serviceClient<laser_assembler::AssembleScans>("assemble_scans");
+  ros::ServiceClient client = nh_.serviceClient<laser_assembler::AssembleScans>("assemble_scans");
  
   laser_assembler::AssembleScans srv;
   srv.request.begin = cStarting_time;
