@@ -5,31 +5,129 @@
   <!-- ##### LINKS ##### -->
 
   <link name="base_link">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <cylinder radius="0.25" length="0.10"/>
+      </geometry>
+      <material name="default">
+        <color rgba="0.65 0.65 0.65 0.8"/>
+      </material>
+    </visual>
   </link>
 
   <link name="tower_axis_link">
   </link>
 
+  <link name="hip_link_1">
+    <visual>
+      <origin xyz="0.25 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <box size="0.10 0.15 0.50"/>
+      </geometry>
+      <material name="default"/>
+    </visual>
+  </link>
+
+  <link name="hip_link_2">
+  </link>
+
+  <link name="hip_link_3">
+  </link>
+
   <link name="thigh_link_1">
+    <visual>
+      <origin xyz="0.125 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <box size="0.025 0.025 0.25"/>
+      </geometry>
+      <material name="default"/>
+    </visual>
   </link>
+
   <link name="thigh_link_2">
+    <visual>
+      <origin xyz="0.125 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <box size="0.025 0.025 0.25"/>
+      </geometry>
+      <material name="default"/>
+    </visual>
   </link>
+
   <link name="thigh_link_3">
+    <visual>
+      <origin xyz="0.125 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <box size="0.025 0.025 0.25"/>
+      </geometry>
+      <material name="default"/>
+    </visual>
   </link>
 
   <link name="leg_link_1">
+    <visual>
+      <origin xyz="0 0 -0.375" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.025 0.025 0.75"/>
+      </geometry>
+      <material name="default"/>
+    </visual>
   </link>
+
+
   <link name="leg_link_2">
+    <visual>
+      <origin xyz="0 0 -0.375" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.025 0.025 0.75"/>
+      </geometry>
+      <material name="default"/>
+    </visual>
   </link>
+
   <link name="leg_link_3">
+    <visual>
+      <origin xyz="0 0 -0.375" rpy="0 0 0"/>
+      <geometry>
+        <box size="0.025 0.025 0.75"/>
+      </geometry>
+      <material name="default"/>
+    </visual>
   </link>
 
   <link name="foot_link_1">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.025"/>
+      </geometry>
+      <material name="black">
+        <color rgba="0 0 0 0.8"/>
+      </material>
+    </visual>
   </link>
+
   <link name="foot_link_2">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.025"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
   </link>
+
   <link name="foot_link_3">
+    <visual>
+      <origin xyz="0 0 0" rpy="0 0 0"/>
+      <geometry>
+        <sphere radius="0.025"/>
+      </geometry>
+      <material name="black"/>
+    </visual>
   </link>
+
 
   <!-- ##### ##### ##### -->
 
@@ -38,38 +136,56 @@
   <joint name="tower_axis_joint" type="continuous">
     <parent link="base_link"/>
     <child link="tower_axis_link"/>
-    <origin xyz="0 0 0.15" rpy="0 0 0"/>
+    <origin xyz="0 0 0.75" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
   </joint>
 
-  <joint name="hip_joint_1" type="revolute">
+  <joint name="base_joint_1" type="fixed">
     <parent link="base_link"/>
+    <child link="hip_link_1"/>
+    <origin xyz="0.15 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <joint name="base_joint_2" type="fixed">
+    <parent link="base_link"/>
+    <child link="hip_link_2"/>
+    <origin xyz="-0.075 0.13 0" rpy="0 0 2.09"/>
+  </joint>
+
+  <joint name="base_joint_3" type="fixed">
+    <parent link="base_link"/>
+    <child link="hip_link_3"/>
+    <origin xyz="-0.075 -0.13 0" rpy="0 0 4.19"/>
+  </joint>
+
+  <joint name="hip_joint_1" type="revolute">
+    <parent link="hip_link_1"/>
     <child link="thigh_link_1"/>
-    <origin xyz="0.50 0 0" rpy="0 0 0"/>
+    <origin xyz="0.35 0 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
+    <limit effort="1000.00" lower="0.00" upper="-1.57" velocity="0.50"/>
   </joint>
 
   <joint name="hip_joint_2" type="revolute">
-    <parent link="base_link"/>
+    <parent link="hip_link_2"/>
     <child link="thigh_link_2"/>
-    <origin xyz="-0.25 0.43 0" rpy="0 0 2.09"/>
+    <origin xyz="0.35 0 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
+    <limit effort="1000.00" lower="0.00" upper="-1.57" velocity="0.50"/>
   </joint>
 
   <joint name="hip_joint_3" type="revolute">
-    <parent link="base_link"/>
+    <parent link="hip_link_3"/>
     <child link="thigh_link_3"/>
-    <origin xyz="-0.25 -0.43 0" rpy="0 0 4.19"/>
+    <origin xyz="0.35 0 0" rpy="0 0 0"/>
     <axis xyz="0 1 0"/>
-    <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
+    <limit effort="1000.00" lower="0.00" upper="-1.57" velocity="0.50"/>
   </joint>
 
   <joint name="knee_joint_1" type="revolute">
     <parent link="thigh_link_1"/>
     <child link="leg_link_1"/>
-    <origin xyz="0.50 0 0"/>
+    <origin xyz="0.25 0 0"/>
     <axis xyz="0 1 0"/>
     <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
   </joint>
@@ -77,7 +193,7 @@
   <joint name="knee_joint_2" type="revolute">
     <parent link="thigh_link_2"/>
     <child link="leg_link_2"/>
-    <origin xyz="0.50 0 0"/>
+    <origin xyz="0.25 0 0"/>
     <axis xyz="0 1 0"/>
     <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
   </joint>
@@ -85,7 +201,7 @@
   <joint name="knee_joint_3" type="revolute">
     <parent link="thigh_link_3"/>
     <child link="leg_link_3"/>
-    <origin xyz="0.50 0 0"/>
+    <origin xyz="0.25 0 0"/>
     <axis xyz="0 1 0"/>
     <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
   </joint>
@@ -93,19 +209,19 @@
   <joint name="foot_joint_1" type="fixed">
     <parent link="leg_link_1"/>
     <child link="foot_link_1"/>
-    <origin xyz="0 0 -1.00"/>
+    <origin xyz="0 0 -0.75"/>
   </joint>
 
   <joint name="foot_joint_2" type="fixed">
     <parent link="leg_link_2"/>
     <child link="foot_link_2"/>
-    <origin xyz="0 0 -1.00"/>
+    <origin xyz="0 0 -0.75"/>
   </joint>
 
   <joint name="foot_joint_3" type="fixed">
     <parent link="leg_link_3"/>
     <child link="foot_link_3"/>
-    <origin xyz="0 0 -1.00"/>
+    <origin xyz="0 0 -0.75"/>
   </joint>
 
   <!-- ##### ##### ##### -->
