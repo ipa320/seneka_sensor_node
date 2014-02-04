@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="seneka">
+
+  <!-- ##### LINKS ##### -->
+
+  <link name="base_link">
+  </link>
+
+  <link name="tower_axis_link">
+  </link>
+
+  <link name="thigh_link_1">
+  </link>
+  <link name="thigh_link_2">
+  </link>
+  <link name="thigh_link_3">
+  </link>
+
+  <link name="leg_link_1">
+  </link>
+  <link name="leg_link_2">
+  </link>
+  <link name="leg_link_3">
+  </link>
+
+  <link name="foot_link_1">
+  </link>
+  <link name="foot_link_2">
+  </link>
+  <link name="foot_link_3">
+  </link>
+
+  <!-- ##### ##### ##### -->
+
+  <!-- ##### JOINTS ##### -->
+
+  <joint name="tower_axis_joint" type="continuous">
+    <parent link="base_link"/>
+    <child link="tower_axis_link"/>
+    <origin xyz="0 0 0.15" rpy="0 0 0"/>
+    <axis xyz="0 0 1"/>
+  </joint>
+
+  <joint name="hip_joint_1" type="revolute">
+    <parent link="base_link"/>
+    <child link="thigh_link_1"/>
+    <origin xyz="0.50 0 0" rpy="0 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
+  </joint>
+
+  <joint name="hip_joint_2" type="revolute">
+    <parent link="base_link"/>
+    <child link="thigh_link_2"/>
+    <origin xyz="-0.25 0.43 0" rpy="0 0 2.09"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
+  </joint>
+
+  <joint name="hip_joint_3" type="revolute">
+    <parent link="base_link"/>
+    <child link="thigh_link_3"/>
+    <origin xyz="-0.25 -0.43 0" rpy="0 0 4.19"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
+  </joint>
+
+  <joint name="knee_joint_1" type="revolute">
+    <parent link="thigh_link_1"/>
+    <child link="leg_link_1"/>
+    <origin xyz="0.50 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
+  </joint>
+
+  <joint name="knee_joint_2" type="revolute">
+    <parent link="thigh_link_2"/>
+    <child link="leg_link_2"/>
+    <origin xyz="0.50 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
+  </joint>
+
+  <joint name="knee_joint_3" type="revolute">
+    <parent link="thigh_link_3"/>
+    <child link="leg_link_3"/>
+    <origin xyz="0.50 0 0"/>
+    <axis xyz="0 1 0"/>
+    <limit effort="1000.00" lower="0.00" upper="1.57" velocity="0.50"/>
+  </joint>
+
+  <joint name="foot_joint_1" type="fixed">
+    <parent link="leg_link_1"/>
+    <child link="foot_link_1"/>
+    <origin xyz="0 0 -1.00"/>
+  </joint>
+
+  <joint name="foot_joint_2" type="fixed">
+    <parent link="leg_link_2"/>
+    <child link="foot_link_2"/>
+    <origin xyz="0 0 -1.00"/>
+  </joint>
+
+  <joint name="foot_joint_3" type="fixed">
+    <parent link="leg_link_3"/>
+    <child link="foot_link_3"/>
+    <origin xyz="0 0 -1.00"/>
+  </joint>
+
+  <!-- ##### ##### ##### -->
+
+</robot>
