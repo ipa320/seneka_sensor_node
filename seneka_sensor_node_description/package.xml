@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+
+<package>
+
+  <name>seneka_sensor_node_description</name>
+  <version>0.0.0</version>
+  <license>LGPL</license>
+
+  <description>
+  The seneka_sensor_node_description package contains a URDF description for the SENEKA project at Fraunhofer IPA.
+  </description>
+
+  <maintainer email="Matthias.Gruhler@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
+  <author email="Thorsten.Andreas.Kannacher@ipa.fraunhofer.de">Thorsten Andreas Kannacher</author>
+
+  <buildtool_depend>catkin</buildtool_depend>
+
+</package>

@@ -1,0 +1,88 @@
+<?xml version="1.0"?>
+
+<robot name="seneka">
+
+  <link name="base_link">
+    <visual>
+      <geometry>
+        <cylinder length="0.05" radius="0.5"/>
+      </geometry>
+      <material name="silver">
+        <color rgba="0.65 0.65 0.65 0.8"/>
+      </material>
+      </visual>
+  </link>
+
+<!-- FIRST LEG -->
+
+<link name="first_leg">
+  <visual>
+    <geometry>
+      <cylinder length="0.75" radius="0.025"/>
+    </geometry>
+    <origin xyz="0 0 -0.375"/>
+    <material name="silver"/>
+  </visual>
+</link>
+
+<joint name="first_leg_base" type="fixed">
+  <parent link="base_link"/>
+  <child link="first_leg"/>
+  <origin xyz="0.5 0 0"/>
+</joint>
+
+<!-- FIRST LEG LIMB -->
+
+<link name="first_leg_limb">
+  <visual>
+    <geometry>
+      <cylinder length="0.375" radius="0.025"/>
+    </geometry>
+    <origin rpy="0 1.57 0" xyz="0.1875 0 0"/>
+    <material name="silver"/>
+  </visual>
+</link>
+
+<joint name="first_leg_limb_base" type="fixed">
+  <parent link="base_link"/>
+  <child link="first_leg_limb"/>
+  <origin xyz="0.5 0 0"/>
+</joint>
+
+<!-- SECOND LEG -->
+
+<link name="second_leg">
+  <visual>
+    <geometry>
+      <cylinder length="0.75" radius="0.025"/>
+    </geometry>
+    <origin xyz="0 0 -0.375"/>
+    <material name="silver"/>
+  </visual>
+</link>
+
+<joint name="second_leg_base" type="fixed">
+  <parent link="base_link"/>
+  <child link="second_leg"/>
+  <origin xyz="-0.25 0.43 0"/>
+</joint>
+
+<!-- THIRD LEG -->
+
+<link name="third_leg">
+  <visual>
+    <geometry>
+      <cylinder length="0.75" radius="0.025"/>
+    </geometry>
+    <origin xyz="0 0 -0.375"/>
+    <material name="silver"/>
+  </visual>
+</link>
+
+<joint name="third_leg_base" type="fixed">
+  <parent link="base_link"/>
+  <child link="third_leg"/>
+  <origin xyz="-0.25 -0.43 0"/>
+</joint>
+
+</robot>
