@@ -53,8 +53,7 @@ Visualization Manager:
       Collision Enabled: false
       Enabled: true
       Links:
-        All Links Enabled:
-          {}
+        All Links Enabled: true
         Expand Joint Details: false
         Expand Link Details: false
         Expand Tree: false
@@ -63,42 +62,67 @@ Visualization Manager:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
         foot_link_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
         foot_link_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
         foot_link_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
+        hip_link_1:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hip_link_2:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
+        hip_link_3:
+          Alpha: 1
+          Show Axes: false
+          Show Trail: false
+          Value: true
         leg_link_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
         leg_link_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
         leg_link_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
         thigh_link_1:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
         thigh_link_2:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
         thigh_link_3:
           Alpha: 1
           Show Axes: false
           Show Trail: false
+          Value: true
         tower_axis_link:
           Alpha: 1
           Show Axes: false
@@ -120,6 +144,12 @@ Visualization Manager:
         /foot_link_2:
           Value: true
         /foot_link_3:
+          Value: true
+        /hip_link_1:
+          Value: true
+        /hip_link_2:
+          Value: true
+        /hip_link_3:
           Value: true
         /leg_link_1:
           Value: true
@@ -143,18 +173,21 @@ Visualization Manager:
       Show Names: true
       Tree:
         /base_link:
-          /thigh_link_1:
-            /leg_link_1:
-              /foot_link_1:
-                {}
-          /thigh_link_2:
-            /leg_link_2:
-              /foot_link_2:
-                {}
-          /thigh_link_3:
-            /leg_link_3:
-              /foot_link_3:
-                {}
+          /hip_link_1:
+            /thigh_link_1:
+              /leg_link_1:
+                /foot_link_1:
+                  {}
+          /hip_link_2:
+            /thigh_link_2:
+              /leg_link_2:
+                /foot_link_2:
+                  {}
+          /hip_link_3:
+            /thigh_link_3:
+              /leg_link_3:
+                /foot_link_3:
+                  {}
           /tower_axis_link:
             {}
       Update Interval: 0
@@ -182,17 +215,17 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 5.71057
+      Distance: 4.74204
       Focal Point:
         X: 0
         Y: 0
         Z: 0
       Name: Current View
       Near Clip Distance: 0.01
-      Pitch: 0.285398
+      Pitch: 0.265398
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 1.5954
+      Yaw: 1.1004
     Saved: ~
 Window Geometry:
   Displays:
@@ -210,5 +243,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1216
-  X: 216
+  X: 209
   Y: 79
