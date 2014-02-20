@@ -85,7 +85,8 @@ public:
 	 * @param iBaudRate baud rate
 	 */
 	bool open(const char* pcPort, int iBaudRate);
-	void latlong(double* lat);
+	bool getPosition(double* lat);
+        bool checkConnection();
 
 private:
 	// Constants

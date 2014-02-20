@@ -208,6 +208,7 @@ bool windsensor::extract_sensordata_from_buffer(unsigned char *input, float sens
     // convert char* to string
     std::string fields[6] = {""};
     std::string s = reinterpret_cast<const char*>(input);
+    std::string s_cp = reinterpret_cast<const char*>(input);
 
     // extract values
     std::string delimiter = "\r\n";             // line endings
@@ -284,6 +285,7 @@ bool windsensor::extract_sensordata_from_buffer(unsigned char *input, float sens
         success = true;
     }else{
         ROS_WARN("could not extract windsensor values (publishrate too high?)");
+        ROS_WARN(s_cp.c_str());
     }
     return success;
 }
