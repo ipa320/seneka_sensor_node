@@ -139,7 +139,22 @@ SerialIO::~SerialIO() {
 }
 
 void SerialIO::binary(int dec, char* binary) {
+    int dec_in = dec;
     char bin8[] = "00000000";
+    // sure we want to use --pos instead of pos-- ??
+    for (int pos = 7; pos >= 0; pos-- ){
+        if (dec % 2)
+            bin8[pos] = '1';
+        dec /= 2;
+    }
+
+    cout << "binary of: " << dec_in << " --> " << bin8 << "\n";
+    strcat(binary, bin8);
+}
+
+void SerialIO::binary_old(int dec, char* binary) {
+    char bin8[] = "00000000";
+    // sure we want to use --pos instead of pos-- ??
     for (int pos = 7; pos >= 0; --pos) {
         if (dec % 2)
             bin8[pos] = '1';
@@ -156,7 +171,6 @@ void SerialIO::alphatointeg(char* binary, int* value) {
 
 int SerialIO::open() {
     int Res;
-    cout << "testing open";
     // open device
     m_Device = ::open(m_DeviceName.c_str(), O_RDWR | O_NOCTTY | O_NONBLOCK);
 
@@ -327,6 +341,7 @@ void SerialIO::setBytePeriod(double Period) {
 //-----------------------------------------------
 
 int SerialIO::readBlocking(char *Buffer, int Length) {
+    cout << "serialIO.readBlocking:\n";
     ssize_t BytesRead;
     BytesRead = ::read(m_Device, Buffer, Length);
     printf("%2d Bytes read:", (int) BytesRead);
@@ -350,7 +365,11 @@ int SerialIO::readBlocking(char *Buffer, int Length) {
 }
 
 int SerialIO::readNonBlocking(char *Buffer, int Length) {
+    
+    sleep(1);
+    cout << "serialIO.readNonBlocking:\n";
     int iAvaibleBytes = getSizeRXQueue();
+
     int iBytesToRead = (Length < iAvaibleBytes) ? Length : iAvaibleBytes;
     ssize_t BytesRead;
     BytesRead = ::read(m_Device, Buffer, iBytesToRead);
@@ -368,6 +387,7 @@ int SerialIO::readNonBlocking(char *Buffer, int Length) {
 }
 
 int SerialIO::write(const char *Buffer, int Length) {
+    cout << "serialIO.write:\n";
     ssize_t BytesWritten;
 
     if (m_BytePeriod.tv_usec || m_BytePeriod.tv_sec) {

@@ -73,6 +73,18 @@
 
 #include <sstream>
 
+
+// default parameters
+string position_topic = "/position";
+string diagnostics_topic = "/diagnostics";
+string serial_port = "/dev/ttyUSB0";
+int serial_baudrate = 38400;
+int publishrate = 1;
+
+
+
+
+
 string IntToString(int a) {
     //string str;
     ostringstream temp;
@@ -110,33 +122,35 @@ public:
     //		unsigned int syncedSICKStamp;
     //		bool syncedTimeReady;
 
+    
 
     // Constructor
 
     DgpsNode() {
         // create a handle for this node, initialize node
         nh = ros::NodeHandle("~");
-        if (!nh.hasParam("port"))ROS_WARN("Used default parameter for port (/dev/ttyUSB0)");
-        nh.param("port", port, std::string("/dev/ttyUSB0"));
+        if (!nh.hasParam("port"))ROS_WARN("Used default parameter for port (%s)",serial_port.c_str());
+        nh.param("port", port, std::string(serial_port));
 
-        if (!nh.hasParam("baud")) ROS_WARN("Used default parameter for baud (38400)");
-        nh.param("baud", baud, 38400);
+        if (!nh.hasParam("baud")) ROS_WARN("Used default parameter for baud (%i)",serial_baudrate);
+        nh.param("baud", baud, serial_baudrate);
 
 
-        if (!nh.hasParam("rate")) ROS_WARN("Used default parameter for rate (50)");
-        nh.param("rate", rate, 50);
+        if (!nh.hasParam("rate")) ROS_WARN("Used default parameter for rate (%i)",publishrate);
+        nh.param("rate", rate, publishrate);
 
         syncedROSTime = ros::Time::now();
         //	syncedTimeReady = false;
         // implementation of topics to publish
-        topicPub_position = nh.advertise<sensor_msgs::NavSatFix > ("position", 1);
-        topicPub_Diagnostic_ = nh.advertise<diagnostic_msgs::DiagnosticArray > ("/diagnostics", 1);
+        topicPub_position = nh.advertise<sensor_msgs::NavSatFix > (position_topic.c_str(), 1);
+        topicPub_Diagnostic_ = nh.advertise<diagnostic_msgs::DiagnosticArray > (diagnostics_topic.c_str(), 1);
         // implementation of topics to subscribe
         //--
 
         // implementation of service servers
         //--
     }
+
     
     
     // Destructor
@@ -186,22 +200,23 @@ public:
 ////#######################
 //#### main programm ####
 
+
 int main(int argc, char** argv) {
     // initialize ROS, spezify name of node
     ros::init(argc, argv, "Dgps");
     DgpsNode rosNode;
     Dgps dgps;
+
     
-
-
+    
     
     int publishRate = rosNode.rate;
     int baudRate = rosNode.baud;
-    bool dgpsSensor_opened = false, success_getPosition = false, connectionOK = false;
+    bool dgpsSensor_opened = false, success_getPosition = false, connection_OK = false;
     double dgpsData[100] = {0};
     while (!dgpsSensor_opened) {
-        
 
+         
         ROS_INFO("Opening DGPS... (port: %s , baudrate: %s )", rosNode.port.c_str(), IntToString(baudRate).c_str());
         dgpsSensor_opened = dgps.open(rosNode.port.c_str(), baudRate);
         // check, if it is the first try to open scanner
@@ -215,12 +230,14 @@ int main(int argc, char** argv) {
     // main loop
     ros::Rate loop_rate(publishRate); // Hz
 
-    connectionOK = dgps.checkConnection();
+    connection_OK = dgps.checkConnection();
 
-    if (!connectionOK) {
+    
+    if (!connection_OK) {
         cout << "protocol request failed (05h): check cables, adapters, settings, ...";
     } else {
 
+        
         while (rosNode.nh.ok()) {
             // read values
             ROS_DEBUG("Reading DGPS...");
@@ -228,9 +245,10 @@ int main(int argc, char** argv) {
             success_getPosition = dgps.getPosition(dgpsData);
 
             if (success_getPosition) {
-                ROS_INFO("...publishing position of DGps %1f, %1f, %1f", dgpsData[0], dgpsData[1], dgpsData[2]);
+                ROS_INFO("...publishing position of DGPS: %1f, %1f, %1f", dgpsData[0], dgpsData[1], dgpsData[2]);
 
                 rosNode.publishPosition(dgpsData);
+
             } else {
                 ROS_WARN("...no Values available");
             }

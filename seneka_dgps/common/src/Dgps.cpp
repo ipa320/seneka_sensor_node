@@ -108,37 +108,47 @@ bool Dgps::open(const char* pcPort, int iBaudRate) {
 
 bool Dgps::checkConnection() {
     bool success = false;
+    int max_tries = 5;
+    int retry_delay = 1000000;      // in microSeconds
 
     // test command "05h"       // expects test reply "06h"
     char message[] = {0x05};
     int length = sizeof (message) / sizeof (message[0]);
     unsigned char Buffer[1024] = {0};
     int bytesWritten = m_SerialIO.write(message, length);
-    // wait a second
-    sleep(1);
-    int bytesRead = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
 
-    if (bytesRead <= 0) {
-        // error, nothing received --> wait for at least 500ms and try again few times
-        cout << "error, nothing received";
-    } else {
-        cout << "received:\n";
-        for (int i = 0; i < bytesRead; i++) {
-            printf("%.2x ", Buffer[i]);
-            //cout << std::hex << Buffer[i];
-//            if (i % 2 == 1) {
-//                cout << " ";
-//            } else
+    // retry few times
+    int count = 0;
+    while (!success && (count < max_tries)) {
+        count += 1;
+        usleep(retry_delay);
+        int bytesRead = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
+
+        if (bytesRead <= 0) {
+            // error, nothing received --> wait for at least 500ms and try again few times
+        } else {
+            for (int i = 0; i < bytesRead; i++) {
+                printf("%.2x ", Buffer[i]);
+                //cout << std::hex << Buffer[i];
+                //            if (i % 2 == 1) {
+                //                cout << " ";
+                //            } else
                 if (i % 20 == 19) {
-                cout << "\n";
+                    cout << "\n";
+                }
             }
+            cout << std::dec << "\n";
         }
-        cout << std::dec << "\n";
+
+        if (Buffer[0] == 6) {
+            success = true;
+            cout << "protocol request successful.";
+        } else {
+            success = false;
+            cout << "protocol request failed. retrying..." << "\n";
+            
+        };
     }
-
-    if (Buffer[0]==6) success = true;
-    else success = false;
-
     return success;
 }
 
@@ -148,21 +158,32 @@ bool Dgps::getPosition(double* latt) {
 
     int length;
     unsigned char Buffer[1024] = {0};
+    for (int i = 0; i<1024; i++) Buffer[i]='0';
     char str[10];
     char binary[10000] = {0};
     int value[1000] = {0};
     int open, y, bytesread, byteswrite, bin;
 
+    // see page 73 in BD982 user guide for packet specification
     //  start tx,
     //      status,
     //          packet type,
     //              length,
-    //                  type raw data,
+    //                  type raw data,      [0x00: Real-Time Survey Data Record; 0x01: Position Record]
     //                      flags,
     //                          reserved,
     //                              checksum,
     //                                  end tx
-    char message[] = {0x02, 0x00, 0x56, 0x03, 0x01, 0x00, 0x00, 0x5a, 0x03}; // 56h command packet       // expects 57h reply packet (basic coding)
+    unsigned char stx_ = 0x02;
+    unsigned char status_ = 0x00;
+    unsigned char packet_type_ = 0x56;
+    unsigned char length_ = 0x03;
+    unsigned char data_type_ = 0x01;
+    unsigned char etx_ = 0x03;
+
+    unsigned char checksum_ = (status_ + packet_type_ + data_type_ + 0 + 0 + length_)%256;
+
+    char message[] = {stx_, status_, packet_type_, length_, data_type_, 0x00, 0x00, checksum_, etx_}; // 56h command packet       // expects 57h reply packet (basic coding)
 
     //        char message[]={ 0x05 };
     length = sizeof (message) / sizeof (message[0]);
@@ -178,43 +199,94 @@ bool Dgps::getPosition(double* latt) {
     bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
 
     printf("\nTotal number of bytes read: %i\n", bytesread);
-    cout << Buffer << "\n";
     cout << "-----------\n";
-//    int buffer_size = sizeof (Buffer) / sizeof (Buffer[0]);
+    //    int buffer_size = sizeof (Buffer) / sizeof (Buffer[0]);
     for (int i = 0; i < bytesread; i++) {
-        printf("%.2x ", Buffer[i]);
+        printf(" |%.2x| ", Buffer[i]);
         //cout << std::hex << Buffer[i];
-//        if (i % 2 == 1) {
-//            cout << " ";
-//        } else
-            if (i % 20 == 19) {
-            cout << "\n";
-        }
+        //        if (i % 2 == 1) {
+        //            cout << " ";
+        //        } else
+//        if (i % 20 == 19) {
+//            cout << "\n";
+//        }
     }
     cout << std::dec << "\n";
 
     cout << "-----------\n";
 
-// NEW parsing code
+    // NEW parsing code
 
+    // parse a position record (p. 139 in BD982 userguide)
+// ------------ header --------------
     int stx = Buffer[0];
-    int rx_status = Buffer[1];
+    int rx_status = Buffer[1];      // big-endian; bit 1 signals low battery; rest is reserved
+    //                cut most left bit; check if next bit is 1
+       int low_battery = (rx_status % 128)  / 64;
+
     int packet_type = Buffer[2];
     int data_length = Buffer[3];
-    int checksum = Buffer[data_length+3];
-    int etx = Buffer[data_length+4];
+// ---------- data records -----------
+
+    int record_type = Buffer[4];
+    int paging_information = Buffer[5];  // bit 7-4 is current page number; bit 3-0 is total page number
+       int page_total = paging_information /(2*2*2*2); // bits 0-3
+       int current_page = paging_information % (2*2*2*2); // bits 4-7
+
+       int reply_number = Buffer[6]; // this number is identical for every page of one reply
+    int record_interpretation = Buffer [7];
+
+    int latitude_msg = Buffer[8];
+    int longitude_msg = Buffer[9];
+    int altitude_msg = Buffer[10];
+    int clock_offset = Buffer[11];
+    int freq_offset = Buffer[12];
+    int pdop = Buffer[13];
+    int latitude_rate = Buffer[14];
 
     int *data = new int[data_length];
-    
-    for (int i = 0;i < data_length; i++){
-        data[i] = Buffer[i+4];
+    for (int i = 0; i < data_length; i++) {
+        data[i] = Buffer[i + 8];
     }
-    cout << "packet data:" << "\n";
+
+
+// ------------ footer -----------
+    int checksum = Buffer[bytesread - 2];
+    // check if data_length "hits" checksum
+    int checksum2 = Buffer[4+data_length];
+    int etx = Buffer[bytesread -1];
+
+
+
+// log to console
+    printf("STX (expects 02): %.2x\n", stx);
+    printf("rx_status: %.2x %i\n", rx_status, rx_status);
+    printf("  low_battery: %i\n", low_battery);
+    printf("packet_type: %.2x\n", packet_type);
+    printf("LENGTH: %i\n", data_length);
+    printf("record_type: %i\n", record_type);
+    printf("paging_information: %.2x\n", paging_information);
+    printf("  page_total: %i\n", page_total);
+    printf("  current_page: %i\n", current_page);
+    printf("reply_number: %.2x\n", reply_number);
+    printf("record_interpretation: %.2x\n", record_interpretation);
+    cout << "packet data: ";
     cout << std::dec << data << "\n";
+    printf("checksum: %.2x %.2x\n", checksum, checksum2);
+    printf( "ETX (expects 03): %.2x\n", etx);
+    cout << "----\n";
+    printf("latitude_msg: %.2x\n", latitude_msg);
+    printf("longitude_msg: %.2x\n", longitude_msg);
+    printf("altitude_msg: %.2x\n", altitude_msg);
     cout << "----\n";
 
 
-// OLD parsing code
+    int data_sum = 0;
+    for (int i = 0; i<data_length; i++) data_sum += Buffer[4+i];
+    int checksum_r = (rx_status + packet_type + data_sum + data_length)%256;
+
+    printf("checksum comparison: %.2x %.2x\n", checksum, checksum_r);
+    // OLD parsing code
 
     for (int i = 0; i < bytesread; i++) {
         //	printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
@@ -223,7 +295,7 @@ bool Dgps::getPosition(double* latt) {
     }
 
     m_SerialIO.alphatointeg(binary, value);
-    cout << value << "\n";
+    cout <<"value: " << value << "\n";
     cout << "-----------\n";
 
     double lat_fract = 0.0, lat_exp = 0.0, lon_fract = 0.0, lon_exp = 0.0, alt_fract = 0.0, alt_exp = 0.0;
@@ -238,10 +310,15 @@ bool Dgps::getPosition(double* latt) {
         lon_exp = lon_exp + (value[139 - h]) * pow(2, h);
         alt_exp = alt_exp + (value[203 - h]) * pow(2, h);
     }
+
+    cout << value[64] << value[128] << value[192] << "\n";
+    cout << value[64] << value[65] << value[66] << value[67] << "..\n";
+
+
     latt[0] = pow((-1), value[64])* ((lat_fract + 1) * pow(2, (lat_exp - 1023))*180);
     latt[1] = pow((-1), value[128])* ((lon_fract + 1) * pow(2, (lon_exp - 1023))*180);
     latt[2] = pow((-1), value[192])* ((alt_fract + 1) * pow(2, (alt_exp - 1023)));
-    cout << "latitude= " << latt[0] << "\tlongitude= " << latt[1] << "\taltitude= " << latt[2] << endl;
+    cout << "       latitude= " << latt[0] << "\tlongitude= " << latt[1] << "\taltitude= " << latt[2] << endl;
 
     // need to check if values were ok, right now just hardcoded true..
     success = true;
