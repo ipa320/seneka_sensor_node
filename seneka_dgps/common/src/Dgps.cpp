@@ -181,7 +181,10 @@ bool Dgps::getPosition(double* latt) {
     unsigned char data_type_ = 0x01;
     unsigned char etx_ = 0x03;
 
-    unsigned char checksum_ = (status_ + packet_type_ + data_type_ + 0 + 0 + length_)%256;
+    unsigned char checksum_ = status_ + packet_type_ + data_type_ + length_;
+    //(status_ + packet_type_ + data_type_ + 0 + 0 + length_)%256;
+
+
 
     char message[] = {stx_, status_, packet_type_, length_, data_type_, 0x00, 0x00, checksum_, etx_}; // 56h command packet       // expects 57h reply packet (basic coding)
 
@@ -226,7 +229,7 @@ bool Dgps::getPosition(double* latt) {
 
     int packet_type = Buffer[2];
     int data_length = Buffer[3];
-// ---------- data records -----------
+// ---------- data records -----------      CHAR: 1 byte, INT: 2 byte, LONG: 4 byte, DOUBLE: 8 byte
 
     int record_type = Buffer[4];
     int paging_information = Buffer[5];  // bit 7-4 is current page number; bit 3-0 is total page number
@@ -234,17 +237,92 @@ bool Dgps::getPosition(double* latt) {
        int current_page = paging_information % (2*2*2*2); // bits 4-7
 
        int reply_number = Buffer[6]; // this number is identical for every page of one reply
-    int record_interpretation = Buffer [7];
+    int record_interpretation = Buffer [7];         // CHAR  --> bitflags
 
-    int latitude_msg = Buffer[8];
-    int longitude_msg = Buffer[9];
-    int altitude_msg = Buffer[10];
-    int clock_offset = Buffer[11];
-    int freq_offset = Buffer[12];
-    int pdop = Buffer[13];
-    int latitude_rate = Buffer[14];
+    
 
-    int *data = new int[data_length];
+    int latitude_index = 8;
+    int longitude_index = 16;
+    int altitude_index = 24;
+
+
+    // - get all 8 bytes of latitude
+    // - reverse byte order (NOT bit order!)
+    // - calculate value according to IEEE double-precision format (DOUBLE)
+    int latitude_msg[8] = {0};               // DOUBLE
+    for (int i = 0; i<8; i++){
+        latitude_msg[i] = Buffer[latitude_index+7-i];
+    }
+    cout << "latitude bytes, reversed:\n";
+    for (int i = 0; i<8; i++){
+        printf(" %.2x", latitude_msg[i]);
+    }
+    cout << "\n";
+
+
+
+    static int byte_count = 8;
+    
+    bool latitude_bits[64] = {false};
+    bool latitude_bits_reversed[64] = {false};
+
+   // latitude_bits[bit_count] = {0};
+    // get bits of DOUBLE
+    for (int k = 0; k<8; k++){
+        for (int i = byte_count-1; i>=0; i--){
+            latitude_bits[((k*8)+i)] =  0 != (latitude_msg[k] & (1 << i));
+        }
+    }
+    cout << "latitude bits:\n";
+    for (int i = 0; i<64; i++){
+        printf(" %i", latitude_bits[i]);
+    }
+    cout << "\n";
+
+
+
+
+
+    cout << "latitude bits per byte reversed:\n";
+    for (int i = 0; i<64; i++){
+        printf(" %i", latitude_bits[i]);
+    }
+    cout << "\n";
+
+
+
+    int sign_bit = latitude_bits[0];
+    int exponent = -1023;
+    int fraction = 0;
+    for (int i = 1; i< 11;i++){
+        exponent = exponent + latitude_bits[i]*pow(2,i);
+    }
+    for (int i = 11; i<64; i++){
+        fraction = latitude_bits[i]*pow(0.5,i);
+    }
+
+    double latitude_value = pow(-1,sign_bit) * pow(fraction, exponent);
+
+    cout << std::dec << "  calculated latitude: " << latitude_value << " \n";
+    
+
+
+
+    int longitude_msg[8] = {0};              // DOUBLE
+    int altitude_msg[8] = {0};               // DOUBLE
+    int clock_offset[8] = {0};               // DOUBLE
+    int freq_offset[8] = {0};                // DOUBLE
+    int pdop[8] = {0};                       // DOUBLE
+    int latitude_rate[8] = {0};              // DOUBLE
+    int longitude_rate[8] = {0};             // DOUBLE
+    int altitude_rate[8] = {0};              // DOUBLE
+    int GPS_msec_of_week[4] = {0};           // LONG
+    int position_flags[4] = {0};             // CHAR
+    int number_of_SVs = {0};                 // CHAR
+
+    //
+
+    int *data = new int[bytesread];
     for (int i = 0; i < data_length; i++) {
         data[i] = Buffer[i + 8];
     }
@@ -254,9 +332,12 @@ bool Dgps::getPosition(double* latt) {
     int checksum = Buffer[bytesread - 2];
     // check if data_length "hits" checksum
     int checksum2 = Buffer[4+data_length];
+
     int etx = Buffer[bytesread -1];
 
-
+    for (int i=0; i<length_;i++){
+        checksum_ += Buffer[i+4];
+    }
 
 // log to console
     printf("STX (expects 02): %.2x\n", stx);
@@ -275,9 +356,9 @@ bool Dgps::getPosition(double* latt) {
     printf("checksum: %.2x %.2x\n", checksum, checksum2);
     printf( "ETX (expects 03): %.2x\n", etx);
     cout << "----\n";
-    printf("latitude_msg: %.2x\n", latitude_msg);
-    printf("longitude_msg: %.2x\n", longitude_msg);
-    printf("altitude_msg: %.2x\n", altitude_msg);
+    //printf("latitude_msg: %.2x\n", latitude_msg);
+    //printf("longitude_msg: %.2x\n", longitude_msg);
+    //printf("altitude_msg: %.2x\n", altitude_msg);
     cout << "----\n";
 
 
