@@ -297,250 +297,255 @@ bool getFakePosition(double* latt) {
 
     cout << "-----------\n";
 
-    // NEW parsing code
-
-    int stx;
-    int rx_status;
-
-    int low_battery;
-    int packet_type;
-    int data_length;
-    int record_type;
-    int etx;
-    char checksum;
-    bool done = false;
-
-
-    while (buffer_index < bytesread && !done) {
-
-        // parse a position record (p. 139 in BD982 userguide)
-        // ------------ header --------------
-        stx = Buffer[buffer_index + 0];
-        rx_status = Buffer[buffer_index + 1]; // big-endian; bit 1 signals low battery; rest is reserved
-        //                cut most left bit; check if next bit is 1
-        low_battery = (rx_status % 128) / 64;
-
-        packet_type = Buffer[buffer_index + 2];
-
-        data_length = Buffer[buffer_index + 3];
-        record_type = Buffer[buffer_index + 4];
-
-        printf("\tpacket_type: %i  \trecord_type: %i \tdata_length: %i\n", packet_type, record_type, data_length);
-
-
-        // data contains 2 packets!
-        // -- length field is correct!
-        // -- now get both packets, verify checksum over data fields, find out data structure
-
-        if (packet_type == 5 * 16 + 7 && record_type == 0 * 16 + 1) {
-
-            for (int i = 0; i < data_length; i++) {
-                data_buffer[data_index] = Buffer[buffer_index + 4 + i];
-                data_index++;
-            }
-        }
-        if (buffer_index + 4 + data_length + 2 < bytesread) {
-            buffer_index = buffer_index + 4 + data_length + 2;
-        } else {
-            done = true;
-        }
-
-
-
-        checksum = Buffer[buffer_index + 4 + data_length + 1];
-        etx = Buffer[buffer_index + 4 + data_length + 2];
-        // verify checksum now
-
-    }
-
-    cout << "data_buffer: \n";
-    for (int i = 0; i < data_index; i++) {
-        printf("%.2x ", data_buffer[i]);
-    }
-    cout << endl;
-
-    // ---------- data records -----------      CHAR: 1 byte, INT: 2 byte, LONG: 4 byte, DOUBLE: 8 byte
-
-    record_type = Buffer[buffer_index + 4];
-    int paging_information = Buffer[buffer_index + 5]; // bit 7-4 is current page number; bit 3-0 is total page number
-    int page_total = paging_information / (2 * 2 * 2 * 2); // bits 0-3
-    int current_page = paging_information % (2 * 2 * 2 * 2); // bits 4-7
-
-    int reply_number = Buffer[buffer_index + 6]; // this number is identical for every page of one reply
-    int record_interpretation = Buffer [buffer_index + 7]; // CHAR  --> bitflags
-
-    int latitude_index = 8;
-    int longitude_index = 16;
-    int altitude_index = 24;
-
-
-    // - get all 8 bytes of latitude
-    // - reverse byte order (NOT bit order!)
-    // - calculate value according to IEEE double-precision format (DOUBLE)
-    int latitude_msg[8] = {0}; // DOUBLE
-    for (int i = 0; i < 8; i++) {
-        //latitude_msg[i] = Buffer[buffer_index + latitude_index + 7 - i];
-        latitude_msg[7-i] = data_buffer[i+4];
-    }
-    cout << "latitude bytes, reversed:\n";
-    int temp = 0;
-    for (int i = 0; i < 8; i++) {
-        temp = latitude_msg[i];
-        latitude_msg[i] = latitude_msg[7-i];
-        latitude_msg[7-i] = temp;
-
-    }
-        for (int i = 0; i < 8; i++) {
-
-        printf(" %.2x", latitude_msg[i]);
-    }
-    cout << "\n";
-
-
-
-    static int byte_count = 8;
-
-    bool latitude_bits[64] = {false};
-    bool latitude_bits_reversed[64] = {false};
-
-    // latitude_bits[bit_count] = {0};
-    // get bits of DOUBLE
-    for (int k = 0; k < 8; k++) {
-        for (int i = byte_count - 1; i >= 0; i--) {
-            latitude_bits[((k * 8)+(i))] = 0 != (latitude_msg[k] & (1 << i));
-        }
-    }
-    cout << "latitude bits:\n";
-    for (int i = 0; i < 64; i++) {
-        printf(" %i", latitude_bits[i]);
-    }
-    cout << "\n";
-
-
-
-
-
-//    cout << "latitude bits per byte reversed:\n";
+    packet_data incoming_packet;
+    Dgps temp_gps_dev = Dgps();
+    temp_gps_dev.receiveData(Buffer, bytesread, incoming_packet);
+//
+//    // NEW parsing code
+//
+//    int stx;
+//    int rx_status;
+//
+//    int low_battery;
+//    int packet_type;
+//    int data_length;
+//    int record_type;
+//    int etx;
+//    char checksum;
+//    bool done = false;
+//
+//
+//    while (buffer_index < bytesread && !done) {
+//
+//        // parse a position record (p. 139 in BD982 userguide)
+//        // ------------ header --------------
+//        stx = Buffer[buffer_index + 0];
+//        rx_status = Buffer[buffer_index + 1]; // big-endian; bit 1 signals low battery; rest is reserved
+//        //                cut most left bit; check if next bit is 1
+//        low_battery = (rx_status % 128) / 64;
+//
+//        packet_type = Buffer[buffer_index + 2];
+//
+//        data_length = Buffer[buffer_index + 3];
+//        record_type = Buffer[buffer_index + 4];
+//
+//        printf("\tpacket_type: %i  \trecord_type: %i \tdata_length: %i\n", packet_type, record_type, data_length);
+//
+//
+//        // data contains 2 packets!
+//        // -- length field is correct!
+//        // -- now get both packets, verify checksum over data fields, find out data structure
+//
+//        if (packet_type == 5 * 16 + 7 && record_type == 0 * 16 + 1) {
+//
+//            for (int i = 0; i < data_length; i++) {
+//                data_buffer[data_index] = Buffer[buffer_index + 4 + i];
+//                data_index++;
+//            }
+//        }
+//        if (buffer_index + 4 + data_length + 2 < bytesread) {
+//            buffer_index = buffer_index + 4 + data_length + 2;
+//        } else {
+//            done = true;
+//        }
+//
+//
+//
+//        checksum = Buffer[buffer_index + 4 + data_length + 1];
+//        etx = Buffer[buffer_index + 4 + data_length + 2];
+//        // verify checksum now
+//
+//    }
+//
+//    cout << "data_buffer: \n";
+//    for (int i = 0; i < data_index; i++) {
+//        printf("%.2x ", data_buffer[i]);
+//    }
+//    cout << endl;
+//
+//    // ---------- data records -----------      CHAR: 1 byte, INT: 2 byte, LONG: 4 byte, DOUBLE: 8 byte
+//
+//    record_type = Buffer[buffer_index + 4];
+//    int paging_information = Buffer[buffer_index + 5]; // bit 7-4 is current page number; bit 3-0 is total page number
+//    int page_total = paging_information / (2 * 2 * 2 * 2); // bits 0-3
+//    int current_page = paging_information % (2 * 2 * 2 * 2); // bits 4-7
+//
+//    int reply_number = Buffer[buffer_index + 6]; // this number is identical for every page of one reply
+//    int record_interpretation = Buffer [buffer_index + 7]; // CHAR  --> bitflags
+//
+//    int latitude_index = 8;
+//    int longitude_index = 16;
+//    int altitude_index = 24;
+//
+//
+//    // - get all 8 bytes of latitude
+//    // - reverse byte order (NOT bit order!)
+//    // - calculate value according to IEEE double-precision format (DOUBLE)
+//    int latitude_msg[8] = {0}; // DOUBLE
+//    for (int i = 0; i < 8; i++) {
+//        //latitude_msg[i] = Buffer[buffer_index + latitude_index + 7 - i];
+//        latitude_msg[7-i] = data_buffer[i+4];
+//    }
+//
+////    cout << "latitude bytes, reversed:\n";
+////    int temp = 0;
+////    for (int i = 0; i < 8; i++) {
+////        temp = latitude_msg[i];
+////        latitude_msg[i] = latitude_msg[7-i];
+////        latitude_msg[7-i] = temp;
+////
+////    }
+//        for (int i = 0; i < 8; i++) {
+//
+//        printf(" %.2x", latitude_msg[i]);
+//    }
+//    cout << "\n";
+//
+//
+//
+//    static int byte_count = 8;
+//
+//    bool latitude_bits[64] = {false};
+//    bool latitude_bits_reversed[64] = {false};
+//
+//    // latitude_bits[bit_count] = {0};
+//    // get bits of DOUBLE
+//    for (int k = 0; k < 8; k++) {
+//        for (int i = byte_count - 1; i >= 0; i--) {
+//            latitude_bits[((k * 8)+(i))] = 0 != (latitude_msg[k] & (1 << i));
+//        }
+//    }
+//    cout << "latitude bits:\n";
 //    for (int i = 0; i < 64; i++) {
 //        printf(" %i", latitude_bits[i]);
 //    }
 //    cout << "\n";
-
-
-
-    int sign_bit = latitude_bits[0];
-    double exponent = -1023;
-    double  fraction = 0;
-    for (int i = 1; i <= 11; i++) {
-        exponent = exponent + latitude_bits[i] * pow(2, 11-i);
-    }
-    for (int i = 1; i <= 52; i++) {
-        fraction = fraction + latitude_bits[i+11] * pow(0.5, i);
-    }
-
-    double latitude_value = (pow(-1, sign_bit) * ((fraction + 1) * pow(2, exponent - 1023))) ;
-
-    int sv_count = data_buffer[85-4];
-    printf("number of SVs: %i", sv_count);
-    
-    printf("\n  calculated fraction: %f \ncalculated exponent: %f \ncalculated latitude: %f \n\n", fraction, exponent, latitude_value);
-
-
-
-
-    int longitude_msg[8] = {0}; // DOUBLE
-    int altitude_msg[8] = {0}; // DOUBLE
-    int clock_offset[8] = {0}; // DOUBLE
-    int freq_offset[8] = {0}; // DOUBLE
-    int pdop[8] = {0}; // DOUBLE
-    int latitude_rate[8] = {0}; // DOUBLE
-    int longitude_rate[8] = {0}; // DOUBLE
-    int altitude_rate[8] = {0}; // DOUBLE
-    int GPS_msec_of_week[4] = {0}; // LONG
-    int position_flags[4] = {0}; // CHAR
-    int number_of_SVs = {0}; // CHAR
-
-    //
-
-    int *data = new int[bytesread];
-    for (int i = 0; i < data_length; i++) {
-        data[i] = Buffer[i + 8];
-    }
-
-
-    // ------------ footer -----------
-    checksum = Buffer[buffer_index + bytesread - 2];
-    // check if data_length "hits" checksum
-    int checksum2 = Buffer[buffer_index + 4 + data_length];
-
-    etx = Buffer[bytesread - 1];
-
-    for (int i = 0; i < length_; i++) {
-        checksum_ += Buffer[buffer_index + i + 4];
-    }
-
-    // log to console
-    printf("STX (expects 02): %.2x\n", stx);
-    printf("rx_status: %.2x %i\n", rx_status, rx_status);
-    printf("  low_battery: %i\n", low_battery);
-    printf("packet_type: %.2x\n", packet_type);
-    printf("LENGTH: %i\n", data_length);
-    printf("record_type: %i\n", record_type);
-    printf("paging_information: %.2x\n", paging_information);
-    printf("  page_total: %i\n", page_total);
-    printf("  current_page: %i\n", current_page);
-    printf("reply_number: %.2x\n", reply_number);
-    printf("record_interpretation: %.2x\n", record_interpretation);
-    cout << "packet data: ";
-    cout << std::dec << data << "\n";
-    printf("checksum: %.2x %.2x\n", checksum, checksum2);
-    printf("ETX (expects 03): %.2x\n", etx);
-    cout << "----\n";
-    //printf("latitude_msg: %.2x\n", latitude_msg);
-    //printf("longitude_msg: %.2x\n", longitude_msg);
-    //printf("altitude_msg: %.2x\n", altitude_msg);
-    cout << "----\n";
-
-
-    int data_sum = 0;
-    for (int i = 0; i < data_length; i++) data_sum += Buffer[buffer_index + 4 + i];
-    int checksum_r = (rx_status + packet_type + data_sum + data_length) % 256;
-
-    printf("checksum comparison: %.2x %.2x\n", checksum, checksum_r);
-    // OLD parsing code
-
-    for (int i = 0; i < bytesread; i++) {
-        //	printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
-        bin = (unsigned char) Buffer[i]; //
-        to_bin(bin, binary); // binary conversion
-    }
-
-    alphatointeg(binary, value);
-    cout << "\nvalue: " << value << "\n";
-    cout << "-----------\n";
-
-    double lat_fract = 0.0, lat_exp = 0.0, lon_fract = 0.0, lon_exp = 0.0, alt_fract = 0.0, alt_exp = 0.0;
-    for (int j = 1; j <= 52; j++) {
-        lat_fract = lat_fract + (value[75 + j]) * pow(0.5, j);
-        lon_fract = lon_fract + (value[139 + j]) * pow(0.5, j);
-        alt_fract = alt_fract + (value[203 + j]) * pow(0.5, j);
-    }
-    // write a function to convert from character to integer
-    for (int h = 0; h <= 10; h++) {
-        lat_exp = lat_exp + (value[75 - h]) * pow(2, h);
-        lon_exp = lon_exp + (value[139 - h]) * pow(2, h);
-        alt_exp = alt_exp + (value[203 - h]) * pow(2, h);
-    }
-
-    cout << value[64] << value[128] << value[192] << "\n";
-    cout << value[64] << value[65] << value[66] << value[67] << "..\n";
-
-
-    latt[0] = pow((-1), value[64])* ((lat_fract + 1) * pow(2, (lat_exp - 1023))*180);
-    latt[1] = pow((-1), value[128])* ((lon_fract + 1) * pow(2, (lon_exp - 1023))*180);
-    latt[2] = pow((-1), value[192])* ((alt_fract + 1) * pow(2, (alt_exp - 1023)));
-    printf("       latitude= %f \tlongitude= %f \taltitude= %f\n\n", latt[0], latt[1], latt[2]);
-    //cout << "       latitude= " << latt[0] << "\tlongitude= " << latt[1] << "\taltitude= " << latt[2] << endl <<endl;
+//
+//
+//
+//
+//
+////    cout << "latitude bits per byte reversed:\n";
+////    for (int i = 0; i < 64; i++) {
+////        printf(" %i", latitude_bits[i]);
+////    }
+////    cout << "\n";
+//
+//
+//
+//    int sign_bit = latitude_bits[0];
+//    double exponent = -1023;
+//    double  fraction = 0;
+//    for (int i = 1; i <= 11; i++) {
+//        exponent = exponent + latitude_bits[i] * pow(2, 11-i);
+//    }
+//    for (int i = 1; i <= 52; i++) {
+//        fraction = fraction + latitude_bits[i+11] * pow(0.5, i);
+//    }
+//
+//    double latitude_value = (pow(-1, sign_bit) * ((fraction + 1) * pow(2, exponent - 1023))) ;
+//
+//    int sv_count = data_buffer[85-4];
+//    printf("number of SVs: %i", sv_count);
+//
+//    printf("\n  calculated fraction: %f \ncalculated exponent: %f \ncalculated latitude: %f \n\n", fraction, exponent, latitude_value);
+//
+//
+//
+//
+//    int longitude_msg[8] = {0}; // DOUBLE
+//    int altitude_msg[8] = {0}; // DOUBLE
+//    int clock_offset[8] = {0}; // DOUBLE
+//    int freq_offset[8] = {0}; // DOUBLE
+//    int pdop[8] = {0}; // DOUBLE
+//    int latitude_rate[8] = {0}; // DOUBLE
+//    int longitude_rate[8] = {0}; // DOUBLE
+//    int altitude_rate[8] = {0}; // DOUBLE
+//    int GPS_msec_of_week[4] = {0}; // LONG
+//    int position_flags[4] = {0}; // CHAR
+//    int number_of_SVs = {0}; // CHAR
+//
+//    //
+//
+//    int *data = new int[bytesread];
+//    for (int i = 0; i < data_length; i++) {
+//        data[i] = Buffer[i + 8];
+//    }
+//
+//
+//    // ------------ footer -----------
+//    checksum = Buffer[buffer_index + bytesread - 2];
+//    // check if data_length "hits" checksum
+//    int checksum2 = Buffer[buffer_index + 4 + data_length];
+//
+//    etx = Buffer[bytesread - 1];
+//
+//    for (int i = 0; i < length_; i++) {
+//        checksum_ += Buffer[buffer_index + i + 4];
+//    }
+//
+//    // log to console
+//    printf("STX (expects 02): %.2x\n", stx);
+//    printf("rx_status: %.2x %i\n", rx_status, rx_status);
+//    printf("  low_battery: %i\n", low_battery);
+//    printf("packet_type: %.2x\n", packet_type);
+//    printf("LENGTH: %i\n", data_length);
+//    printf("record_type: %i\n", record_type);
+//    printf("paging_information: %.2x\n", paging_information);
+//    printf("  page_total: %i\n", page_total);
+//    printf("  current_page: %i\n", current_page);
+//    printf("reply_number: %.2x\n", reply_number);
+//    printf("record_interpretation: %.2x\n", record_interpretation);
+//    cout << "packet data: ";
+//    cout << std::dec << data << "\n";
+//    printf("checksum: %.2x %.2x\n", checksum, checksum2);
+//    printf("ETX (expects 03): %.2x\n", etx);
+//    cout << "----\n";
+//    //printf("latitude_msg: %.2x\n", latitude_msg);
+//    //printf("longitude_msg: %.2x\n", longitude_msg);
+//    //printf("altitude_msg: %.2x\n", altitude_msg);
+//    cout << "----\n";
+//
+//
+//    int data_sum = 0;
+//    for (int i = 0; i < data_length; i++) data_sum += Buffer[buffer_index + 4 + i];
+//    int checksum_r = (rx_status + packet_type + data_sum + data_length) % 256;
+//
+//    printf("checksum comparison: %.2x %.2x\n", checksum, checksum_r);
+//    // OLD parsing code
+//
+//    for (int i = 0; i < bytesread; i++) {
+//        //	printf(" %.2x Hexa-decimal",(unsigned char)Buffer[i]);
+//        bin = (unsigned char) Buffer[i]; //
+//        to_bin(bin, binary); // binary conversion
+//    }
+//
+//    alphatointeg(binary, value);
+//    cout << "\nvalue: " << value << "\n";
+//    cout << "-----------\n";
+//
+//    double lat_fract = 0.0, lat_exp = 0.0, lon_fract = 0.0, lon_exp = 0.0, alt_fract = 0.0, alt_exp = 0.0;
+//    for (int j = 1; j <= 52; j++) {
+//        lat_fract = lat_fract + (value[75 + j]) * pow(0.5, j);
+//        lon_fract = lon_fract + (value[139 + j]) * pow(0.5, j);
+//        alt_fract = alt_fract + (value[203 + j]) * pow(0.5, j);
+//    }
+//    // write a function to convert from character to integer
+//    for (int h = 0; h <= 10; h++) {
+//        lat_exp = lat_exp + (value[75 - h]) * pow(2, h);
+//        lon_exp = lon_exp + (value[139 - h]) * pow(2, h);
+//        alt_exp = alt_exp + (value[203 - h]) * pow(2, h);
+//    }
+//
+//    cout << value[64] << value[128] << value[192] << "\n";
+//    cout << value[64] << value[65] << value[66] << value[67] << "..\n";
+//
+//
+//    latt[0] = pow((-1), value[64])* ((lat_fract + 1) * pow(2, (lat_exp - 1023))*180);
+//    latt[1] = pow((-1), value[128])* ((lon_fract + 1) * pow(2, (lon_exp - 1023))*180);
+//    latt[2] = pow((-1), value[192])* ((alt_fract + 1) * pow(2, (alt_exp - 1023)));
+//    printf("       latitude= %f \tlongitude= %f \taltitude= %f\n\n", latt[0], latt[1], latt[2]);
+//    //cout << "       latitude= " << latt[0] << "\tlongitude= " << latt[1] << "\taltitude= " << latt[2] << endl <<endl;
 
     // need to check if values were ok, right now just hardcoded true..
     success = true;
@@ -579,7 +584,7 @@ int main(int argc, char** argv) {
             rosNode.publishError("...DGPS not available on port");
         }
         sleep(1); // wait for Dgps to get ready if successfull, or wait before retrying
-    }
+    }  
     //	ROS_INFO("...DGPS opened successfully on port %s",nodeClass.port.c_str());
     // main loop
     ros::Rate loop_rate(publishRate); // Hz
@@ -591,14 +596,17 @@ int main(int argc, char** argv) {
         cout << "protocol request failed (05h): check cables, adapters, settings, ...";
     } else {
 
-
+        bool once = false;
         while (rosNode.nh.ok()) {
             // read values
             ROS_DEBUG("Reading DGPS...");
 
             //success_getPosition = dgps.getPosition(dgpsData);
-            success_getPosition = getFakePosition(dgpsData);
 
+
+            if (!once) {success_getPosition = getFakePosition(dgpsData);
+            once = true;
+            }else{
             if (success_getPosition) {
                 ROS_INFO("...publishing position of DGPS: %1f, %1f, %1f", dgpsData[0], dgpsData[1], dgpsData[2]);
 
@@ -606,6 +614,7 @@ int main(int argc, char** argv) {
 
             } else {
                 ROS_WARN("...no Values available");
+            }
             }
             ros::spinOnce();
             loop_rate.sleep();
