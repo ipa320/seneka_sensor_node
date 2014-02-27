@@ -408,6 +408,39 @@ double getDOUBLE(unsigned char* bytes, bool invertByteOrder = false){
     return latitude_value;
 }
 
+// index is relative to begin of data_part; so it is byte number: index+8 in packet-bytes
+int latitude_value_index = 0;
+int latitude_value_length = 8;
+int longitude_value_index = 8;
+int longitude_value_length = 8;
+int altitude_value_index = 16;
+int altitude_value_length = 8;
+int clock_offset_index = 24;
+int clock_offset_length = 8;
+int frequency_offset_index = 32;
+int frequency_offset_length = 8;
+int pdop_index = 40;
+int pdop_length = 8;
+int latitude_rate_index = 48;
+int latitude_rate_length = 8;
+int longitude_rate_index = 56;
+int longitude_rate_length = 8;
+int altitude_rate_index = 64;
+int altitude_rate_length = 8;
+
+int gps_msec_of_week_index = 72;
+int gps_msec_of_week_length = 4;
+
+int position_flags_index;
+int position_flags_length = 76;
+int number_of_SVs_index;
+int number_of_SVs_length = 77;
+// 78 .. 80 .. 82 .. 84 ..
+int *channel_number_index;
+int channel_number_length = 1;
+// 79 .. 81 .. 83 .. 85 ..
+int *prn_index;
+int prn_length = 1;
 
 bool Dgps::extractGPS(packet_data incoming_packet, gps_data incoming_gps) {
 
@@ -425,12 +458,23 @@ bool Dgps::extractGPS(packet_data incoming_packet, gps_data incoming_gps) {
     unsigned char latitude_bytes[8] = {0};
     unsigned char longitude_bytes[8] = {0};
     unsigned char altitude_bytes[8] = {0};
+    unsigned char clock_offset_bytes[8] = {0};
+    unsigned char frequency_offset_bytes[8] = {0};
+    unsigned char pdop_bytes[8] = {0};
 
+    // get all double fields ( 8 bytes )
     for (int i = 0; i < 8; i++) {
-        latitude_bytes[i] = incoming_packet.data_bytes[i];
-        longitude_bytes[i] = incoming_packet.data_bytes[i + 8];
-        altitude_bytes[i] = incoming_packet.data_bytes[i + 16];
+        latitude_bytes[i] = incoming_packet.data_bytes[i + latitude_value_index];
+        longitude_bytes[i] = incoming_packet.data_bytes[i + longitude_value_index];
+        altitude_bytes[i] = incoming_packet.data_bytes[i + altitude_value_index];
+        clock_offset_bytes[i] = incoming_packet.data_bytes[i + clock_offset_index];
+        frequency_offset_bytes[i] = incoming_packet.data_bytes[i + frequency_offset_index];
+        pdop_bytes[i] = incoming_packet.data_bytes[i + pdop_index];
     }
+
+    // get all long fields ( 4 bytes )
+
+    // get all char fields ( 1 byte )
 
     unsigned char test_minus_25_25[8] ={0x00};
     test_minus_25_25[0] = 0xc0;
@@ -454,237 +498,20 @@ bool Dgps::extractGPS(packet_data incoming_packet, gps_data incoming_gps) {
     printf("calculated longitude: %f\n\n\n", longitude_value * sc_factor);
 
     double altitude_value = getDOUBLE(altitude_bytes);
-    printf("calculated altitude semi-circles: %f\n", longitude_value);
     printf("calculated altitude: %f\n\n\n", altitude_value);
 
+
+        double clock_offset = getDOUBLE(clock_offset_bytes);
+    printf("clock_offset: %f\n\n\n", clock_offset);
+        double frequency_offset = getDOUBLE(frequency_offset_bytes);
+    printf("frequency_offset: %f\n\n\n", frequency_offset);
+        double pdop = getDOUBLE(pdop_bytes);
+    printf("pdop: %f\n\n\n", pdop);
+
+
+
+
     printf("calculated -25.25: %f\n\n\n", getDOUBLE(test_minus_25_25) );
-
-
-
-//
-//
-//    printf(" latitude bytes:\n");
-//    for (int i = 0; i < 8; i++) {
-//        printf("%.4x ", latitude_bytes[i]);
-//    }
-//    printf("\n");
-//    unsigned char *latitude_bytes_reversed;
-//    latitude_bytes_reversed = invertByteOrder_Double(latitude_bytes);
-//    printf(" latitude bytes reversed:\n");
-//    for (int i = 0; i < 8; i++) {
-//        printf("%.4x ", latitude_bytes_reversed[i]);
-//    }
-//    printf("\n");
-//    bool latitude_bits[64] = {false};
-//    // latitude_bits[bit_count] = {0};
-//    // get bits of DOUBLE
-//    for (int k = 0; k < 8; k++) {
-//        for (int i = 0; i < 8; i++) {
-//            latitude_bits[((k * 8) + i)] = 0 != (latitude_bytes_reversed[k] & (1 << i));
-//        }
-//    }
-//
-//
-//
-//
-//
-//    //    for (int i = 0; i < 64; i++) {
-//    //        latitude_bits[i] = 0;
-//    //    }
-//
-//    // = 1.0
-//    //bool latitude_bits [64] = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-//
-//    // = -0.6875
-//    //bool latitude_bits [64] =   {1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-//
-//    // = 1.5
-//    //bool latitude_bits [64] =   {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-//
-//    // = -1.5
-//    //bool latitude_bits [64] =   {1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-//
-//    // = -25.25
-//    //    bool latitude_bits [64] =   {1,
-//    //                                 1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 1,
-//    //                                 1, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
-//
-//     // 0 ; //1023;
-//
-//
-//    cout << "latitude bits:\n";
-//    for (int i = 0; i < 64; i++) {
-//        printf("%i", latitude_bits[i]);
-//    }
-//    cout << "\n";
-//
-//
-//
-//
-//
-//    printf(" longitude bytes:\n");
-//    for (int i = 0; i < 8; i++) {
-//        printf("%.4x ", longitude_bytes[i]);
-//    }
-//    printf("\n");
-//    unsigned char *longitude_bytes_reversed;
-//    longitude_bytes_reversed = invertByteOrder_Double(longitude_bytes);
-//    printf(" longitude bytes reversed:\n");
-//    for (int i = 0; i < 8; i++) {
-//        printf("%.4x ", longitude_bytes_reversed[i]);
-//    }
-//    printf("\n");
-//    bool longitude_bits[64] = {false};
-//    // latitude_bits[bit_count] = {0};
-//    // get bits of DOUBLE
-//    for (int k = 0; k < 8; k++) {
-//        for (int i = 0; i < 8; i++) {
-//            longitude_bits[((k * 8) + i)] = 0 != (longitude_bytes_reversed[k] & (1 << i));
-//        }
-//    }
-//    cout << "longitude bits:\n";
-//    for (int i = 0; i < 64; i++) {
-//        printf(" %i", longitude_bits[i]);
-//    }
-//    cout << "\n";
-//
-//
-//
-//
-//
-//
-//    printf(" altitude bytes:\n");
-//    for (int i = 0; i < 8; i++) {
-//        printf("%.4x ", altitude_bytes[i]);
-//    }
-//    printf("\n");
-//    unsigned char *altitude_bytes_reversed;
-//    altitude_bytes_reversed = invertByteOrder_Double(altitude_bytes);
-//    printf(" altitude bytes reversed:\n");
-//    for (int i = 0; i < 8; i++) {
-//        printf("%.4x ", altitude_bytes_reversed[i]);
-//    }
-//    printf("\n");
-//    bool altitude_bits[64] = {false};
-//    // latitude_bits[bit_count] = {0};
-//    // get bits of DOUBLE
-//    for (int k = 0; k < 8; k++) {
-//        for (int i = 0; i < 8; i++) {
-//            altitude_bits[((k * 8) + i)] = 0 != (altitude_bytes_reversed[k] & (1 << i));
-//        }
-//    }
-//    cout << "altitude bits:\n";
-//    for (int i = 0; i < 64; i++) {
-//        printf(" %i", altitude_bits[i]);
-//    }
-//    cout << "\n\n\n";
-//
-//
-//
-//
-//
-//
-//
-//
-//    bool * latitude_bits_reversed;
-//    latitude_bits_reversed = invertBitOrder_Double(latitude_bits);
-//    for (int i = 0; i < 64; i++) latitude_bits[i] = latitude_bits_reversed[i];
-//
-//    cout << "latitude bits:\n";
-//    for (int i = 0; i < 64; i++) {
-//        printf("%i", latitude_bits[i]);
-//    }
-//    cout << "\n";
-//
-//
-//    int sign_bit_lat = latitude_bits[0];
-//    int exponent_lat = 0;
-//    double fraction_lat = 0;
-//    for (int i = 0; i < 11; i++) {
-//        exponent_lat = exponent_lat + latitude_bits[i + 1] * pow(2, 10 - i);
-//    }
-//    for (int i = 0; i < 52; i++) {
-//        fraction_lat = fraction_lat + latitude_bits[i + 12] * pow(0.5, i + 1);
-//    }
-//    fraction_lat += 1;
-//    printf("exponent_lat: %i\n", exponent_lat-exponent_bias);
-//    printf("fraction_lat: %f\n", fraction_lat);
-//
-//    int sign_lat = 1;
-//    if (sign_bit_lat == 1) sign_lat = -1;
-//
-//    double latitude_value = sign_lat * (fraction_lat * pow(2, exponent_lat - exponent_bias)) * (180/2^31);
-//    printf("  calculated latitude: %f \n", latitude_value);
-//
-//
-//
-//        bool * longitude_bits_reversed;
-//    longitude_bits_reversed = invertBitOrder_Double(longitude_bits);
-//    for (int i = 0; i < 64; i++) longitude_bits[i] = longitude_bits_reversed[i];
-//
-//    cout << "longitude bits:\n";
-//    for (int i = 0; i < 64; i++) {
-//        printf("%i", longitude_bits[i]);
-//    }
-//    cout << "\n";
-//
-//    int sign_bit_long = longitude_bits[0];
-//    int exponent_long = 0;
-//    double fraction_long = 0;
-//    for (int i = 1; i < 11; i++) {
-//        exponent_long = exponent_long + longitude_bits[i+1] * pow(2, i);
-//    }
-//    for (int i = 0; i < 52; i++) {
-//        fraction_long = fraction_long + longitude_bits[i+12] * pow(0.5, i+1);
-//    }
-//    fraction_long += 1;
-//        printf("exponent_long: %i\n", exponent_long-exponent_bias);
-//    printf("fraction_long: %f\n", fraction_long);
-//        int sign_long = 1;
-//    if (sign_bit_long == 1) sign_long = -1;
-//    double longitude_value = sign_long * (fraction_long * pow(2, exponent_long-exponent_bias)) * (180/2^31);
-//    printf("  calculated longitude: %f \n", longitude_value);
-//
-//
-//
-//    bool * altitude_bits_reversed;
-//    altitude_bits_reversed = invertBitOrder_Double(altitude_bits);
-//    for (int i = 0; i < 64; i++) altitude_bits[i] = altitude_bits_reversed[i];
-//    cout << "altitude bits:\n";
-//    for (int i = 0; i < 64; i++) {
-//        printf("%i", altitude_bits[i]);
-//    }
-//    cout << "\n";
-//    int sign_bit_alt = altitude_bits[0];
-//    int exponent_alt = 0;
-//    double fraction_alt = 0;
-//    for (int i = 1; i < 11; i++) {
-//        exponent_alt = exponent_alt + altitude_bits[i+1] * pow(2, i);
-//    }
-//    for (int i = 11; i < 52; i++) {
-//        fraction_alt = fraction_alt + altitude_bits[i+12] * pow(0.5, i+1);
-//    }
-//    fraction_alt +=1;
-//
-//        printf("exponent_alt: %i\n", exponent_alt-exponent_bias);
-//    printf("fraction_alt: %f\n", fraction_alt);
-//        int sign_alt = 1;
-//    if (sign_bit_alt == 1) sign_alt = -1;
-//    double altitude_value = sign_alt * (fraction_alt *  pow(2, exponent_alt-exponent_bias));
-//    printf("  calculated altitude: %f \n", altitude_value);
-//
-//
-
-
-
-
-
-
-
-
-
-
-
 
 
 
