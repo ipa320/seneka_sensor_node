@@ -224,6 +224,8 @@ bool Dgps::receiveData(unsigned char * incoming_data, // int array from serial.I
         printf(" %.2x", ringbuffer[i]);
     }
     cout << endl;
+    printf(" buffer_start: %i", ringbuffer_start);
+    printf(" buffer_length: %i", ringbuffer_length);
 
     // find stx, try to get length, and match checksum + etx
     for (int i = 0; i < ringbuffer_length; i++) {
