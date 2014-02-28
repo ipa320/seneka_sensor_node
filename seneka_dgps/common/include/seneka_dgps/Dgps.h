@@ -69,11 +69,8 @@
 using namespace std;
 
 
-
-
-
 // see BD982 user guide, packet type 57h
-// this struct contains all bytes of a 57h
+// this struct contains all bytes of a 57h packet
 struct packet_data{
     // --- header --- p.132: 4 bytes packet header
     char stx;
@@ -126,34 +123,19 @@ public:
 	// Destructor
 	~Dgps();
 
-	/**
-	 * Opens serial port.
-	 * @param pcPort used "COMx" or "/dev/ttyUSB0"
-	 * @param iBaudRate baud rate
-	 */
 	bool open(const char* pcPort, int iBaudRate);
-
         bool receiveData(unsigned char * incoming_data, 
                 int incoming_data_length,
                 packet_data incoming_packet,
-                gps_data &position_record);               // gets data from serial.IO, gives packet data
-        bool extractGPS(packet_data &incoming_packet, gps_data &position_record );        // gets packet data, gives gps data
-
+                gps_data &position_record);             // gets data from serial.IO, gives packet_data
+        bool extractGPS(packet_data &incoming_packet,
+                gps_data &position_record );            // takes packet data, gives gps_data
 	bool getPosition(gps_data &position_record);
-        bool checkConnection();
+        bool checkConnection();                       // sends 0x052, expects to receive 0x06
 
 private:
-	// Constants
-	// Components
+        // serial.IO object
 	SerialIO m_SerialIO;
-	// Functions
-
-	unsigned int getUnsignedWord(unsigned char msb, unsigned char lsb)
-	{
-		return (msb << 8) | lsb;
-	}
-
-	unsigned int createCRC(unsigned char *ptrData, int Size);
 
 };
 #endif //

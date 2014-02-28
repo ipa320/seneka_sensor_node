@@ -99,28 +99,19 @@ int checksum_index(int length_value) {
 }
 int checksum_length = 1;
 
-// call with value from byte 3: "length"
-
+// call with value of byte #3 (length-field)
 int etx_index(int length_value) {
     return 4 + length_value + 1;
 }
 int etx_length = 1;
 
-//-----------------------------------------------
-
 Dgps::Dgps() {
 
 }
 
-
-//-------------------------------------------
-
 Dgps::~Dgps() {
     m_SerialIO.close();
 }
-
-
-// ---------------------------------------------------------------------------
 
 bool Dgps::open(const char* pcPort, int iBaudRate) {
     int bRetSerial;
@@ -128,9 +119,7 @@ bool Dgps::open(const char* pcPort, int iBaudRate) {
     //	if (iBaudRate != 38400)
     //            ROS_WARN("Baudrate is not set to 38400, might be too slow to transmit all data..");
     //	return false;
-
     // update scan id (id=8 for slave scanner, else 7)
-
     // initialize Serial Interface
     m_SerialIO.setBaudRate(iBaudRate);
     m_SerialIO.setDeviceName(pcPort);
@@ -155,60 +144,41 @@ bool Dgps::checkConnection() {
     bool success = false;
     int max_tries = 5;
     int retry_delay = 1000000; // in microSeconds
-
     // test command "05h"       // expects test reply "06h"
     char message[] = {0x05};
     int length = sizeof (message) / sizeof (message[0]);
     unsigned char Buffer[1024] = {0};
     int bytesWritten = m_SerialIO.write(message, length);
-
     // retry few times
     int count = 0;
     while (!success && (count < max_tries)) {
         count += 1;
         usleep(retry_delay);
         int bytesRead = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
-
-        if (bytesRead <= 0) {
-            // error, nothing received --> wait for at least 500ms and try again few times
-        } else {
-            for (int i = 0; i < bytesRead; i++) {
-                printf("%.2x ", Buffer[i]);
-                //cout << std::hex << Buffer[i];
-                //            if (i % 2 == 1) {
-                //                cout << " ";
-                //            } else
-                if (i % 20 == 19) {
-                    cout << "\n";
-                }
-            }
-            cout << std::dec << "\n";
-        }
-
-        if (Buffer[0] == 6) {
+        if (bytesRead > 0 && Buffer[0] == 6) {
             success = true;
             cout << "protocol request successful.\n";
         } else {
             success = false;
             cout << "protocol request failed. retrying...\n";
-
         };
     }
     return success;
 }
 
-int ringbuffer_size = 256;
-unsigned char ringbuffer[256] = {0};
+
+
+
+int ringbuffer_size = 4096*4;                 // important:  - change next line too (array init), when changing buffer size!!
+unsigned char ringbuffer[4096*4] = {0};
 int ringbuffer_start = 0;
 int ringbuffer_length = 0;
-
 bool Dgps::receiveData(unsigned char * incoming_data, // int array from serial.IO
         int incoming_data_length, // count of received bytes
         packet_data incoming_packet,
         gps_data &position_record) { // .. function writes to this data address
     bool success = false;
     packet_data temp_packet; // = new packet_data;
-
     if ((ringbuffer_size - ringbuffer_length) >= incoming_data_length) {
         for (int i = 0; i < incoming_data_length; i++) {
             ringbuffer[(ringbuffer_start + ringbuffer_length + 1) % ringbuffer_size] = (char) incoming_data[i];
@@ -218,14 +188,13 @@ bool Dgps::receiveData(unsigned char * incoming_data, // int array from serial.I
         cout << "Buffer is full! .. cannot insert data.." << endl;
         // received too much data, buffer is full
     }
-
+    printf(" buffer_start: %i\n", ringbuffer_start);
+    printf(" buffer_length: %i\n", ringbuffer_length);
     printf("content of ringbuffer:\n");
     for (int i = 0; i < ringbuffer_size; i++) {
         printf(" %.2x", ringbuffer[i]);
     }
     cout << endl;
-    printf(" buffer_start: %i", ringbuffer_start);
-    printf(" buffer_length: %i", ringbuffer_length);
 
     // find stx, try to get length, and match checksum + etx
     for (int i = 0; i < ringbuffer_length; i++) {
@@ -265,7 +234,6 @@ bool Dgps::receiveData(unsigned char * incoming_data, // int array from serial.I
             checksum = checksum + (temp_packet.record_interpretation_flags % 256);
             for (int i = 0; i < data_bytes_length(temp_packet.length); i++) {
                 checksum = (checksum + temp_packet.data_bytes[i]);
-
             }
             checksum = checksum % 256;
 
@@ -285,9 +253,10 @@ bool Dgps::receiveData(unsigned char * incoming_data, // int array from serial.I
             if (ringbuffer_old_start < ringbuffer_start)
                 ringbuffer_length = ringbuffer_length - (ringbuffer_start - ringbuffer_old_start);
             if (ringbuffer_old_start >= ringbuffer_start)
-                ringbuffer_length = ringbuffer_length - (ringbuffer_start + ringbuffer_old_start);
+                ringbuffer_length = ringbuffer_length - (ringbuffer_start + (ringbuffer_size - ringbuffer_old_start));
             if (!error_occured) {
                 incoming_packet = temp_packet;
+
                 // if data is okay, update ringbuffer pointers and write new packet to parameter
                 success = extractGPS(incoming_packet, position_record);
             }
@@ -304,13 +273,11 @@ bool Dgps::receiveData(unsigned char * incoming_data, // int array from serial.I
                     printf("..stopped interpreting remaining buffer to avoid infinite-loop\n");
                 }
             } else {
-
                 printf(" extracted packet successfully \n\n");
             }
             return success;
         }
     }
-
     return success;
 }
 
@@ -332,7 +299,14 @@ bool * invertBitOrder_Double(bool* bits, bool invertBitsPerByte = true, bool inv
 
 
 
+// bias is 1023 as default for standard numbers
+// ...(IEEE example -25.25 reads ok with invertedBitsPerByte and bias 1023)
 //
+// example data for -25.25:                              ( 8 bytes, last 5 bytes are 0x00, so written at initialization of array..)
+//    unsigned char test_minus_25_25[8] = {0x00};
+//    test_minus_25_25[0] = 0xc0;
+//    test_minus_25_25[1] = 0x39;
+//    test_minus_25_25[2] = 0x40;
 int exponent_bias = 1023;
 double getDOUBLE(unsigned char* bytes) {
     bool bits[64] = {false};
@@ -343,9 +317,9 @@ double getDOUBLE(unsigned char* bytes) {
             bits[((k * 8) + i)] = 0 != (bytes[k] & (1 << i));
         }
     }
-    bool * bits_reversed;
-    bits_reversed = invertBitOrder_Double(bits);
-    for (int i = 0; i < 64; i++) bits[i] = bits_reversed[i];
+    bool * resulting_bits;
+    resulting_bits = invertBitOrder_Double(bits);
+    for (int i = 0; i < 64; i++) bits[i] = resulting_bits[i];
 
     cout << "bits:\n";
     for (int i = 0; i < 64; i++) {
@@ -353,26 +327,35 @@ double getDOUBLE(unsigned char* bytes) {
     }
     cout << "\n";
 
-    int sign_bit_lat = bits[0];
-    double exponent_lat = 0;
-    double fraction_lat = 0;
+    int sign_bit = bits[0];
+    double exponent = 0;
+    double fraction = 0;
     for (int i = 0; i < 11; i++) {
-        exponent_lat = exponent_lat + bits[i + 1] * pow(2, 10 - i);
+        exponent = exponent + bits[i + 1] * pow(2, 10 - i);
     }
     for (int i = 0; i < 52; i++) {
-        fraction_lat = fraction_lat + bits[i + 12] * pow(0.5, i + 1);
+        fraction = fraction + bits[i + 12] * pow(0.5, i + 1);
     }
-    fraction_lat += 1;
+    fraction += 1;
     //printf("exponent_lat: %f\n", exponent_lat-exponent_bias);
     //printf("fraction_lat: %f\n", fraction_lat);
 
     int sign_lat = 1;
-    if (sign_bit_lat == 1) sign_lat = -1;
+    if (sign_bit == 1) sign_lat = -1;
 
-    double latitude_value = sign_lat * (fraction_lat * pow(2, exponent_lat - exponent_bias));
+    double double_value = sign_lat * (fraction * pow(2, exponent - exponent_bias));
     //printf("  calculated value: %f \n", latitude_value);
-    return latitude_value;
+    return double_value;
 }
+
+
+
+
+
+
+
+
+
 
 // index is relative to begin of data_part; so it is byte number: index+8 in packet-bytes
 int latitude_value_index = 0;
@@ -408,6 +391,8 @@ int channel_number_length = 1;
 int *prn_index;
 int prn_length = 1;
 
+
+double semi_circle_factor = 180.0;
 bool Dgps::extractGPS(packet_data &incoming_packet, gps_data &position_record) {
 
     if (incoming_packet.packet_type != 0x057) {
@@ -442,30 +427,14 @@ bool Dgps::extractGPS(packet_data &incoming_packet, gps_data &position_record) {
 
     // get all char fields ( 1 byte )
 
-    unsigned char test_minus_25_25[8] = {0x00};
-    test_minus_25_25[0] = 0xc0;
-    test_minus_25_25[1] = 0x39;
-    test_minus_25_25[2] = 0x40;
-
-
-
-
-    double semi_circle_factor = (pow(2, 31));
-    printf("semi-circle factor: %f\n", semi_circle_factor);
-    semi_circle_factor = 180.0;
-    printf("semi-circle factor: %f\n", semi_circle_factor);
-
     double latitude_value = getDOUBLE(latitude_bytes) * semi_circle_factor;
-    printf("calculated latitude semi-circles: %f\n", latitude_value);
     printf("calculated latitude: %f\n\n\n", latitude_value);
 
     double longitude_value = getDOUBLE(longitude_bytes) * semi_circle_factor;
-    printf("calculated longitude semi-circles: %f\n", longitude_value);
     printf("calculated longitude: %f\n\n\n", longitude_value);
 
     double altitude_value = getDOUBLE(altitude_bytes);
     printf("calculated altitude: %f\n\n\n", altitude_value);
-
 
     double clock_offset = getDOUBLE(clock_offset_bytes);
     printf("clock_offset: %f\n\n\n", clock_offset);
@@ -476,15 +445,13 @@ bool Dgps::extractGPS(packet_data &incoming_packet, gps_data &position_record) {
 
 
 
-
-    printf("calculated -25.25: %f\n\n\n", getDOUBLE(test_minus_25_25));
-
-
     position_record.latitude_value = latitude_value;
     position_record.longitude_value = longitude_value;
     position_record.altitude_value = altitude_value;
 
 
+    // implement value checking if needed:  e.g. value of longitude&latitude between 0 and 180; ...
+    // ... return false if any check fails..
     return true;
 }
 
@@ -495,9 +462,8 @@ bool Dgps::getPosition(gps_data &position_record) {
     int buffer_index = 0;
     int bytesread, byteswrite;
 
-
     // generate request message
-
+    //
     // see page 73 in BD982 user guide for packet specification
     //  start tx,
     //      status,
@@ -516,35 +482,11 @@ bool Dgps::getPosition(gps_data &position_record) {
     unsigned char etx_ = 0x03;
     unsigned char checksum_ = status_ + packet_type_ + data_type_ + length_;
     char message[] = {stx_, status_, packet_type_, length_, data_type_, 0x00, 0x00, checksum_, etx_}; // 56h command packet       // expects 57h reply packet (basic coding)
-
     int length = sizeof (message) / sizeof (message[0]);
 
-    //SerialIO dgps;
-    //open = dgps.open();
     byteswrite = m_SerialIO.write(message, length);
     printf("Total number of bytes sent: %i\n", byteswrite);
-    //sleep(1);
     bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
-
-    //bytesread = 118;  //m_SerialIO.readNonBlocking((char*) Buffer, 1020);
-    //    string test_packet = " |02|  |20|  |57|  |0a|  |0c|  |11|  |00|  |00|  |00|  |4d|  |01|  |e1|  |01|  |e1|  |af|  |03|  |02|  |20|  |57|  |60|  |01|  |11|  |00|  |00|  |3f|  |d1|  |54|  |8a|  |b6|  |cf|  |c6|  |8d|  |3f|  |a9|  |e0|  |bd|  |3f|  |29|  |c8|  |f7|  |40|  |80|  |ae|  |2a|  |c9|  |7b|  |b7|  |11|  |c0|  |fd|  |d3|  |79|  |61|  |fb|  |23|  |99|  |c0|  |92|  |ca|  |3b|  |46|  |c7|  |05|  |15|  |3f|  |ff|  |9f|  |23|  |e0|  |00|  |00|  |00|  |be|  |44|  |16|  |1f|  |0d|  |84|  |d5|  |33|  |be|  |2c|  |8b|  |3b|  |bb|  |46|  |eb|  |85|  |3f|  |b5|  |ec|  |f0|  |c0|  |00|  |00|  |00|  |08|  |06|  |f0|  |d8|  |d4|  |07|  |0f|  |0d|  |13|  |01|  |0c|  |07|  |04|  |07|  |0d|  |08|  |09|  |0a|  |1a|  |1c|  |5c|  |03|";
-    //           test_packet = " |02|  |20|  |57|  |0a|  |0c|  |11|  |00|  |00|  |00|  |4d|  |01|  |e1|  |01|  |e1|  |af|  |03|  |02|  |20|  |57|  |60|  |01|  |11|  |00|  |00|  |3f|  |d1|  |54|  |8a|  |b6|  |cf|  |c6|  |8d|  |3f|  |a9|  |e0|  |bd|  |3f|  |29|  |c8|  |f7|  |40|  |80|  |ae|  |2a|  |c9|  |7b|  |b7|  |11|  |c0|  |fd|  |d3|  |79|  |61|  |fb|  |23|  |99|  |c0|  |92|  |ca|  |3b|  |46|  |c7|  |05|  |15|  |3f|  |ff|  |9f|  |23|  |e0|  |00|  |00|  |00|  |be|  |44|  |16|  |1f|  |0d|  |84|  |d5|  |33|  |be|  |2c|  |8b|  |3b|  |bb|  |46|  |eb|  |85|  |3f|  |b5|  |ec|  |f0|  |c0|  |00|  |00|  |00|  |08|  |06|  |f0|  |d8|  |d4|  |07|  |0f|  |0d|  |13|  |01|  |0c|  |07|  |04|  |07|  |0d|  |08|  |09|  |0a|  |1a|  |1c|  |5c|  |03|";
-    //
-    //    for (int i = 0; i < bytesread; i++) {
-    //        char hex_byte1 = test_packet[i * 6 + 2];
-    //        char hex_byte2 = test_packet[i * 6 + 3];
-    //
-    //        if (hex_byte1 > 96) hex_byte1 -= 87; // 96-9
-    //        else hex_byte1 -= 48;
-    //        if (hex_byte2 > 96) hex_byte2 -= 87; // 96-9
-    //        else hex_byte2 -= 48;
-    //
-    //        Buffer[i] = hex_byte1 * 16 + hex_byte2;
-    //        printf("%x%x-%i  ", hex_byte1, hex_byte2, Buffer[i]);
-    //
-    //    }
-    //    cout << "\n";
-
     printf("\nTotal number of bytes received: %i\n", bytesread);
     cout << "-----------\n";
     for (int i = 0; i < bytesread; i++) {
@@ -555,12 +497,9 @@ bool Dgps::getPosition(gps_data &position_record) {
     cout << "-----------\n";
 
     packet_data incoming_packet;
-    //Dgps temp_gps_dev = Dgps();
 
     success = receiveData(Buffer, bytesread, incoming_packet, position_record);
 
-    // need to check if values were ok, right now just hardcoded true..
-    //    success = true;
     return success;
 }
 
