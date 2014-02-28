@@ -133,10 +133,13 @@ public:
 	 */
 	bool open(const char* pcPort, int iBaudRate);
 
-        bool receiveData(unsigned char * incoming_data, int incoming_data_length, packet_data incoming_packet);               // gets data from serial.IO, gives packet data
-        bool extractGPS(packet_data incoming_packet, gps_data incoming_gps );        // gets packet data, gives gps data
+        bool receiveData(unsigned char * incoming_data, 
+                int incoming_data_length,
+                packet_data incoming_packet,
+                gps_data &position_record);               // gets data from serial.IO, gives packet data
+        bool extractGPS(packet_data &incoming_packet, gps_data &position_record );        // gets packet data, gives gps data
 
-	bool getPosition(double* lat);
+	bool getPosition(gps_data &position_record);
         bool checkConnection();
 
 private:
