@@ -19,7 +19,22 @@
  * Supervised by: Christophe Maufroy
  *
  * Date of creation: Jan 2013
- * ToDo:
+ * modified 02/2014: David Bertram, email: davidbertram@gmx.de
+ *
+ * TODO:
+ * - generation and publishing of error messages
+ * - extract all fields of a position record message (especially dynamic length of sat-channel_numbers and prns..)
+ * - publish all gps values to ros topic (maybe need a new message if navsatFix cannot take all provided values..)
+ *
+ * - monitor frequency/quality/.. of incoming data packets.. --> inform ROS about bad settings (publishing rate <-> receiving rate)
+ *
+ * - rewrite function structure of interpretData and connected functions.. (still in dev state.. double check for memory leaks etc..!!)
+ *
+ *
+ * - extracting multi page messages from buffer..  (not needed for position records)
+ * - clean up SerialIO files
+ * - add more parameter handling (commandline, ..); document parameters and configuration
+ * - testing !
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -89,7 +104,6 @@ public:
 
     // Constructor
     DgpsNode() {
-        // create a handle for this node, initialize node
         nh = ros::NodeHandle("~");
         if (!nh.hasParam("port"))ROS_WARN("Used default parameter for port (%s)", serial_port.c_str());
         nh.param("port", port, std::string(serial_port));
@@ -151,7 +165,6 @@ int main(int argc, char** argv) {
         }
         sleep(1); // wait for Dgps to get ready if successfull, or wait before retrying
     }
-    //	ROS_INFO("...DGPS opened successfully on port %s",nodeClass.port.c_str());
 
     // main loop
     ros::Rate loop_rate(publishRate); // Hz
@@ -195,6 +208,7 @@ int main(int argc, char** argv) {
 // ##########################################################################
 
 
+// context of this function needs to be created!!
 //bool getFakePosition(double* latt) {
 //    // set to true after extracting position values. method return value.
 //    bool success = false;
@@ -277,7 +291,7 @@ int main(int argc, char** argv) {
 //
 //    packet_data incoming_packet;
 //    Dgps temp_gps_dev = Dgps();
-//    temp_gps_dev.receiveData(Buffer, bytesread, incoming_packet);
+//    temp_gps_dev.interpretData(Buffer, bytesread, incoming_packet);
 //
 //
 //    // need to check if values were ok, right now just hardcoded true..

@@ -124,7 +124,7 @@ public:
 	~Dgps();
 
 	bool open(const char* pcPort, int iBaudRate);
-        bool receiveData(unsigned char * incoming_data, 
+        bool interpretData(unsigned char * incoming_data,
                 int incoming_data_length,
                 packet_data incoming_packet,
                 gps_data &position_record);             // gets data from serial.IO, gives packet_data
