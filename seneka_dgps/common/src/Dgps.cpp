@@ -195,31 +195,31 @@ bool Dgps::interpretData(unsigned char * incoming_data, // int array from serial
     cout << endl;
 
     // find stx, try to get length, and match checksum + etx
-    for (int i = 0; i < ringbuffer_length; i++) {
+    for (int y = 0; y < ringbuffer_length; y++) {
         // find stx: (byte 0 == 0x02)
-        if (ringbuffer[(ringbuffer_start + i + stx_index) % ringbuffer_size] != 0x02) {
-            printf("first byte was not stx: %i\n", ringbuffer[(ringbuffer_start + i + stx_index) % ringbuffer_size]);
+        if (ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size] != 0x02) {
+            printf("first byte was not stx: %i\n", ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size]);
             continue;
         } else {
             //            printf("found stx @ byte: %i\n", i);
             // --- header ---
-            temp_packet.stx = ringbuffer[(ringbuffer_start + i + stx_index) % ringbuffer_size] % 256;
-            temp_packet.status = ringbuffer[(ringbuffer_start + i + status_index) % ringbuffer_size] % 256;
-            temp_packet.packet_type = ringbuffer[(ringbuffer_start + i + packet_type_index) % ringbuffer_size] % 256;
-            temp_packet.length = ringbuffer[(ringbuffer_start + i + length_index) % ringbuffer_size] % 256;
+            temp_packet.stx = ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size] % 256;
+            temp_packet.status = ringbuffer[(ringbuffer_start + y + status_index) % ringbuffer_size] % 256;
+            temp_packet.packet_type = ringbuffer[(ringbuffer_start + y + packet_type_index) % ringbuffer_size] % 256;
+            temp_packet.length = ringbuffer[(ringbuffer_start + y + length_index) % ringbuffer_size] % 256;
             // --- data_part ---
-            temp_packet.record_type = ringbuffer[(ringbuffer_start + i + record_type_index) % ringbuffer_size] % 256;
-            temp_packet.page_counter = ringbuffer[(ringbuffer_start + i + page_counter_index) % ringbuffer_size] % 256;
-            temp_packet.reply_number = ringbuffer[(ringbuffer_start + i + reply_number_index) % ringbuffer_size] % 256;
-            temp_packet.record_interpretation_flags = ringbuffer[(ringbuffer_start + i + record_interpretation_flags_index) % ringbuffer_size] % 256;
+            temp_packet.record_type = ringbuffer[(ringbuffer_start + y + record_type_index) % ringbuffer_size] % 256;
+            temp_packet.page_counter = ringbuffer[(ringbuffer_start + y + page_counter_index) % ringbuffer_size] % 256;
+            temp_packet.reply_number = ringbuffer[(ringbuffer_start + y + reply_number_index) % ringbuffer_size] % 256;
+            temp_packet.record_interpretation_flags = ringbuffer[(ringbuffer_start + y + record_interpretation_flags_index) % ringbuffer_size] % 256;
             // --- --- data_bytes --- ---
             temp_packet.data_bytes = new char[temp_packet.length];
             for (int j = 0; j < data_bytes_length(temp_packet.length); j++) {
-                temp_packet.data_bytes[j] = ringbuffer[(ringbuffer_start + i + data_bytes_index + j) % ringbuffer_size] % 256;
+                temp_packet.data_bytes[j] = ringbuffer[(ringbuffer_start + y + data_bytes_index + j) % ringbuffer_size] % 256;
             }
             // --- footer ---
-            temp_packet.checksum = ringbuffer[(ringbuffer_start + i + checksum_index(temp_packet.length)) % ringbuffer_size] % 256;
-            temp_packet.etx = ringbuffer[(ringbuffer_start + i + etx_index(temp_packet.length)) % ringbuffer_size] % 256;
+            temp_packet.checksum = ringbuffer[(ringbuffer_start + y + checksum_index(temp_packet.length)) % ringbuffer_size] % 256;
+            temp_packet.etx = ringbuffer[(ringbuffer_start + y + etx_index(temp_packet.length)) % ringbuffer_size] % 256;
 
             // verify checksum + etx
             char checksum = 0x00;
@@ -231,8 +231,8 @@ bool Dgps::interpretData(unsigned char * incoming_data, // int array from serial
             checksum = checksum + (temp_packet.reply_number % 256);
             checksum = checksum + (temp_packet.record_interpretation_flags % 256);
             // calculate checksum over data bytes
-            for (int i = 0; i < data_bytes_length(temp_packet.length); i++) {
-                checksum = (checksum + temp_packet.data_bytes[i]);
+            for (int z = 0; z < data_bytes_length(temp_packet.length); z++) {
+                checksum = (checksum + temp_packet.data_bytes[z]);
             }
             // wrap checksum into 1 byte
             checksum = checksum % 256;
@@ -249,7 +249,7 @@ bool Dgps::interpretData(unsigned char * incoming_data, // int array from serial
 
             // calculate new ringbuffer pointers
             int ringbuffer_old_start = ringbuffer_start;
-            ringbuffer_start = (ringbuffer_start + i + etx_index(temp_packet.length) + 1) % ringbuffer_size;
+            ringbuffer_start = (ringbuffer_start + y + etx_index(temp_packet.length) + 1) % ringbuffer_size;
             if (ringbuffer_old_start < ringbuffer_start)
                 ringbuffer_length = ringbuffer_length - (ringbuffer_start - ringbuffer_old_start);
             if (ringbuffer_old_start >= ringbuffer_start)
