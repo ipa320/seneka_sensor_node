@@ -285,14 +285,14 @@ bool Dgps::interpretData(unsigned char * incoming_data, // int array from serial
 
 
 // function to reorder incoming bits.
-bool * invertBitOrder_Double(bool* bits, bool invertBitsPerByte = true, bool invertByteOrder = false) {
+bool * invertBitOrder_Double(bool* bits, bool invertBitsPerByte = false, bool invertByteOrder = true) {
     bool * reversed = new bool[64];
     for (int k = 0; k < 8; k++) {
         for (int i = 0; i < 8; i++) {
             if (!invertByteOrder && invertBitsPerByte) reversed[k * 8 + i] = bits[(k) * 8 + (7 - i)];
             else if (!invertByteOrder && !invertBitsPerByte) reversed[k * 8 + i] = bits[(k) * 8 + (i) ];
             else if (invertByteOrder && invertBitsPerByte) reversed[k * 8 + i] = bits[(7 - k) * 8 + (7 - i)];
-            else if (invertByteOrder && !invertBitsPerByte) reversed[k * 8 + i] = bits[(k) * 8 + (7 - i)];
+            else if (invertByteOrder && !invertBitsPerByte) reversed[k * 8 + i] = bits[(7 - k) * 8 + (i)];
         }
     }
     return reversed;
