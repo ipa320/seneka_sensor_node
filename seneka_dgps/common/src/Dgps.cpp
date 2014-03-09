@@ -18,7 +18,10 @@
  * Supervised by: Christophe Maufroy
  *
  * Date of creation: Jan 2013
+ * modified 03/2014: David Bertram, email: davidbertram@gmx.de
+ *
  * ToDo:
+ * - see seneka_dgps.cpp for todo list
  *
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++

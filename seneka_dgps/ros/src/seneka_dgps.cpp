@@ -19,7 +19,7 @@
  * Supervised by: Christophe Maufroy
  *
  * Date of creation: Jan 2013
- * modified 02/2014: David Bertram, email: davidbertram@gmx.de
+ * modified 03/2014: David Bertram, email: davidbertram@gmx.de
  *
  * TODO:
  * - generation and publishing of error messages
