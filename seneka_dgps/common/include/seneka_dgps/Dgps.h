@@ -18,7 +18,10 @@
  * Supervised by: ciby mathew, email:ciby.mathew@ipa.fhg.de
  *
  * Date of creation: Jan 2009
+ * modified 03/2014: David Bertram, email: davidbertram@gmx.de
+ *
  * ToDo:
+ * - see seneka_dgps.cpp for todo list
  *
  * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  *
@@ -69,6 +72,50 @@
 using namespace std;
 
 
+// see BD982 user guide, packet type 57h
+// this struct contains all bytes of a 57h packet
+struct packet_data{
+    // --- header --- p.132: 4 bytes packet header
+    char stx;
+    char status;
+    char packet_type;
+    char length;
+    // --- data_part --- including 4 bytes of paging and interpretation data
+    char record_type;
+    char page_counter;                                                          // see user guide for bit interpretation!
+    char reply_number;
+    char record_interpretation_flags;
+    char * data_bytes;                                                          // maximum of 244 bytes for data; concatenate pages if needed!
+    // --- footer ---
+    char checksum;                                                              // calculated over: all bytes between stx and checksum
+    char etx;
+};
+
+// see BD982 user guide, packet type 57h: Position Record; p. 139
+// this struct contains all the interpreted values of the data fields of a Position Record packet
+//
+// interpretation of data bytes follows:
+// ... latitude; 8 char bytes --> Motorola Byte-Order -> IEEE Double Precision Floating Point Format
+// ... ...
+struct gps_data{
+    double latitude_value;                                                      // in semi-circles
+    double longitude_value;                                                     // in semi-circles
+    double altitude_value;                                                      // in meters
+    double clock_offset;                                                        // in meters
+    double frequency_offset;                                                    // in Hz
+    double pdop;
+    double latitude_rate;                                                       // in radians per second
+    double longitude_rate;                                                      // in radians per second
+    double altitude_rate;                                                       // in meters  per second
+    long gps_msec_of_week;                                                      // in msec
+    char position_flags;                                                        // see page 140
+    char number_of_SVs;                                                         // number of used satellites
+    char * channel_number;                                                      // 1 char for each satellite
+    char * prn;                                                                 // 1 char for each satellite
+}; 
+
+
+
 class Dgps
 {
 public:
@@ -79,26 +126,19 @@ public:
 	// Destructor
 	~Dgps();
 
-	/**
-	 * Opens serial port.
-	 * @param pcPort used "COMx" or "/dev/ttyUSB0"
-	 * @param iBaudRate baud rate
-	 */
 	bool open(const char* pcPort, int iBaudRate);
-	void latlong(double* lat);
+        bool interpretData(unsigned char * incoming_data,
+                int incoming_data_length,
+                packet_data incoming_packet,
+                gps_data &position_record);             // gets data from serial.IO, gives packet_data
+        bool extractGPS(packet_data &incoming_packet,
+                gps_data &position_record );            // takes packet data, gives gps_data
+	bool getPosition(gps_data &position_record);
+        bool checkConnection();                       // sends 0x052, expects to receive 0x06
 
 private:
-	// Constants
-	// Components
+        // serial.IO object
 	SerialIO m_SerialIO;
-	// Functions
-
-	unsigned int getUnsignedWord(unsigned char msb, unsigned char lsb)
-	{
-		return (msb << 8) | lsb;
-	}
-
-	unsigned int createCRC(unsigned char *ptrData, int Size);
 
 };
 #endif //

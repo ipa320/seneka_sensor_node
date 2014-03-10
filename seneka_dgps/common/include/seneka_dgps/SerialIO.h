@@ -106,6 +106,7 @@ public:
 	 * @param Name 'COM1', 'COM2', ...
 	 */
 	void binary (int dec, char* binary);
+        void binary_old (int dec, char* binary);
 	/**
 	 * decimal to binary conversion, the value is stored in as ASCII
 	 */
