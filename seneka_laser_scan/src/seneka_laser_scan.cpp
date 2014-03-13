@@ -1,22 +1,33 @@
 /****************************************************************
 *
-* Copyright (c) 2010
+* Copyright (c) 2014
 *
 * Fraunhofer Institute for Manufacturing Engineering and Automation (IPA)
 *
 * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 *
-* Project name: SENEKA
-* ROS package name: seneka_laser_scan
-* Description: The seneka_laser_scan package implements a ROS service node which triggers 
-* a Hokuyo laser scanner to take a 360 degrees 3D scan of its environment.
+* Project name: SeNeKa
+* ROS metapackage: seneka_sensor_node
+* ROS package: seneka_laser_scan
+* GitHub repository: https://github.com/ipa320/seneka_sensor_node
+* 
+* Package description: The seneka_laser_scan package is part of the
+* seneka_sensor_node metapackage, developed for the SeNeKa project
+* at Fraunhofer IPA. It implements a ROS service node which triggers
+* a (Hokuyo) laser scanner, rotated by an electric actuator, to take
+* a 360 degrees 3D scan of its environment. This package might work
+* with other hardware and can be used for other purposes, however the
+* development has been specifically for this project and the deployed
+* sensors.
 *
 * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 *
-* Supervised by: Matthias Gruhler, email: Matthias.Gruhler@ipa.fraunhofer.de
-* Author: Thorsten Andreas Kannacher, email: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
+* Supervisor: Matthias Gruhler, E-Mail: Matthias.Gruhler@ipa.fraunhofer.de
+* Author: Thorsten Andreas Kannacher, E-Mail:Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 *
-* Date of creation: Jan 2014
+* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*
+* Date of creation: January 2014
 *
 * Modified by: 
 * Date of modification: 
@@ -26,12 +37,12 @@
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
 *
-* * Redistributions of source code must retain the above copyright
+* Redistributions of source code must retain the above copyright
 * notice, this list of conditions and the following disclaimer.
-* * Redistributions in binary form must reproduce the above copyright
+* Redistributions in binary form must reproduce the above copyright
 * notice, this list of conditions and the following disclaimer in the
 * documentation and/or other materials provided with the distribution.
-* * Neither the name of the Fraunhofer Institute for Manufacturing
+* Neither the name of the Fraunhofer Institute for Manufacturing
 * Engineering and Automation (IPA) nor the names of its
 * contributors may be used to endorse or promote products derived from
 * this software without specific prior written permission.
@@ -52,16 +63,18 @@
 *
 ****************************************************************/
 
-/* The following code implements a ROS service node which triggers a 
- * Hokuyo laser scanner to take a 360 degrees 3D scan of its environment.
- */
+// standart includes
 
+// ros includes
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
 #include <laser_assembler/AssembleScans.h>
 //#include <MOTOR_DRIVER_PACKAGE/MOTOR_DRIVER_SERVICE.h>
 
-bool scanEnvironment(std_srvs::Empty::Request& cRequest, std_srvs::Empty::Response& cResponse);
+// external includes
+
+// function prototypes
+bool scanEnvironment(std_srvs::Empty::Request& cRequest, std_srvs::Empty::Response& cResponse);	// callback function
 bool driveRequest(float fTarget_position);
 bool getCloud(ros::Time cTime_flag_begin, ros::Time cTime_flag_end);
 
@@ -74,8 +87,10 @@ int main(int argc, char **argv)
 
   ros::ServiceServer service = nh_.advertiseService("scan_environment", scanEnvironment);
 
-  //ros::service::waitForService("MOTOR_DRIVER_SERVICE");
-  ros::service::waitForService("assemble_scans");
+  // need to wait for all dependend services to be ready
+  // node continues as soon as all dependend services below are ready
+  // ros::service::waitForService("MOTOR_DRIVER_SERVICE");	// necessary for rotation
+  ros::service::waitForService("assemble_scans");		// necessary for building and merging point clouds
   ROS_INFO("Ready to scan environment.\n");
 
   ros::spin();
@@ -92,26 +107,26 @@ bool scanEnvironment(std_srvs::Empty::Request& cRequest, std_srvs::Empty::Respon
 
   ros::Time cTime_flag_begin, cTime_flag_end;
 
-  //Assuming motor driver does not return true before reaching target position
+  // assuming motor driver does not return true before reaching target position
   if (driveRequest(fStart_position))
   {
-    ROS_INFO("Reached starting position.\n");
     ros::Time cTime_flag_begin = ros::Time::now();
+    ROS_INFO("Reached starting position.\n");
   }
-  //Assuming motor driver returns false in case of an error or a timeout
+  // assuming motor driver returns false in case of an error or a timeout
   else
   {
     ROS_ERROR("Reaching starting position failed.\n");
     return false;
   }
 
-  //Assuming motor driver does not return true before reaching target position
+  // assuming motor driver does not return true before reaching target position
   if (driveRequest(fEnd_position))
   {
-    ROS_INFO("Reached end position.\n");
     ros::Time cTime_flag_end = ros::Time::now();
+    ROS_INFO("Reached end position.\n");
   }
-  //Assuming motor driver returns false in case of an error or a timeout
+  // assuming motor driver returns false in case of an error or a timeout
   else
   {
     ROS_ERROR("Reaching end position failed.\n");
@@ -165,12 +180,10 @@ bool getCloud(ros::Time cStarting_time, ros::Time cEnd_time)
     return false;
 }
 
-
 /* This function will only be necessary if motor driver returns true before reaching target position
  *
 bool getPosition(void)
 {
-  ros::NodeHandle nh4;
   ros::ServiceClient client = nh4.serviceClient<MOTOR_DRIVER_PACKAGE::MOTOR_DRIVER_SERVICE>("MOTOR_DRIVER_SERVICE");
 
   MOTOR_DRIVER_PACKAGE::MOTOR_DRIVER_SERVICE srv;
