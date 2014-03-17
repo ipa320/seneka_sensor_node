@@ -34,6 +34,8 @@ add_service_files(
     titleText.srv
     videoMode.srv
     zoom.srv
+    streaming.srv
+    debugScreen.srv
 )
 
 ## Generate added messages and services with any dependencies listed here
