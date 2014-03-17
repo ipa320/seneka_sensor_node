@@ -83,123 +83,141 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh)
     lDeviceParams = lDevice.GetGenParameters();
 
     //publish images
-    publish_rgb_image =             it.advertise(       "SonyGigCam_rgb_image", 10);
+    publish_rgb_image               =   it.advertise(       "SonyGigCam_rgb_image", 10);
 
     // advertise zooming service
-    zoom_service_=                  nh.advertiseService("set_zoomin",               &Sony_Camera_Node::zoom_in_outService, this);
+    zoom_service_                   =   nh.advertiseService("set_zoomin",               &Sony_Camera_Node::zoom_in_outService, this);
 
     // advertise autofocus service
-    focus_service_ =                nh.advertiseService("set_autofocus",            &Sony_Camera_Node::focusControlService, this);
+    focus_service_                  =   nh.advertiseService("set_autofocus",            &Sony_Camera_Node::focusControlService, this);
 
     // advertise videomodenext service
-    videoModeNext_service_=         nh.advertiseService("set_videomodenext",        &Sony_Camera_Node::videoModeNextService, this);
+    videoModeNext_service_          =   nh.advertiseService("set_videomodenext",        &Sony_Camera_Node::videoModeNextService, this);
 
     // advertise focus position service
-    focusPosition_servie_=          nh.advertiseService("set_focusPosition",        &Sony_Camera_Node::focusPositionService, this);
+    focusPosition_servie_           =   nh.advertiseService("set_focusPosition",        &Sony_Camera_Node::focusPositionService, this);
 
     // advertise focus infraredCutFilterAuto service
-    focusNearLimit_service_=        nh.advertiseService("set_focusNearLimit",       &Sony_Camera_Node::focusNearLimitService, this);
+    focusNearLimit_service_         =   nh.advertiseService("set_focusNearLimit",       &Sony_Camera_Node::focusNearLimitService, this);
 
     // advertise focus focusNearLimit service
-    infraredCutFilterAuto_service = nh.advertiseService("set_infraredCutFilterAuto",&Sony_Camera_Node::infraredCutFilterAutoService, this);
+    infraredCutFilterAuto_service   =   nh.advertiseService("set_infraredCutFilterAuto",&Sony_Camera_Node::infraredCutFilterAutoService, this);
 
     // advertise focus infraredCutFilter service
-    infraredCutFilter_service =     nh.advertiseService("set_infraredCutFilter",    &Sony_Camera_Node::infraredCutFilterService, this);
+    infraredCutFilter_service       =   nh.advertiseService("set_infraredCutFilter",    &Sony_Camera_Node::infraredCutFilterService, this);
 
     // advertise pictureEffect service
-    pictureEffect_service =         nh.advertiseService("set_pictureEffect",        &Sony_Camera_Node::pictureEffectService, this);
+    pictureEffect_service           =   nh.advertiseService("set_pictureEffect",        &Sony_Camera_Node::pictureEffectService, this);
 
     // advertise noiseReduction service
-    noiseReduction_service =        nh.advertiseService("set_noiseReduction",       &Sony_Camera_Node::noiseReductionService, this);
+    noiseReduction_service          =   nh.advertiseService("set_noiseReduction",       &Sony_Camera_Node::noiseReductionService, this);
 
     // advertise backLightCompensation service
-    backLightCompensation_service = nh.advertiseService("set_backLightCompensation",&Sony_Camera_Node::backLightCompensationService, this);
+    backLightCompensation_service   =   nh.advertiseService("set_backLightCompensation",&Sony_Camera_Node::backLightCompensationService, this);
 
     // advertise  statusDisplay service
-    statusDisplay_service =         nh.advertiseService("set_statusDisplay",        &Sony_Camera_Node::statusDisplayService, this);
+    statusDisplay_service           =   nh.advertiseService("set_statusDisplay",        &Sony_Camera_Node::statusDisplayService, this);
 
     // advertise  titleDisplay service
-    titleDisplay_service =          nh.advertiseService("set_titleDisplay",         &Sony_Camera_Node::titleDisplayService, this);
+    titleDisplay_service            =   nh.advertiseService("set_titleDisplay",         &Sony_Camera_Node::titleDisplayService, this);
 
     // advertise  titleText service
-    titleText_service =             nh.advertiseService("set_titleText",            &Sony_Camera_Node::titleTextService, this);
+    titleText_service               =   nh.advertiseService("set_titleText",            &Sony_Camera_Node::titleTextService, this);
+
+    // advertise streaming service
+    streaming_service               =   nh.advertiseService("set_streaming",            &Sony_Camera_Node::streamingService, this);
+
+    // advertise debug_screen service
+    debugScreen_service             =   nh.advertiseService("set_debugScreen",          &Sony_Camera_Node::debugScreenService, this);
 
 
 
     // read parameter: camera_ip_address
     if(!pnh_.hasParam("camera_ip_address"))
-        ROS_WARN("Using default value for for initial ip_address parameter [\"192.168.0.1\"].");
+        ROS_WARN("Using default value for initial ip_address parameter [\"192.168.0.1\"].");
     pnh_.param("camera_ip_address", camera_ip_address_param, std::string("192.168.0.1"));
 
     // read parameter: zoom_ratio_optical
     if(!pnh_.hasParam("zoom_ratio_optical"))
-        ROS_WARN("Using default value for for initial zoom_ratio_optical parameter [1].");
+        ROS_WARN("Using default value for initial zoom_ratio_optical parameter [1].");
     pnh_.param("zoom_ratio_optical", zoom_ratio_optical_param, 1);
 
     // read parameter: zoom_ratio_digital
     if(!pnh_.hasParam("zoom_ratio_digital"))
-        ROS_WARN("Using default value for for initial zoom_ratio_digital parameter [1].");
+        ROS_WARN("Using default value for initial zoom_ratio_digital parameter [1].");
     pnh_.param("zoom_ratio_digital", zoom_ratio_digital_param, 1);
 
     // read parameter: autoFocus
     if(!pnh_.hasParam("autoFocus"))
-        ROS_WARN("Using default value for for initial autoFocus parameter [3].");
+        ROS_WARN("Using default value for initial autoFocus parameter [3].");
     pnh_.param("autoFocus", autoFocus_param, 3);
 
     // read parameter: videoModeNext
     if(!pnh_.hasParam("videoModeNext"))
-        ROS_WARN("Using default value for for initial videoModeNext parameter [11].");
+        ROS_WARN("Using default value for initial videoModeNext parameter [11].");
     pnh_.param("videoModeNext", videoModeNext_param, 11);
 
     // read parameter: focusPosition
     if(!pnh_.hasParam("focusPosition"))
-        ROS_WARN("Using default value for for initial focusPosition parameter [53248].");
+        ROS_WARN("Using default value for initial focusPosition parameter [53248].");
     pnh_.param("focusPosition", focusPosition_param, 53248);
 
     // read parameter: focusNearLimit
     if(!pnh_.hasParam("focusNearLimit"))
-        ROS_WARN("Using default value for for initial focusNearLimit parameter [0].");
+        ROS_WARN("Using default value for initial focusNearLimit parameter [0].");
     pnh_.param("focusNearLimit", focusLimit_param, 0);
 
     // read parameter: titleText
     if(!pnh_.hasParam("titleText"))
-        ROS_WARN("Using default value for for initial titleText parameter [""].");
+        ROS_WARN("Using default value for initial titleText parameter [""].");
     pnh_.param("titleText", titleText_param, std::string(""));
 
     // read parameter: titleDisplay
     if(!pnh_.hasParam("titleDisplay"))
-        ROS_WARN("Using default value for for initial titleDisplay parameter [0].");
+        ROS_WARN("Using default value for initial titleDisplay parameter [0].");
     pnh_.param("titleDisplay", titleDisplay_param, 0);
 
     // read parameter: statusDisplay
     if(!pnh_.hasParam("statusDisplay"))
-        ROS_WARN("Using default value for for initial statusDisplay parameter [0].");
+        ROS_WARN("Using default value for initial statusDisplay parameter [0].");
     pnh_.param("statusDisplay", statusDisplay_param, 0);
 
     // read parameter: backLightCompensation
     if(!pnh_.hasParam("backLightCompensation"))
-        ROS_WARN("Using default value for for initial backLightCompensation parameter [0].");
+        ROS_WARN("Using default value for initial backLightCompensation parameter [0].");
     pnh_.param("backLightCompensation", backLightCompensation_param, 0);
 
     // read parameter: noiseReduction
     if(!pnh_.hasParam("noiseReduction"))
-        ROS_WARN("Using default value for for initial noiseReduction parameter [3].");
+        ROS_WARN("Using default value for initial noiseReduction parameter [3].");
     pnh_.param("noiseReduction", noiseReduction_param, 3);
 
     // read parameter: pictureEffect
     if(!pnh_.hasParam("pictureEffect"))
-        ROS_WARN("Using default value for for initial pictureEffect parameter [0].");
+        ROS_WARN("Using default value for initial pictureEffect parameter [0].");
     pnh_.param("pictureEffect", pictureEffect_param, 0);
 
     // read parameter: infraredCutFilter
     if(!pnh_.hasParam("infraredCutFilter"))
-        ROS_WARN("Using default value for for initial infraredCutFilter parameter [0].");
+        ROS_WARN("Using default value for initial infraredCutFilter parameter [0].");
     pnh_.param("infraredCutFilter", infraredCutFilter_param, 0);
 
     // read parameter: infraredCutFilterAuto
     if(!pnh_.hasParam("infraredCutFilterAuto"))
-        ROS_WARN("Using default value for for initial infraredCutFilterAuto parameter [0].");
+        ROS_WARN("Using default value for initial infraredCutFilterAuto parameter [0].");
     pnh_.param("infraredCutFilterAuto",infraredCutFilterAuto_param, 0);
+
+    // read parameter from parameter server
+    // if parameter not found, use default value
+    if(!pnh_.hasParam("streaming"))
+        ROS_WARN("Using default value for initial streaming parameter [false].");
+    pnh_.param("streaming",streaming_param, false);
+
+    // read parameter from parameter server
+    // if parameter not found, use default value
+    if(!pnh_.hasParam("debug_screen"))
+        ROS_WARN("Using default value for initial debug_screen parameter [false].");
+    pnh_.param("debug_screen",debug_screen_param, false);
 
 
 
@@ -210,7 +228,8 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh)
     configCamera();
 
     //start streaming of the camera device
-    startStreaming();
+    if(streaming_param)
+        startStreaming();
 }
 
 //Destructor
@@ -256,6 +275,8 @@ void Sony_Camera_Node::configCamera()
     this->pictureEffect(pictureEffect_param);
     this->infraredCutFilter(infraredCutFilter_param);
     this->infraredCutFilterAuto(infraredCutFilterAuto_param);
+    this->streaming(streaming_param);
+    this->debugScreen(debug_screen_param);
 
     //focusPosition can be set only while the camera's FocusAuto is set to other than Continuos(=3), basically set to off(=0)
     //lDeviceParams->GetEnumValue("FocusAuto",focus_auto);
@@ -265,6 +286,49 @@ void Sony_Camera_Node::configCamera()
     //focusNearLimit can be set only while the camera's FocusAuto is set to Continuos(=3)
     if(autoFocus_param == 3){
         this->focusNearLimit(focusLimit_param);
+    }
+}
+
+bool Sony_Camera_Node::streamingService(seneka_srv::streaming::Request &req,
+                                        seneka_srv::streaming::Response &res)
+{
+    streaming(req.streaming);
+
+    return true;
+}
+
+void Sony_Camera_Node::streaming(bool decider)
+{
+        if(decider)
+    {
+        streaming_param = true;
+        startStreaming();
+    }
+    else if (!decider)
+    {
+        streaming_param = false;
+        stopStreaming();
+    }
+}
+
+bool Sony_Camera_Node::debugScreenService(seneka_srv::debugScreen::Request &req,
+                                          seneka_srv::debugScreen::Response &res)
+{
+    debugScreen(req.debugScreen);
+
+    return true;
+}
+
+void Sony_Camera_Node::debugScreen(bool decider)
+{
+    if(decider)
+    {
+        debug_screen_param = true;
+    }
+
+    else if(!decider)
+    {
+        debug_screen_param = false;
     }
 }
 
@@ -394,7 +458,8 @@ void Sony_Camera_Node::publishImage()
     }
 }
 
-void Sony_Camera_Node::stopStreaming(){
+void Sony_Camera_Node::stopStreaming()
+{
     // Clean-up
     // Tell the device to stop sending images
     ROS_INFO("Sending AcquisitionStop command to the device.");

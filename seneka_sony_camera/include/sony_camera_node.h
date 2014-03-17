@@ -61,19 +61,18 @@
 *
 ****************************************************************/
 
+// standart headers
+#include "stdio.h"
+
+// ros headers
 #include <ros/ros.h>
-#include <cv_bridge/cv_bridge.h>
+
+// ros service headers
 #include <sensor_msgs/image_encodings.h>
-#include <image_transport/image_transport.h>
-#include <opencv/cvwimage.h>
-#include <opencv/highgui.h>
 #include <sensor_msgs/Image.h>
 #include <sensor_msgs/fill_image.h>
-#include "opencv/cv.h"
-#include "opencv/highgui.h"
-#include "stdio.h"
-#include <opencv2/opencv.hpp>
 
+// seneka service headers
 #include <seneka_srv/zoom.h>
 #include <seneka_srv/focusAuto.h>
 #include <seneka_srv/focus.h>
@@ -87,12 +86,24 @@
 #include <seneka_srv/statusDisplay.h>
 #include <seneka_srv/titleDisplay.h>
 #include <seneka_srv/titleText.h>
+#include <seneka_srv/streaming.h>
+#include <seneka_srv/debugScreen.h>
 
+// pleora ebus sdk headers
 #include <PvSampleUtils.h>
 #include <PvDevice.h>
 #include <PvBuffer.h>
 #include <PvStream.h>
 #include <PvStreamRaw.h>
+
+// miscellaneous headers
+#include <cv_bridge/cv_bridge.h>
+#include <image_transport/image_transport.h>
+#include <opencv/cvwimage.h>
+#include <opencv/highgui.h>
+#include "opencv/cv.h"
+#include "opencv/highgui.h"
+#include <opencv2/opencv.hpp>
 
 #ifndef SONY_CAMERA_NODE_H
 #define SONY_CAMERA_NODE_H
@@ -104,6 +115,7 @@ class Sony_Camera_Node
         Sony_Camera_Node();
         ~Sony_Camera_Node();
 
+        // function prototypes
         void connectCamera();
         void configCamera();
         void startStreaming();
@@ -125,7 +137,10 @@ class Sony_Camera_Node
         void pictureEffect(int val);
         void infraredCutFilter(int val);
         void infraredCutFilterAuto(int val);
+        void streaming(bool decider);
+        void debugScreen(bool decider);
 
+        // service callback function prototypes
         bool zoom_in_outService(            seneka_srv::zoom::Request &req,
                                             seneka_srv::zoom::Response &res);
     
@@ -165,6 +180,12 @@ class Sony_Camera_Node
         bool titleTextService(              seneka_srv::titleText::Request &req,
                                             seneka_srv::titleText::Response &res);
 
+        bool streamingService(              seneka_srv::streaming::Request &req,
+                                            seneka_srv::streaming::Response &res);
+
+        bool debugScreenService(            seneka_srv::debugScreen::Request &req,
+                                            seneka_srv::debugScreen::Response &res);
+
         std::string camera_ip_address_param;
         std::string titleText_param;
         int zoom_ratio_optical_param;
@@ -180,6 +201,8 @@ class Sony_Camera_Node
         int pictureEffect_param;
         int infraredCutFilter_param;
         int infraredCutFilterAuto_param;
+        bool streaming_param;
+        bool debug_screen_param;
 
         ros::NodeHandle nh,  pnh_;
         ros::ServiceServer  zoom_service_,
@@ -194,7 +217,9 @@ class Sony_Camera_Node
                             backLightCompensation_service,
                             statusDisplay_service,
                             titleDisplay_service,
-                            titleText_service;
+                            titleText_service,
+                            streaming_service,
+                            debugScreen_service;
 
         image_transport::ImageTransport it;
         image_transport::Publisher publish_rgb_image;
@@ -215,4 +240,4 @@ class Sony_Camera_Node
         PvInt64 width_, height_ ;
 };
 
-#endif SONY_CAMERA_NODE_H
+#endif // SONY_CAMERA_NODE_H
