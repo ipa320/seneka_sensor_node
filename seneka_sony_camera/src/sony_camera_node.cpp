@@ -430,8 +430,8 @@ void Sony_Camera_Node::disconnectCamera(){
 
 //Service: zooming functionalities- Optical Zoom/Digital Zoom
 bool Sony_Camera_Node::zoom_in_outService(seneka_srv::zoom::Request &req,
-                                          seneka_srv::zoom::Response &res){
-
+                                          seneka_srv::zoom::Response &res)
+{
     if(req.zoom_ratio_digital==1){
         zoom_ratio_optical(req.zoom_ratio_optical);
         res.success = true;
@@ -445,12 +445,11 @@ bool Sony_Camera_Node::zoom_in_outService(seneka_srv::zoom::Request &req,
         res.success = false;
     }
     return true;
-
 }
 
 //Parametric: zooming functionalities- Optical Zoom/Digital Zoom
-void Sony_Camera_Node::zoom_in_out(int ratio_optical, int ratio_digital){
-
+void Sony_Camera_Node::zoom_in_out(int ratio_optical, int ratio_digital)
+{
     if(ratio_digital==1){
         zoom_ratio_optical(ratio_optical);
     }
@@ -460,7 +459,6 @@ void Sony_Camera_Node::zoom_in_out(int ratio_optical, int ratio_digital){
     else{
         ROS_WARN("Warning!: Zoom ratio should be given according to the camera standard. Default is set to optical 1.");
     }
-
 }
 
 void Sony_Camera_Node::zoom_ratio_optical(int ratio)
@@ -577,6 +575,7 @@ void Sony_Camera_Node::zoom_ratio_optical(int ratio)
         lDeviceParams->SetEnumValue("ZoomRatio",0);
         break;
     }
+
     lDeviceParams->ExecuteCommand("CAM_Zoom");
 }
 
@@ -589,64 +588,64 @@ void Sony_Camera_Node::zoom_ratio_digital(int ratio)
     switch(ratio)
     {
 
-    //zoomRatio: x20x2
-    case 2:
-        lDeviceParams->SetEnumValue("ZoomRatio",83);
-        break;
+        //zoomRatio: x20x2
+        case 2:
+            lDeviceParams->SetEnumValue("ZoomRatio",83);
+            break;
 
         //zoomRatio: x20x3
-    case 3:
-        lDeviceParams->SetEnumValue("ZoomRatio",84);
-        break;
+        case 3:
+            lDeviceParams->SetEnumValue("ZoomRatio",84);
+            break;
 
         //zoomRatio: x20x4
-    case 4:
-        lDeviceParams->SetEnumValue("ZoomRatio",85);
-        break;
+        case 4:
+            lDeviceParams->SetEnumValue("ZoomRatio",85);
+            break;
 
         //zoomRatio: x20x5
-    case 5:
-        lDeviceParams->SetEnumValue("ZoomRatio",86);
-        break;
+        case 5:
+            lDeviceParams->SetEnumValue("ZoomRatio",86);
+            break;
 
         //zoomRatio: x20x6
-    case 6:
-        lDeviceParams->SetEnumValue("ZoomRatio",87);
-        break;
+        case 6:
+            lDeviceParams->SetEnumValue("ZoomRatio",87);
+            break;
 
         //zoomRatio: x20x7
-    case 7:
-        lDeviceParams->SetEnumValue("ZoomRatio",88);
-        break;
+        case 7:
+            lDeviceParams->SetEnumValue("ZoomRatio",88);
+            break;
 
         //zoomRatio: x20x8
-    case 8:
-        lDeviceParams->SetEnumValue("ZoomRatio",89);
-        break;
+        case 8:
+            lDeviceParams->SetEnumValue("ZoomRatio",89);
+            break;
 
         //zoomRatio: x20x9
-    case 9:
-        lDeviceParams->SetEnumValue("ZoomRatio",90);
-        break;
+        case 9:
+            lDeviceParams->SetEnumValue("ZoomRatio",90);
+            break;
 
         //zoomRatio: x20x10
-    case 10:
-        lDeviceParams->SetEnumValue("ZoomRatio",91);
-        break;
+        case 10:
+            lDeviceParams->SetEnumValue("ZoomRatio",91);
+            break;
 
         //zoomRatio: x20x11
-    case 11:
-        lDeviceParams->SetEnumValue("ZoomRatio",92);
-        break;
+        case 11:
+            lDeviceParams->SetEnumValue("ZoomRatio",92);
+            break;
 
         //zoomRatio: x20x12
-    case 12:
-        lDeviceParams->SetEnumValue("ZoomRatio",93);
-        break;
-    default:
-        ROS_WARN("Zoom ratio should be given according to the camera standard. Default is set to 1.");
-        lDeviceParams->SetEnumValue("ZoomRatio",0);
-        break;
+        case 12:
+            lDeviceParams->SetEnumValue("ZoomRatio",93);
+            break;
+        default:
+            ROS_WARN("Zoom ratio should be given according to the camera standard. Default is set to 1.");
+            lDeviceParams->SetEnumValue("ZoomRatio",0);
+            break;
     }
 
     lDeviceParams->ExecuteCommand("CAM_Zoom");
@@ -664,33 +663,35 @@ bool Sony_Camera_Node::focusControlService(seneka_srv::focusAuto::Request &req,
 
 void Sony_Camera_Node::autoFocusControl(int autoFocus)
 {
-    switch(autoFocus){
+    switch(autoFocus)
+    {
 
-    //Auto Focus: Off
-    case 0:
-        lDeviceParams->SetEnumValue("FocusAuto",0);
-        break;
+        //Auto Focus: Off
+        case 0:
+            lDeviceParams->SetEnumValue("FocusAuto",0);
+            break;
 
-    //Auto Focus: Once
-    case 1:
-        lDeviceParams->SetEnumValue("FocusAuto",1);
-        break;
+        //Auto Focus: Once
+        case 1:
+            lDeviceParams->SetEnumValue("FocusAuto",1);
+            break;
 
-    //Auto Focus: Infinity
-    case 2:
-        lDeviceParams->SetEnumValue("FocusAuto",2);
-        break;
+        //Auto Focus: Infinity
+        case 2:
+            lDeviceParams->SetEnumValue("FocusAuto",2);
+            break;
 
-    //Auto Focus: Continuous
-    case 3:
-        lDeviceParams->SetEnumValue("FocusAuto",3);
-        break;
+        //Auto Focus: Continuous
+        case 3:
+            lDeviceParams->SetEnumValue("FocusAuto",3);
+            break;
 
-    default:
-        ROS_WARN( "Please specify the correct focus formate. Default AutoFocus is set to Continuous mode.");
-        lDeviceParams->SetEnumValue("FocusAuto",3);
-        break;
+        default:
+            ROS_WARN("Please specify the correct focus formate. Default AutoFocus is set to Continuous mode.");
+            lDeviceParams->SetEnumValue("FocusAuto",3);
+            break;
     }
+
     lDeviceParams->ExecuteCommand("CAM_Focus");
 }
 
@@ -774,6 +775,7 @@ void Sony_Camera_Node::videoModeNext(int videoMode_)
             break;
     }
 }
+
 //Service: set Focus Position
 bool Sony_Camera_Node::focusPositionService(seneka_srv::focus::Request &req,
                                             seneka_srv::focus::Response &res)
@@ -798,7 +800,6 @@ bool Sony_Camera_Node::focusPositionService(seneka_srv::focus::Request &req,
         res.success = false;
     }
     return true;
-
 }
 
 void Sony_Camera_Node::focusPosition(int val)
@@ -844,8 +845,8 @@ bool Sony_Camera_Node::focusNearLimitService(seneka_srv::focusNearLimit::Request
     return true;
 }
 
-bool Sony_Camera_Node::focusNearLimit(int focusLimit){
-
+bool Sony_Camera_Node::focusNearLimit(int focusLimit)
+{
     lDeviceParams->GetEnumValue("FocusAuto",focus_auto);
 
     if (focus_auto != 0)
@@ -947,13 +948,12 @@ bool Sony_Camera_Node::focusNearLimit(int focusLimit){
         ROS_WARN("FocusNearLimit is only valid while the camera's  FocusAuto is set to Continuous.");
         return false;
     }
-
 }
 
 //Service: Enable or Disable Infrared CutFilterAuto
 bool  Sony_Camera_Node::infraredCutFilterAutoService(seneka_srv::infraredCutFilterAuto::Request &req,
-                                                     seneka_srv::infraredCutFilterAuto::Response &res){
-
+                                                     seneka_srv::infraredCutFilterAuto::Response &res)
+{
     infraredCutFilterAuto(req.cutfilter_auto);
     res.success = true;
     return true;
@@ -1016,7 +1016,6 @@ void Sony_Camera_Node::infraredCutFilter(int val)
     }
 
     lDeviceParams->ExecuteCommand("CAM_ICRModeInq");
-
 }
 
 //Service: set Picture Effect: Off, NegReversal, BlackAndWhite
@@ -1104,7 +1103,6 @@ void Sony_Camera_Node::backLightCompensation(int val)
 {
     switch(val)
     {
-
         //BackLightCompensation: false
         case 0:
             lDeviceParams->SetBooleanValue("BackLightCompensation",false);
@@ -1119,7 +1117,6 @@ void Sony_Camera_Node::backLightCompensation(int val)
             ROS_WARN("Back Light Compensation can be either 0(false) or 1(true). Default BackLightCompensation is set to false.");
             lDeviceParams->SetBooleanValue("BackLightCompensation",false);
             break;
-
     }
 
     lDeviceParams->ExecuteCommand("CAM_BackLight");
@@ -1155,7 +1152,6 @@ void Sony_Camera_Node::statusDisplay(int val)
     }
 
     lDeviceParams->ExecuteCommand("CAM_Display");
-
 }
 
 //Service: Enable or disable to display title
@@ -1185,7 +1181,6 @@ void Sony_Camera_Node::titleDisplay(int val)
             ROS_WARN("Title Display can be either 0(false) or 1 (true). Default Title Display is set to false.");
             lDeviceParams->SetBooleanValue("TitleDisplay",false);
             break;
-
     }
 
     lDeviceParams->ExecuteCommand("CAM_Title");
@@ -1206,7 +1201,6 @@ void Sony_Camera_Node::titleText(std::string str1)
     lDeviceParams->SetString("TitleText",str);
     lDeviceParams->ExecuteCommand("CAM_Title");
 }
-
 
 int main(int argc, char** argv)
 {
