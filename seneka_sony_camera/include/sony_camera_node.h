@@ -1,42 +1,49 @@
-/*!
-*****************************************************************
+/****************************************************************
 *
-* sony_camera_node.h
+* Copyright (c) 2014
 *
-* Copyright (c) 2012
-* Fraunhofer Institute for Manufacturing Engineering
-* and Automation (IPA)
+* Fraunhofer Institute for Manufacturing Engineering and Automation (IPA)
 *
-*****************************************************************
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 *
-* Project name: SENEKA
+* Project name: SeNeKa
+* ROS metapackage: seneka_sensor_node
+* ROS package: seneka_sony_camera
+* GitHub repository: https://github.com/ipa320/seneka_sensor_node
+* 
+* Package description: The seneka_sony_camera package is part of the
+* seneka_sensor_node metapackage, developed for the SeNeKa project at
+* Fraunhofer IPA. It implements a ROS driver for the Sony Block Camera
+* FCB EH 6300. This package might work with other hardware and can be used
+* for other purposes, however the development has been specifically for this
+* project and the deployed sensors.
 *
-* ROS stack name: seneka
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 *
-* ROS package name: seneka_sony_camera
-*
+* Supervisor: Matthias Gruhler, E-Mail: Matthias.Gruhler@ipa.fraunhofer.de
 * Author: Rajib Banik
 *
-* Supervised by: Matthias Gruhler
-
-* email: Matthias.Gruhler@ipa.fraunhofer.de
-
+* ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+*
 * Date of creation: 26.05.2013
 *
-*****************************************************************
+* Modified by: Thorsten Andreas Kannacher, E-Mail: Thorsten.Andreas.Kannacher@fraunhofer.de
+* Date of modification: 17.03.2014
+*
+* +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 *
 * Redistribution and use in source and binary forms, with or without
 * modification, are permitted provided that the following conditions are met:
 *
-* - Redistributions of source code must retain the above copyright
-* notice, this list of conditions and the following disclaimer. \n
-* - Redistributions in binary form must reproduce the above copyright
+* Redistributions of source code must retain the above copyright
+* notice, this list of conditions and the following disclaimer.
+* Redistributions in binary form must reproduce the above copyright
 * notice, this list of conditions and the following disclaimer in the
-* documentation and/or other materials provided with the distribution. \n
-* - Neither the name of the Fraunhofer Institute for Manufacturing
+* documentation and/or other materials provided with the distribution.
+* Neither the name of the Fraunhofer Institute for Manufacturing
 * Engineering and Automation (IPA) nor the names of its
 * contributors may be used to endorse or promote products derived from
-* this software without specific prior written permission. \n
+* this software without specific prior written permission.
 *
 * This program is free software: you can redistribute it and/or modify
 * it under the terms of the GNU Lesser General Public License LGPL as
