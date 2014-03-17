@@ -63,38 +63,32 @@
 *
 ****************************************************************/
 
-// standart includes
-
 // ros includes
 #include <ros/ros.h>
 #include <std_srvs/Empty.h>
 #include <laser_assembler/AssembleScans.h>
-//#include <MOTOR_DRIVER_PACKAGE/MOTOR_DRIVER_SERVICE.h>
-
-// external includes
+// #include <...> // actuator driver
 
 // function prototypes
 bool scanEnvironment(std_srvs::Empty::Request& cRequest, std_srvs::Empty::Response& cResponse);	// callback function
 bool driveRequest(float fTarget_position);
 bool getCloud(ros::Time cTime_flag_begin, ros::Time cTime_flag_end);
 
-ros::NodeHandle nh_("");
-
 int main(int argc, char **argv)
 {
-
   ros::init(argc, argv, "laser_scan");
+  ros::NodeHandle nh;
+  ros::ServiceServer service = nh.advertiseService("scan_environment", scanEnvironment);
 
-  ros::ServiceServer service = nh_.advertiseService("scan_environment", scanEnvironment);
+  // waiting for all dependend services to be ready
 
-  // need to wait for all dependend services to be ready
-  // node continues as soon as all dependend services below are ready
-  // ros::service::waitForService("MOTOR_DRIVER_SERVICE");	// necessary for rotation
-  ros::service::waitForService("assemble_scans");		// necessary for building and merging point clouds
+  // service for building and merging point clouds
+  ros::service::waitForService("assemble_scans");
+
+  // node continues as soon as all dependend services are ready
   ROS_INFO("Ready to scan environment.\n");
 
   ros::spin();
-
   return 0;
 }
 
@@ -150,10 +144,10 @@ bool scanEnvironment(std_srvs::Empty::Request& cRequest, std_srvs::Empty::Respon
 bool driveRequest(float fTarget_position)
 {
   /*
+  ros::NodeHandle nh;
+  ros::ServiceClient client = nh.serviceClient<actuator_package::actuator_service>("service_name");
 
-  ros::ServiceClient client = nh_.serviceClient<MOTOR_DRIVER_PACKAGE::MOTOR_DRIVER_SERVICE>("MOTOR_DRIVER_SERVICE");
-
-  MOTOR_DRIVER_PACKAGE::MOTOR_DRIVER_SERVICE srv;
+  actuator_package::actuator_service srv;
   srv.request.SOMETHING = target_position
 
   //Assuming motor driver does not return true before reaching target position
@@ -168,7 +162,8 @@ bool driveRequest(float fTarget_position)
 
 bool getCloud(ros::Time cStarting_time, ros::Time cEnd_time)
 {
-  ros::ServiceClient client = nh_.serviceClient<laser_assembler::AssembleScans>("assemble_scans");
+  ros::NodeHandle nh;
+  ros::ServiceClient client = nh.serviceClient<laser_assembler::AssembleScans>("assemble_scans");
  
   laser_assembler::AssembleScans srv;
   srv.request.begin = cStarting_time;
