@@ -71,6 +71,7 @@ using namespace std;
 
 #define clip(x) (unsigned char)( (x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ) )
 
+// Constructor
 Sony_Camera_Node::Sony_Camera_Node():it(nh)
 {
     lSize = 0;
@@ -82,46 +83,46 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh)
     lDeviceParams = lDevice.GetGenParameters();
 
     //publish images
-    publish_rgb_image = it.advertise("SonyGigCam_rgb_image", 10);
+    publish_rgb_image =             it.advertise(       "SonyGigCam_rgb_image", 10);
 
     // advertise zooming service
-    zoom_service_= nh.advertiseService("set_zoomin",&Sony_Camera_Node::zoom_in_outService, this);
+    zoom_service_=                  nh.advertiseService("set_zoomin",               &Sony_Camera_Node::zoom_in_outService, this);
 
     // advertise autofocus service
-    focus_service_ = nh.advertiseService("set_autofocus",&Sony_Camera_Node::focusControlService, this);
+    focus_service_ =                nh.advertiseService("set_autofocus",            &Sony_Camera_Node::focusControlService, this);
 
     // advertise videomodenext service
-    videoModeNext_service_= nh.advertiseService("set_videomodenext",&Sony_Camera_Node::videoModeNextService, this);
+    videoModeNext_service_=         nh.advertiseService("set_videomodenext",        &Sony_Camera_Node::videoModeNextService, this);
 
     // advertise focus position service
-    focusPosition_servie_= nh.advertiseService("set_focusPosition",&Sony_Camera_Node::focusPositionService, this);
+    focusPosition_servie_=          nh.advertiseService("set_focusPosition",        &Sony_Camera_Node::focusPositionService, this);
 
     // advertise focus infraredCutFilterAuto service
-    focusNearLimit_service_= nh.advertiseService("set_focusNearLimit",&Sony_Camera_Node::focusNearLimitService, this);
+    focusNearLimit_service_=        nh.advertiseService("set_focusNearLimit",       &Sony_Camera_Node::focusNearLimitService, this);
 
     // advertise focus focusNearLimit service
     infraredCutFilterAuto_service = nh.advertiseService("set_infraredCutFilterAuto",&Sony_Camera_Node::infraredCutFilterAutoService, this);
 
     // advertise focus infraredCutFilter service
-    infraredCutFilter_service = nh.advertiseService("set_infraredCutFilter",&Sony_Camera_Node::infraredCutFilterService, this);
+    infraredCutFilter_service =     nh.advertiseService("set_infraredCutFilter",    &Sony_Camera_Node::infraredCutFilterService, this);
 
     // advertise pictureEffect service
-    pictureEffect_service = nh.advertiseService("set_pictureEffect",&Sony_Camera_Node::pictureEffectService, this);
+    pictureEffect_service =         nh.advertiseService("set_pictureEffect",        &Sony_Camera_Node::pictureEffectService, this);
 
     // advertise noiseReduction service
-    noiseReduction_service = nh.advertiseService("set_noiseReduction",&Sony_Camera_Node::noiseReductionService, this);
+    noiseReduction_service =        nh.advertiseService("set_noiseReduction",       &Sony_Camera_Node::noiseReductionService, this);
 
     // advertise backLightCompensation service
     backLightCompensation_service = nh.advertiseService("set_backLightCompensation",&Sony_Camera_Node::backLightCompensationService, this);
 
     // advertise  statusDisplay service
-    statusDisplay_service = nh.advertiseService("set_statusDisplay",&Sony_Camera_Node::statusDisplayService, this);
+    statusDisplay_service =         nh.advertiseService("set_statusDisplay",        &Sony_Camera_Node::statusDisplayService, this);
 
     // advertise  titleDisplay service
-    titleDisplay_service = nh.advertiseService("set_titleDisplay",&Sony_Camera_Node::titleDisplayService, this);
+    titleDisplay_service =          nh.advertiseService("set_titleDisplay",         &Sony_Camera_Node::titleDisplayService, this);
 
     // advertise  titleText service
-    titleText_service =  nh.advertiseService("set_titleText",&Sony_Camera_Node::titleTextService, this);
+    titleText_service =             nh.advertiseService("set_titleText",            &Sony_Camera_Node::titleTextService, this);
 
 
 
@@ -130,21 +131,22 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh)
         ROS_WARN("Using default value for for initial ip_address parameter [\"192.168.0.1\"].");
     pnh_.param("camera_ip_address", camera_ip_address_param, std::string("192.168.0.1"));
 
-    // read parameter: zooming
+    // read parameter: zoom_ratio_optical
     if(!pnh_.hasParam("zoom_ratio_optical"))
         ROS_WARN("Using default value for for initial zoom_ratio_optical parameter [1].");
     pnh_.param("zoom_ratio_optical", zoom_ratio_optical_param, 1);
 
+    // read parameter: zoom_ratio_digital
     if(!pnh_.hasParam("zoom_ratio_digital"))
         ROS_WARN("Using default value for for initial zoom_ratio_digital parameter [1].");
     pnh_.param("zoom_ratio_digital", zoom_ratio_digital_param, 1);
 
-    // read parameter: auto Focus
+    // read parameter: autoFocus
     if(!pnh_.hasParam("autoFocus"))
         ROS_WARN("Using default value for for initial autoFocus parameter [3].");
     pnh_.param("autoFocus", autoFocus_param, 3);
 
-    // read parameter: videoModeNexts
+    // read parameter: videoModeNext
     if(!pnh_.hasParam("videoModeNext"))
         ROS_WARN("Using default value for for initial videoModeNext parameter [11].");
     pnh_.param("videoModeNext", videoModeNext_param, 11);
