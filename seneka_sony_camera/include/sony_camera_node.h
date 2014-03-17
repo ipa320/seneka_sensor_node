@@ -99,7 +99,6 @@
 
 class Sony_Camera_Node
 {
-
     public:
     
         Sony_Camera_Node();
@@ -214,7 +213,6 @@ class Sony_Camera_Node
         PvGenParameterArray *lDeviceParams;
         PvGenInteger *lPayloadSize;
         PvInt64 width_, height_ ;
-
 };
 
-#endif // SONY_CAMERA_NODE_H
+#endif SONY_CAMERA_NODE_H
