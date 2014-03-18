@@ -71,7 +71,7 @@ using namespace std;
 
 #define clip(x) (unsigned char)( (x) < 0 ? 0 : ( (x) > 255 ? 255 : (x) ) )
 
-// Constructor
+// constructor
 Sony_Camera_Node::Sony_Camera_Node():it(nh)
 {
     lSize = 0;
@@ -79,10 +79,10 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh)
     height_ = 0;
     pnh_ = ros::NodeHandle("~");
 
-    // Get device parameters need to control streaming
+    // get device parameters need to control streaming
     lDeviceParams = lDevice.GetGenParameters();
 
-    //publish images
+    // publish images
     publish_rgb_image               =   it.advertise(       "SonyGigCam_rgb_image", 10);
 
     // advertise zooming service
@@ -413,7 +413,9 @@ void Sony_Camera_Node::publishImage()
 
             //IplImage image to cv::Mat
             cv::Mat image(m_RGB);
-            cv::namedWindow("Sony",cv::WINDOW_AUTOSIZE);
+
+            if (debug_screen_param)
+                cv::namedWindow("Sony",cv::WINDOW_AUTOSIZE);
 
             cv_bridge::CvImage out_msg;
             out_msg.header.stamp   = ros::Time::now();
