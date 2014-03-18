@@ -228,7 +228,8 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh)
     configCamera();
 
     //start streaming of the camera device
-    streaming(streaming_param);
+    if(streaming_param)
+        startStreaming();
 }
 
 //Destructor
@@ -274,8 +275,6 @@ void Sony_Camera_Node::configCamera()
     this->pictureEffect(pictureEffect_param);
     this->infraredCutFilter(infraredCutFilter_param);
     this->infraredCutFilterAuto(infraredCutFilterAuto_param);
-    this->streaming(streaming_param);
-    this->debugScreen(debug_screen_param);
 
     //focusPosition can be set only while the camera's FocusAuto is set to other than Continuos(=3), basically set to off(=0)
     //lDeviceParams->GetEnumValue("FocusAuto",focus_auto);
@@ -469,7 +468,8 @@ void Sony_Camera_Node::stopStreaming()
     lStream.Close();
 }
 
-void Sony_Camera_Node::disconnectCamera(){
+void Sony_Camera_Node::disconnectCamera()
+{
     // Finally disconnect the device. Optional, still nice to have
     ROS_INFO("Disconnecting device.");
     lDevice.Disconnect();
@@ -1282,7 +1282,7 @@ int main(int argc, char** argv)
     ros::Rate loop_rate(25); // Hz
     while(SonyCameraNode.nh.ok())
     {
-        //if (SonyCameraNode.streaming_param)
+        if (SonyCameraNode.getStreamingParam())
             SonyCameraNode.publishImage();
 
         ros::spinOnce();

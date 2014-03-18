@@ -117,7 +117,6 @@ class Sony_Camera_Node
         void configCamera();
         void startStreaming();
         void stopStreaming();
-        //void publishImage();
         void disconnectCamera();
         void zoom_ratio_optical(int ratio);
         void zoom_ratio_digital(int ratio);
@@ -137,7 +136,69 @@ class Sony_Camera_Node
         void streaming(bool decider);
         void debugScreen(bool decider);
 
-        // service callback function prototypes
+        std::string camera_ip_address_param;
+        std::string titleText_param;
+        int zoom_ratio_optical_param;
+        int zoom_ratio_digital_param;
+        int videoModeNext_param;
+        int focusPosition_param;
+        int autoFocus_param;
+        int focusLimit_param;
+        int titleDisplay_param;
+        int statusDisplay_param;
+        int backLightCompensation_param;
+        int noiseReduction_param;
+        int pictureEffect_param;
+        int infraredCutFilter_param;
+        int infraredCutFilterAuto_param;
+        bool streaming_param;
+        bool debug_screen_param;
+
+        PvInt64 lSize;
+        PvInt64 focus_pos;
+        PvInt64 focus_auto;
+        bool flag;
+        PvBuffer *lBuffers;
+        PvDevice lDevice;
+        PvResult lResult;
+        PvStream lStream;
+        PvGenParameterArray *lDeviceParams;
+        PvGenInteger *lPayloadSize;
+        PvInt64 width_, height_ ;
+
+        public:
+    
+        Sony_Camera_Node();
+        ~Sony_Camera_Node();
+
+        ros::NodeHandle nh,  pnh_;
+
+        ros::ServiceServer  zoom_service_,
+                            focus_service_,
+                            videoModeNext_service_,
+                            focusPosition_servie_,
+                            focusNearLimit_service_,
+                            infraredCutFilterAuto_service,
+                            infraredCutFilter_service,
+                            pictureEffect_service,
+                            noiseReduction_service,
+                            backLightCompensation_service,
+                            statusDisplay_service,
+                            titleDisplay_service,
+                            titleText_service,
+                            streaming_service,
+                            debugScreen_service;
+
+        image_transport::ImageTransport it;
+        image_transport::Publisher publish_rgb_image;
+        cv_bridge::CvImage out_msg;
+
+        // public member function prototypes
+        void publishImage();
+
+        bool getStreamingParam(void) {return streaming_param;};
+
+        // ros service callback function prototypes
         bool zoom_in_outService(            seneka_srv::zoom::Request &req,
                                             seneka_srv::zoom::Response &res);
     
@@ -182,65 +243,6 @@ class Sony_Camera_Node
 
         bool debugScreenService(            seneka_srv::debugScreen::Request &req,
                                             seneka_srv::debugScreen::Response &res);
-
-        std::string camera_ip_address_param;
-        std::string titleText_param;
-        int zoom_ratio_optical_param;
-        int zoom_ratio_digital_param;
-        int videoModeNext_param;
-        int focusPosition_param;
-        int autoFocus_param;
-        int focusLimit_param;
-        int titleDisplay_param;
-        int statusDisplay_param;
-        int backLightCompensation_param;
-        int noiseReduction_param;
-        int pictureEffect_param;
-        int infraredCutFilter_param;
-        int infraredCutFilterAuto_param;
-        bool streaming_param;
-        bool debug_screen_param;
-
-        ros::ServiceServer  zoom_service_,
-                            focus_service_,
-                            videoModeNext_service_,
-                            focusPosition_servie_,
-                            focusNearLimit_service_,
-                            infraredCutFilterAuto_service,
-                            infraredCutFilter_service,
-                            pictureEffect_service,
-                            noiseReduction_service,
-                            backLightCompensation_service,
-                            statusDisplay_service,
-                            titleDisplay_service,
-                            titleText_service,
-                            streaming_service,
-                            debugScreen_service;
-
-        image_transport::ImageTransport it;
-        image_transport::Publisher publish_rgb_image;
-        cv_bridge::CvImage out_msg;
-
-        PvInt64 lSize;
-        PvInt64 focus_pos;
-        PvInt64 focus_auto;
-        bool flag;
-        PvBuffer *lBuffers;
-        PvDevice lDevice;
-        PvResult lResult;
-        PvStream lStream;
-        PvGenParameterArray *lDeviceParams;
-        PvGenInteger *lPayloadSize;
-        PvInt64 width_, height_ ;
-
-        public:
-    
-        Sony_Camera_Node();
-        ~Sony_Camera_Node();
-
-        ros::NodeHandle nh,  pnh_;
-
-        void publishImage();
 };
 
 #endif // SONY_CAMERA_NODE_H
