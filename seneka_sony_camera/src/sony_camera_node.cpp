@@ -228,8 +228,7 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh)
     configCamera();
 
     //start streaming of the camera device
-    if(streaming_param)
-        startStreaming();
+    streaming(streaming_param);
 }
 
 //Destructor
@@ -280,11 +279,13 @@ void Sony_Camera_Node::configCamera()
 
     //focusPosition can be set only while the camera's FocusAuto is set to other than Continuos(=3), basically set to off(=0)
     //lDeviceParams->GetEnumValue("FocusAuto",focus_auto);
-    if(autoFocus_param == 0){
+    if(autoFocus_param == 0)
+    {
          this->focusPosition(focusPosition_param);
     }
     //focusNearLimit can be set only while the camera's FocusAuto is set to Continuos(=3)
-    if(autoFocus_param == 3){
+    if(autoFocus_param == 3)
+    {
         this->focusNearLimit(focusLimit_param);
     }
 }
@@ -299,7 +300,7 @@ bool Sony_Camera_Node::streamingService(seneka_srv::streaming::Request &req,
 
 void Sony_Camera_Node::streaming(bool decider)
 {
-        if(decider)
+    if(decider)
     {
         streaming_param = true;
         startStreaming();
@@ -308,27 +309,6 @@ void Sony_Camera_Node::streaming(bool decider)
     {
         streaming_param = false;
         stopStreaming();
-    }
-}
-
-bool Sony_Camera_Node::debugScreenService(seneka_srv::debugScreen::Request &req,
-                                          seneka_srv::debugScreen::Response &res)
-{
-    debugScreen(req.debugScreen);
-
-    return true;
-}
-
-void Sony_Camera_Node::debugScreen(bool decider)
-{
-    if(decider)
-    {
-        debug_screen_param = true;
-    }
-
-    else if(!decider)
-    {
-        debug_screen_param = false;
     }
 }
 
@@ -362,7 +342,6 @@ void Sony_Camera_Node::startStreaming()
 
     // Have to set the Device IP destination to the Stream
     lDevice.SetStreamDestination( lStream.GetLocalIPAddress(), lStream.GetLocalPort() );
-
 
     // Queue all buffers in the stream
     for ( PvUInt32 i = 0; i < lBufferCount; i++ )
@@ -444,7 +423,9 @@ void Sony_Camera_Node::publishImage()
 
             publish_rgb_image.publish(out_msg.toImageMsg());
 
-            cv::imshow("Current Image",image);
+            if (debug_screen_param)
+                cv::imshow("Current Image",image);
+
             cv::waitKey(30);
         }
         // re-queue the buffer in the stream object
@@ -1269,6 +1250,27 @@ void Sony_Camera_Node::titleText(std::string str1)
     lDeviceParams->ExecuteCommand("CAM_Title");
 }
 
+bool Sony_Camera_Node::debugScreenService(seneka_srv::debugScreen::Request &req,
+                                          seneka_srv::debugScreen::Response &res)
+{
+    debugScreen(req.debugScreen);
+
+    return true;
+}
+
+void Sony_Camera_Node::debugScreen(bool decider)
+{
+    if(decider)
+    {
+        debug_screen_param = true;
+    }
+
+    else if(!decider)
+    {
+        debug_screen_param = false;
+    }
+}
+
 int main(int argc, char** argv)
 {
     // initialize ROS, specify name of node
@@ -1280,7 +1282,9 @@ int main(int argc, char** argv)
     ros::Rate loop_rate(25); // Hz
     while(SonyCameraNode.nh.ok())
     {
-        SonyCameraNode.publishImage();
+        //if (SonyCameraNode.streaming_param)
+            SonyCameraNode.publishImage();
+
         ros::spinOnce();
         loop_rate.sleep();
     }

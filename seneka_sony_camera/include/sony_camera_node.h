@@ -110,17 +110,14 @@
 
 class Sony_Camera_Node
 {
-    public:
-    
-        Sony_Camera_Node();
-        ~Sony_Camera_Node();
+    private:
 
         // function prototypes
         void connectCamera();
         void configCamera();
         void startStreaming();
         void stopStreaming();
-        void publishImage();
+        //void publishImage();
         void disconnectCamera();
         void zoom_ratio_optical(int ratio);
         void zoom_ratio_digital(int ratio);
@@ -204,7 +201,6 @@ class Sony_Camera_Node
         bool streaming_param;
         bool debug_screen_param;
 
-        ros::NodeHandle nh,  pnh_;
         ros::ServiceServer  zoom_service_,
                             focus_service_,
                             videoModeNext_service_,
@@ -225,8 +221,6 @@ class Sony_Camera_Node
         image_transport::Publisher publish_rgb_image;
         cv_bridge::CvImage out_msg;
 
-    private:
-
         PvInt64 lSize;
         PvInt64 focus_pos;
         PvInt64 focus_auto;
@@ -238,6 +232,15 @@ class Sony_Camera_Node
         PvGenParameterArray *lDeviceParams;
         PvGenInteger *lPayloadSize;
         PvInt64 width_, height_ ;
+
+        public:
+    
+        Sony_Camera_Node();
+        ~Sony_Camera_Node();
+
+        ros::NodeHandle nh,  pnh_;
+
+        void publishImage();
 };
 
 #endif // SONY_CAMERA_NODE_H
