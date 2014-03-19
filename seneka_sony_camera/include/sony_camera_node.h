@@ -87,7 +87,6 @@
 #include <seneka_srv/titleDisplay.h>
 #include <seneka_srv/titleText.h>
 #include <seneka_srv/streaming.h>
-#include <seneka_srv/debugScreen.h>
 
 // pleora ebus sdk headers
 #include <PvSampleUtils.h>
@@ -134,7 +133,6 @@ class Sony_Camera_Node
         void infraredCutFilter(int val);
         void infraredCutFilterAuto(int val);
         void streaming(bool decider);
-        void debugScreen(bool decider);
 
         std::string camera_ip_address_param;
         std::string titleText_param;
@@ -168,6 +166,7 @@ class Sony_Camera_Node
 
         public:
     
+        // Constructor/Destructor
         Sony_Camera_Node();
         ~Sony_Camera_Node();
 
@@ -186,8 +185,7 @@ class Sony_Camera_Node
                             statusDisplay_service,
                             titleDisplay_service,
                             titleText_service,
-                            streaming_service,
-                            debugScreen_service;
+                            streaming_service;
 
         image_transport::ImageTransport it;
         image_transport::Publisher publish_rgb_image;
@@ -240,9 +238,6 @@ class Sony_Camera_Node
 
         bool streamingService(              seneka_srv::streaming::Request &req,
                                             seneka_srv::streaming::Response &res);
-
-        bool debugScreenService(            seneka_srv::debugScreen::Request &req,
-                                            seneka_srv::debugScreen::Response &res);
 };
 
 #endif // SONY_CAMERA_NODE_H

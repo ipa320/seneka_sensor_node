@@ -127,9 +127,6 @@ Sony_Camera_Node::Sony_Camera_Node():it(nh)
     // advertise streaming service
     streaming_service               =   nh.advertiseService("set_streaming",            &Sony_Camera_Node::streamingService, this);
 
-    // advertise debug_screen service
-    debugScreen_service             =   nh.advertiseService("set_debugScreen",          &Sony_Camera_Node::debugScreenService, this);
-
 
 
     // read parameter: camera_ip_address
@@ -1250,27 +1247,6 @@ void Sony_Camera_Node::titleText(std::string str1)
     PvString str = str1.c_str();
     lDeviceParams->SetString("TitleText",str);
     lDeviceParams->ExecuteCommand("CAM_Title");
-}
-
-bool Sony_Camera_Node::debugScreenService(seneka_srv::debugScreen::Request &req,
-                                          seneka_srv::debugScreen::Response &res)
-{
-    debugScreen(req.debugScreen);
-
-    return true;
-}
-
-void Sony_Camera_Node::debugScreen(bool decider)
-{
-    if(decider)
-    {
-        debug_screen_param = true;
-    }
-
-    else if(!decider)
-    {
-        debug_screen_param = false;
-    }
 }
 
 int main(int argc, char** argv)
