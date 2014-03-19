@@ -51,3 +51,11 @@ infraredCutFilter: 0
 #infraredCutFilterAuto parameter
 #true/false (1 = true, 0 = false)
 infraredCutFilterAuto: 0
+
+#streaming (bool, default: false)
+#true: streaming enabled, false: streaming disabled
+streaming: false
+
+#debug_screen (bool, default: false)
+#true: debug screen enabled, false: debug screen disabled
+debug_screen: false
