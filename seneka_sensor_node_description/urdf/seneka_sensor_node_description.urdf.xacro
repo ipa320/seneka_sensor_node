@@ -1,0 +1,137 @@
+<?xml version="1.0"?>
+
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="seneka_sensor_node">
+
+  <!-- *************************************** -->
+  <!-- ##### ##### XACRO:CONSTANTS ##### ##### -->
+  <!-- *************************************** -->
+
+  <xacro:property name="const_pi" value="3.1415926535897931"/>
+
+  <!-- ******************************************************** -->
+  <!-- ##### ##### XACRO:PARAMETERS:JOINT_DISTANCES ##### ##### -->
+  <!-- ******************************************************** -->
+
+  <!-- distance/[m] base_link origin to hip_joint origin -->
+  <xacro:property name="param_distance_base_to_hip" value="0.18"/>
+  <!-- distance/[m] hip_joint origin to knee_joint origin -->
+  <xacro:property name="param_distance_hip_to_knee" value="0.11"/>
+  <!-- distance/[m] knee_joint origin to foot_joint origin -->
+  <xacro:property name="param_distance_knee_to_foot" value="${-0.32}"/>
+  <!-- distance/[m] base_link origin to tower_rotation_axis_joint origin -->
+  <xacro:property name="param_distance_base_to_tower_axis" value="${0.21+0.96}"/>
+
+  <!-- ***************************************************** -->
+  <!-- ##### ##### XACRO:PARAMETERS:JOINT_LIMITS ##### ##### -->
+  <!-- ***************************************************** -->
+
+  <!-- hip joints lower angle limit/[rad] -->
+  <xacro:property name="param_lower_angle_limit_hip_joints" value="0.00"/>
+  <!-- hip joints upper angle limit/[rad] -->
+  <xacro:property name="param_upper_angle_limit_hip_joints" value="-1.57"/>
+  <!-- knee joints lower angle limit/[rad] -->
+  <xacro:property name="param_lower_angle_limit_knee_joints" value="0.00"/>
+  <!-- knee joints upper angle limit/[rad] -->
+  <xacro:property name="param_upper_angle_limit_knee_joints" value="1.57"/>
+
+  <!-- parameters effort/velocity only necessary for revolute/prismatic joints -->
+  <xacro:property name="param_effort" value="1000.00"/>
+  <xacro:property name="param_velocity" value="0.50"/>
+
+  <!-- ****************************************** -->
+  <!-- ##### ##### XACRO:MACROS:LINKS ##### ##### -->
+  <!-- ****************************************** -->
+
+  <!-- macro for the supported creation of a link -->
+  <xacro:macro name="macro_link" params="name">
+    <link name="link_${name}">
+    </link>
+  </xacro:macro>
+
+  <!-- ******************************************* -->
+  <!-- ##### ##### XACRO:MACROS:JOINTS ##### ##### -->
+  <!-- ******************************************* -->
+
+  <!-- macro for the supported creation of a fixed joint -->
+  <xacro:macro name="macro_joint_fixed" params="name type parent child origin rpy">
+    <joint name="joint_${name}" type="${type}">
+      <parent link="${parent}"/>
+      <child link="${child}"/>
+      <origin xyz="${origin}" rpy="${rpy}"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- macro for the supported creation of a continuous joint -->
+  <xacro:macro name="macro_joint_continuous" params="name type parent child origin rpy axis">
+      <joint name="joint_${name}" type="${type}">
+        <parent link="${parent}"/>
+        <child link="${child}"/>
+        <origin xyz="${origin}" rpy="${rpy}"/>
+        <axis xyz="${axis}"/>
+      </joint>
+  </xacro:macro>
+
+  <!-- macro for the supported creation of a revolute joint -->
+  <xacro:macro name="macro_joint_revolute" params="name type parent child origin rpy axis lower upper">
+    <joint name="joint_${name}" type="${type}">
+      <parent link="${parent}"/>
+      <child link="${child}"/>
+      <origin xyz="${origin}" rpy="${rpy}"/>
+      <axis xyz="${axis}"/>
+      <limit lower="${lower}" upper="${upper}" effort="${param_effort}" velocity="${param_velocity}"/>
+    </joint>
+  </xacro:macro>
+
+  <!-- *********************************** -->
+  <!-- ##### ##### ROBOT:LINKS ##### ##### -->
+  <!-- *********************************** -->
+
+  <!-- first link has to be called "base_link" -->
+  <link name="base_link">
+  </link>
+
+  <xacro:macro_link name="tower_axis"/>
+  <xacro:macro_link name="thigh_1"/>
+  <xacro:macro_link name="thigh_2"/>
+  <xacro:macro_link name="thigh_3"/>
+  <xacro:macro_link name="leg_1"/>
+  <xacro:macro_link name="leg_2"/>
+  <xacro:macro_link name="leg_3"/>
+  <xacro:macro_link name="foot_1"/>
+  <xacro:macro_link name="foot_2"/>
+  <xacro:macro_link name="foot_3"/>
+
+  <!-- ************************************ -->
+  <!-- ##### ##### ROBOT:JOINTS ##### ##### -->
+  <!-- ************************************ -->
+
+  <xacro:macro_joint_continuous name="tower_axis" type="continuous" parent="base_link" child="link_tower_axis" origin="0 0 ${param_distance_base_to_tower_axis}" rpy="0 0 0" axis="0 0 1"/>
+
+  <!-- **************************************** -->
+  <!-- ##### ##### ROBOT:JOINTS:HIP ##### ##### -->
+  <!-- **************************************** -->
+
+  <!-- cosinus(0deg)=1.00, sin(0deg)=0.00 -->
+  <xacro:macro_joint_revolute name="hip_1" type="revolute" parent="base_link" child="link_thigh_1" origin="${1.00*param_distance_base_to_hip} ${0.00*param_distance_base_to_hip} 0" rpy="0 0 0" axis="0 1 0" lower="${param_lower_angle_limit_hip_joints}" upper="${param_upper_angle_limit_hip_joints}"/>
+  <!-- cosinus(0deg+120deg)=-0.50, sin(120deg=0.87) -->
+  <xacro:macro_joint_revolute name="hip_2" type="revolute" parent="base_link" child="link_thigh_2" origin="${-0.50*param_distance_base_to_hip} ${0.87*param_distance_base_to_hip} 0" rpy="0 0 ${2*const_pi/360*120}" axis="0 1 0" lower="${param_lower_angle_limit_hip_joints}" upper="${param_upper_angle_limit_hip_joints}"/>
+  <!-- cosinus(0deg+120deg+120deg)=-0.50, sin(0deg+120deg+120deg)=-0.87 -->
+  <xacro:macro_joint_revolute name="hip_3" type="revolute" parent="base_link" child="link_thigh_3" origin="${-0.50*param_distance_base_to_hip} ${-0.87*param_distance_base_to_hip} 0" rpy="0 0 ${2*const_pi/360*240}" axis="0 1 0" lower="${param_lower_angle_limit_hip_joints}" upper="${param_upper_angle_limit_hip_joints}"/>
+
+  <!-- ***************************************** -->
+  <!-- ##### ##### ROBOT:JOINTS:KNEE ##### ##### -->
+  <!-- ***************************************** -->
+
+  <xacro:macro_joint_revolute name="knee_1" type="revolute" parent="link_thigh_1" child="link_leg_1" origin="${param_distance_hip_to_knee} 0 0" rpy="0 0 0" axis="0 1 0" lower="${param_lower_angle_limit_knee_joints}" upper="${param_upper_angle_limit_knee_joints}"/>
+  <xacro:macro_joint_revolute name="knee_2" type="revolute" parent="link_thigh_2" child="link_leg_2" origin="${param_distance_hip_to_knee} 0 0" rpy="0 0 0" axis="0 1 0" lower="${param_lower_angle_limit_knee_joints}" upper="${param_upper_angle_limit_knee_joints}"/>
+  <xacro:macro_joint_revolute name="knee_3" type="revolute" parent="link_thigh_3" child="link_leg_3" origin="${param_distance_hip_to_knee} 0 0" rpy="0 0 0" axis="0 1 0" lower="${param_lower_angle_limit_knee_joints}" upper="${param_upper_angle_limit_knee_joints}"/>
+
+  <!-- ***************************************** -->
+  <!-- ##### ##### ROBOT:JOINTS:FEET ##### ##### -->
+  <!-- ***************************************** -->
+
+  <xacro:macro_joint_fixed name="foot_1" type="fixed" parent="link_leg_1" child="link_foot_1" origin="0 0 ${param_distance_knee_to_foot}" rpy="0 0 0"/>
+  <xacro:macro_joint_fixed name="foot_2" type="fixed" parent="link_leg_2" child="link_foot_2" origin="0 0 ${param_distance_knee_to_foot}" rpy="0 0 0"/>
+  <xacro:macro_joint_fixed name="foot_3" type="fixed" parent="link_leg_3" child="link_foot_3" origin="0 0 ${param_distance_knee_to_foot}" rpy="0 0 0"/>
+
+</robot>

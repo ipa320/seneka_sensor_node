@@ -1,0 +1,14 @@
+<launch>
+	
+	<node name="urg_node" pkg="urg_node" type="urg_node" output="screen">
+		<rosparam file="$(find seneka_node_config)/config/urg_node.yaml" command="load"/>
+	</node>
+
+	<node name="laser_assembler" pkg="laser_assembler" type="laser_scan_assembler" output="screen">
+		<rosparam file="$(find seneka_node_config)/config/laser_assembler.yaml" command="load"/>
+	</node>
+
+	<node name="laser_scan" pkg="seneka_laser_scan" type="seneka_laser_scan" output="screen">
+	</node>
+
+</launch>

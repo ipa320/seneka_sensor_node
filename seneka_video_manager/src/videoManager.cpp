@@ -105,7 +105,6 @@ bool getLiveStreamCallback(seneka_video_manager::getLiveStream::Request &req, se
 bool getSnapShotCallback(seneka_video_manager::getSnapShots::Request &req, seneka_video_manager::getSnapShots::Response &res){
 
 	ROS_INFO("Remote getSnapShots call ...");
-
 	// start snapShots
 	if(!fManager->isSnapShotRunning()){
 		fManager->startSnapshots(req.interval);
