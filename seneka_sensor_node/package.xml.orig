@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+<package>
+  <name>seneka_sensor_node</name>
+  <version>0.0.0</version>
+  <description>The seneka_sensor_node metapackage contains several packages that are built specifically for the Sensor-Nodes developed at Fraunhofer IPA in the SENEKA project.
+    These packages might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.</description>
+
+  <!-- One maintainer tag required, multiple allowed, one person per tag --> 
+  <maintainer email="mig@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
+  <maintainer email="frm@ipa.fraunhofer.de">Florian Mirus</maintainer>
+
+
+  <!-- One license tag required, multiple allowed, one license per tag -->
+  <license>LGPL</license>
+
+  <!-- Author tags are optional, mutiple are allowed, one per tag -->
+  <!-- Authors do not have to be maintianers, but could be -->
+  <author email="mig@ipa.fraunhofer.de">Matthias Gruhler</author>
+  <author email="frm@ipa.fraunhofer.de">Florian Mirus</author>  
+
+
+  <!-- The *_depend tags are used to specify dependencies -->
+  <!-- Dependencies can be catkin packages or system dependencies -->
+  <buildtool_depend>catkin</buildtool_depend>
+
+  <run_depend>seneka_dgps</run_depend>
+  <run_depend>seneka_node_bringup</run_depend>
+  <run_depend>seneka_node_config</run_depend>
+  <run_depend>seneka_srv</run_depend>
+  <run_depend>seneka_termo_video_manager</run_depend>
+  <run_depend>seneka_video_manager</run_depend>
+  <run_depend>seneka_windsensor</run_depend>
+  <run_depend>seneka_laser_scan</run_depend>
+<<<<<<< HEAD
+=======
+  <run_depend>seneka_sensor_node_description</run_depend>
+>>>>>>> feature/sensor_node_description
+
+  <!-- The export tag contains other, unspecified, tags -->
+  <export>
+    <metapackage/>
+  </export>
+</package>
