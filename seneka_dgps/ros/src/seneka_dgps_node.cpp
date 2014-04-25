@@ -142,11 +142,11 @@ int main(int argc, char** argv)
         {
             /*  call getPosition on dgps instance:
             *
-            *   - requests position record from receiver
-            *   - appends incoming data to ringbuffer
-            *   - tries to extract valid packets (incl. checksum verification)
-            *   - tries to read "Position Record"-fields from valid packets
-            *   - writes "Position Record"-data into struct of type gps_data
+            *   -> requests position record from receiver
+            *   -> appends incoming data to ringbuffer
+            *   -> tries to extract valid packets (incl. checksum verification)
+            *   -> tries to read "Position Record"-fields from valid packets
+            *   -> writes "Position Record"-data into struct of type gps_data
             */
             success_getPosition = cDgps.getPosition(position_record);
 
@@ -273,4 +273,4 @@ int main(int argc, char** argv)
 //    return success;
 //}
 
-#endif //NDEBUG
+#endif NDEBUG
