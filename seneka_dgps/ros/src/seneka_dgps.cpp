@@ -1,212 +1,265 @@
-/****************************************************************
- *
- * Copyright (c) 2010
- *
- * Fraunhofer Institute for Manufacturing Engineering
- * and Automation (IPA)
- *
- * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * Project name:  SENEKA 
- * ROS stack name: DGPS
- * ROS package name: seneka_dgps
- * Description:
- *
- *
- * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *
- * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- * Author: Ciby Mathew, email:Ciby.Mathew@ipa.fhg.de
- * Supervised by: Christophe Maufroy
- *
- * Date of creation: Jan 2013
- * modified 03/2014: David Bertram, email: davidbertram@gmx.de
- *
- * TODO:
- * - generation and publishing of error messages
- * - extract all fields of a position record message (especially dynamic length of sat-channel_numbers and prns..)
- * - publish all gps values to ros topic (maybe need a new message if navsatFix cannot take all provided values..)
- *
- * - monitor frequency/quality/.. of incoming data packets.. --> inform ROS about bad settings (publishing rate <-> receiving rate)
- *
- * - rewrite function structure of interpretData and connected functions.. (still in dev state.. double check for memory leaks etc..!!)
- *
- *
- * - extracting multi page messages from buffer..  (not needed for position records)
- * - clean up SerialIO files
- * - add more parameter handling (commandline, ..); document parameters and configuration
- * - testing !
- *
- * +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions are met:
- *
- *	 * Redistributions of source code must retain the above copyright
- *	   notice, this list of conditions and the following disclaimer.
- *	 * Redistributions in binary form must reproduce the above copyright
- *	   notice, this list of conditions and the following disclaimer in the 
- *	   documentation and/or other materials provided with the distribution.
- *	 * Neither the name of the Fraunhofer Institute for Manufacturing
- *	   Engineering and Automation (IPA) nor the names of its
- *	   contributors may be used to endorse or promote products derived from
- *	   this software without specific prior written permission.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License LGPL as
- * published by the Free Software Foundation, either version 3 of the
- * License, or (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License LGPL for more details.
- *
- * You should have received a copy of the GNU Lesser General Public
- * License LGPL along with this program.
- * If not, see <http://www.gnu.org/licenses/>.
- *
- ****************************************************************/
+/*!
+*****************************************************************
+* seneka_dgps.cpp
+*
+* Copyright (c) 2013
+* Fraunhofer Institute for Manufacturing Engineering
+* and Automation (IPA)
+*
+*****************************************************************
+*
+* Repository name: seneka_sensor_node
+*
+* ROS package name: seneka_dgps
+*
+* Author: Ciby Mathew, E-Mail: Ciby.Mathew@ipa.fhg.de
+* 
+* Supervised by: Christophe Maufroy
+*
+* Date of creation: Jan 2013
+* Modified 03/2014: David Bertram, E-Mail: davidbertram@gmx.de
+* Modified 04/2014: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
+*
+* Description:
+*
+* To-Do:
+*
+* - Generation and publishing of error messages
+* - Extract all fields of a position record message (especially dynamic length of sat-channel_numbers and prns...)
+* - Publish all gps values to ros topic (maybe need a new message if navsatFix cannot take all provided values...)
+*
+* - Monitor frequency/quality/... of incoming data packets... --> inform ROS about bad settings (publishing rate <-> receiving rate)
+*
+* - Rewrite function structure of interpretData and connected functions.. (still in dev state... double check for memory leaks etc...!!)
+*
+* - Extracting multi page messages from buffer...  (not needed for position records)
+* - Clean up SerialIO files
+* - Add more parameter handling (commandline, ...); document parameters and configuration
+* - Testing!
+*
+*****************************************************************
+*
+* Redistribution and use in source and binary forms, with or without
+* modification, are permitted provided that the following conditions are met:
+*
+* - Redistributions of source code must retain the above copyright
+* notice, this list of conditions and the following disclaimer. \n
+* - Redistributions in binary form must reproduce the above copyright
+* notice, this list of conditions and the following disclaimer in the
+* documentation and/or other materials provided with the distribution. \n
+* - Neither the name of the Fraunhofer Institute for Manufacturing
+* Engineering and Automation (IPA) nor the names of its
+* contributors may be used to endorse or promote products derived from
+* this software without specific prior written permission. \n
+*
+* This program is free software: you can redistribute it and/or modify
+* it under the terms of the GNU Lesser General Public License LGPL as
+* published by the Free Software Foundation, either version 3 of the
+* License, or (at your option) any later version.
+*
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+* GNU Lesser General Public License LGPL for more details.
+*
+* You should have received a copy of the GNU Lesser General Public
+* License LGPL along with this program.
+* If not, see <http://www.gnu.org/licenses/>.
+*
+****************************************************************/
 
-//##################
-//#### includes ####
-#include <ros/ros.h>
-#include <sensor_msgs/NavSatFix.h>
-#include <diagnostic_msgs/DiagnosticArray.h>
-#include <seneka_dgps/Dgps.h>
-#include <sstream>
+/*****************************************/
+/***** DgpsNode class implementation *****/
+/*****************************************/
 
+#include <seneka_dgps/DgpsNode.h>
 
-// default parameters
-string position_topic = "/position";
-string diagnostics_topic = "/diagnostics";
-string serial_port = "/dev/ttyUSB0";
-int serial_baudrate = 38400;
-int publishrate = 1;
+// constructor
+DgpsNode::DgpsNode()
+{
+    //default parameters
+    position_topic      = "/position";
+    diagnostics_topic   = "/diagnostics";
+    serial_port         = "/dev/ttyUSB0";
+    serial_baudrate     = 38400;            // [] = Bd
+    publishrate         = 1;                // [] = Hz
 
-// helper function
-string IntToString(int a) {
-    ostringstream temp;
-    temp << a;
-    return temp.str();
+    nh = ros::NodeHandle("~");
+
+    // get and set parameters from the ROS parameter server
+    // if there is no matching parameter on the server, a default value is used
+
+    // port
+    if (!nh.hasParam("port"))
+    {
+        ROS_WARN("Using default parameter for port: %s", getSerialPort().c_str());
+        publishStatus("Using default parameter for port.", 0);
+
+    }
+    nh.param("port", port, getSerialPort());
+
+    // baud rate
+    if (!nh.hasParam("baud"))
+    {
+        ROS_WARN("Using default parameter for baud rate: %i Bd", getSerialBaudRate());
+        publishStatus("Using default parameter for baud rate.", 0);
+    }    
+    nh.param("baud", baud, getSerialBaudRate());
+
+    // ROS publish rate
+    if (!nh.hasParam("rate"))
+    {
+        ROS_WARN("Using default parameter for publish rate: %i Hz", getPublishRate());
+        publishStatus("Using default parameter for publish rate.", 0);
+    }
+    nh.param("rate", rate, getPublishRate());
+
+    syncedROSTime = ros::Time::now();
+
+    topicPub_position       = nh.advertise<sensor_msgs::NavSatFix>              (position_topic.c_str(), 1);
+    topicPub_Diagnostic_    = nh.advertise<diagnostic_msgs::DiagnosticArray>    (diagnostics_topic.c_str(), 1);
 }
 
-//####################
-//#### node class ####
-class DgpsNode {
-public:
-    ros::NodeHandle nh;
-    ros::Publisher topicPub_position;
-    ros::Publisher topicPub_Diagnostic_;
-    std::string port;
-    int baud;
-    int rate;
-    ros::Time syncedROSTime;
+// destructor
+DgpsNode::~DgpsNode(){}
 
-    // Constructor
-    DgpsNode() {
-        nh = ros::NodeHandle("~");
-        if (!nh.hasParam("port"))ROS_WARN("Used default parameter for port (%s)", serial_port.c_str());
-        nh.param("port", port, std::string(serial_port));
-        if (!nh.hasParam("baud")) ROS_WARN("Used default parameter for baud (%i)", serial_baudrate);
-        nh.param("baud", baud, serial_baudrate);
-        if (!nh.hasParam("rate")) ROS_WARN("Used default parameter for rate (%i)", publishrate);
-        nh.param("rate", rate, publishrate);
-        syncedROSTime = ros::Time::now();
+// publishing functions
 
-        topicPub_position = nh.advertise<sensor_msgs::NavSatFix > (position_topic.c_str(), 1);
-        topicPub_Diagnostic_ = nh.advertise<diagnostic_msgs::DiagnosticArray > (diagnostics_topic.c_str(), 1);
-    }
+void DgpsNode::publishPosition(Dgps::gps_data gps)
+{
+    sensor_msgs::NavSatFix positions;
 
-    // Destructor
-    ~DgpsNode() {
-    }
+    positions.latitude          = gps.latitude_value;
+    positions.longitude         = gps.longitude_value;
+    positions.altitude          = gps.altitude_value;
+    positions.header.frame_id   = "dgps_frame_id";
+    positions.header.stamp      = ros::Time::now();
 
-    void publishPosition(gps_data gps) {
-        sensor_msgs::NavSatFix positions;
-        positions.latitude = gps.latitude_value;
-        positions.longitude = gps.longitude_value;
-        positions.altitude = gps.altitude_value;
-        positions.header.frame_id = "gps_test_frameID";
-        topicPub_position.publish(positions);
-    }
+    topicPub_position.publish(positions);
+}
 
-    void publishError(std::string error_str) {
-        diagnostic_msgs::DiagnosticArray diagnostics;
-        diagnostics.status.resize(1);
-        diagnostics.status[0].level = 2;
-        diagnostics.status[0].name = nh.getNamespace();
-        diagnostics.status[0].message = error_str;
-        topicPub_Diagnostic_.publish(diagnostics);
-    }
-};
+void DgpsNode::publishStatus(std::string status_str, int level)
+{
+    diagnostic_msgs::DiagnosticArray diagnostics;
 
-//
-//#######################
-//#### main programm ####
-int main(int argc, char** argv) {
-    // initialize ROS, spezify name of node
-    ros::init(argc, argv, "Dgps");
-    DgpsNode rosNode;
-    Dgps dgps;
+    diagnostics.status.resize(1);
+    diagnostics.status[0].level     = level;
+    diagnostics.status[0].name      = nh.getNamespace();
+    diagnostics.status[0].message   = status_str;
+    diagnostics.header.frame_id     = "dgps_frame_id";
+    diagnostics.header.stamp        = ros::Time::now();
 
-    int publishRate = rosNode.rate;
-    int baudRate = rosNode.baud;
-    bool dgpsSensor_opened = false;
-    bool success_getPosition = false, connection_OK = false;
-    gps_data position_record;
+    topicPub_Diagnostic_.publish(diagnostics);
+}
 
-    while (!dgpsSensor_opened) {
-        ROS_INFO("Opening DGPS... (port: %s , baudrate: %s )", rosNode.port.c_str(), IntToString(baudRate).c_str());
-        dgpsSensor_opened = dgps.open(rosNode.port.c_str(), baudRate);
-        // check, if it is the first try to open scanner
-        if (!dgpsSensor_opened) {
-            ROS_ERROR("...DGPS not available on port %s. Will retry every second.", rosNode.port.c_str());
-            rosNode.publishError("...DGPS not available on port");
+/****************************************/
+/***** main program Seneka_dgps.cpp *****/
+/****************************************/
+
+// main program includes
+#include <seneka_dgps/Dgps.h>
+
+int main(int argc, char** argv)
+{
+    // ROS initialization and specification of node name
+    ros::init(argc, argv, "DPGS");
+
+    DgpsNode        cDgpsNode;
+    Dgps            cDgps;
+    Dgps::gps_data  position_record;
+
+    bool dgpsSensor_opened      = false;
+    bool connection_OK          = false;
+    bool success_getPosition    = false;
+
+    while (!dgpsSensor_opened)
+    {
+        ROS_INFO("Establishing connection to DGPS... (Port: %s, Baud rate: %i)", cDgpsNode.getPort().c_str(), cDgpsNode.getBaud());
+        dgpsSensor_opened = cDgps.open(cDgpsNode.getPort().c_str(), cDgpsNode.getBaud());
+
+        if (!dgpsSensor_opened)
+        {
+            ROS_ERROR("Connection to DGPS failed. DGPS is not available on given port %s. Retrying every second...", cDgpsNode.getPort().c_str());
+            cDgpsNode.publishStatus("Connection to DGPS failed. DGPS is not available on given port. Retrying every second...", 2);
         }
-        sleep(1); // wait for Dgps to get ready if successfull, or wait before retrying
+        else
+        {
+            ROS_INFO("Successfully connected to DPGS.");
+            cDgpsNode.publishStatus("Successfully connected to DPGS.", 0);
+        }
+
+        // in case of success, wait for DPGS to get ready
+        // in case of an error, wait before retry connection
+        sleep(1);
     }
 
-    // main loop
-    ros::Rate loop_rate(publishRate); // Hz
-    // send protocoll request to check if GPS-receiver accepts commands
-    connection_OK = dgps.checkConnection();
+    ros::Rate loop_rate(cDgpsNode.getRate()); // [] = Hz
 
-    if (!connection_OK) {
-        cout << "protocol request failed (05h): check cables, adapters, settings, ...";
-    } else {
-        while (rosNode.nh.ok()) {
-            // call getPosition on dgps instance:
-            //  - requests position record from receiver
-            //  - appends incoming data to ringbuffer
-            //  - tries to extract valid packets (incl. checksum verification)
-            //  - tries to read "Position Record"-fields from valid packets
-            //  - writes "Position Record"-data into struct of type gps_data
-            success_getPosition = dgps.getPosition(position_record);
+    // testing the communications link by sending protocol request ENQ (05h) (see BD982 manual, page 65)
+    connection_OK = cDgps.checkConnection();
 
-            // publish GPS to ROS if getPosition was successfull
-            if (success_getPosition) {
-                ROS_INFO("...publishing position of DGPS: %f, %f, %f",
-                        position_record.longitude_value,
-                        position_record.latitude_value,
-                        position_record.altitude_value);
-                rosNode.publishPosition(position_record);
-            } else {
-                ROS_WARN("...no Values available");
+    if (!connection_OK)
+    {
+        ROS_ERROR("Testing the communications link failed. Check cables, adapters, settings, ...");
+        cDgpsNode.publishStatus("Testing the communications link failed. Check cables, adapters, settings, ...", 2);
+    }
+
+    else
+    {
+        ROS_INFO("Successfully tested the communications link.");
+        cDgpsNode.publishStatus("Successfully tested the communications link.", 0);
+
+        ROS_INFO("Beginnig to catch and publish GPS data...");
+        cDgpsNode.publishStatus("Beginnig to catch and publish GPS data...", 0);
+
+        /*****************************/
+        /***** main program loop *****/
+        /*****************************/
+
+        while (cDgpsNode.nh.ok())
+        {
+            /*  call getPosition on dgps instance:
+            *
+            *   - requests position record from receiver
+            *   - appends incoming data to ringbuffer
+            *   - tries to extract valid packets (incl. checksum verification)
+            *   - tries to read "Position Record"-fields from valid packets
+            *   - writes "Position Record"-data into struct of type gps_data
+            */
+            success_getPosition = cDgps.getPosition(position_record);
+
+            // publish GPS data to ROS topic if getPosition() was successfull, if not just publish status
+            if (success_getPosition)
+            {
+                #ifdef DEBUG
+                ROS_DEBUG("Successfully catched DGPS data.");
+                cDgpsNode.publishStatus("Successfully catched DGPS data.", 0);
+
+                ROS_DEBUG("Publishing position of DGPS...");
+                cDgpsNode.publishStatus("Publishing position of DGPS...", 0);
+                #endif
+                
+                cDgpsNode.publishPosition(position_record);
             }
+            else
+            {
+                ROS_WARN("No GPS data available.");
+                cDgpsNode.publishStatus("No GPS data available.", 1);
+            }
+
             ros::spinOnce();
             loop_rate.sleep();
         }
     }
+
     return 0;
 }
 
-
-
+#ifdef DEBUG
 
 // ##########################################################################
 // ## dev-methods -> can be removed when not needed anymore                ##
 // ##########################################################################
-
 
 // context of this function needs to be created!!
 //bool getFakePosition(double* latt) {
@@ -298,3 +351,5 @@ int main(int argc, char** argv) {
 //    success = true;
 //    return success;
 //}
+
+#endif
