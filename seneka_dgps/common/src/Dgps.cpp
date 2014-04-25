@@ -57,16 +57,13 @@
 *
 ****************************************************************/
 
+#include <seneka_dgps/Dgps.h>
+
+typedef unsigned char BYTE;
+
 /*************************************/
 /***** Dgps class implementation *****/
 /*************************************/
-
-#include <seneka_dgps/Dgps.h>
-#include <seneka_dgps/seneka_dgps.h>
-
-using namespace std;
-
-typedef unsigned char BYTE;
 
 // the following variables allow to extract associated packet fields from incoming data frames as described in Trimble BD982 GNSS receiver manual
 // base unit is 1 char = 8 Bit
@@ -128,13 +125,6 @@ Dgps::Dgps(){}
 Dgps::~Dgps()
 {
     m_SerialIO.close();
-}
-
-// transfers a status statement to a SenekaDgps instance for publishing a status message
-void Dgps::publishStatus(std::string status_str, int level)
-{
-    SenekaDgps cSenekaDgps;
-    cSenekaDgps.publishStatus(status_str, level);
 }
 
 // opens serial connection
@@ -219,19 +209,23 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
     else
     {
         // received too much data, buffer is full
-        ROS_WARN("Buffer is full! Cannot insert data!");
-        publishStatus("Buffer is full! Cannot insert data.", 1);
+        std::cout << "\nBuffer is full! Cannot insert data!\n";
     }
 
     #ifndef NDEBUG
-    ROS_DEBUG("Buffer start:    %i\n", ringbuffer_start);
-    ROS_DEBUG("Buffer length:   %i\n", ringbuffer_length);
-    ROS_DEBUG("Content of ringbuffer:");
+
+    std::cout << "\nBuffer start: " << ringbuffer_start << "\n";
+    std::cout << "\nBuffer length: " << ringbuffer_length << "\n";
+
+    std::cout << "\nContent of ringbuffer:\t";
     for (int i = 0; i < ringbuffer_size; i++)
     {
-        ROS_DEBUG(" %.2x ", ringbuffer[i]);
+        printf("%.2x\t", ringbuffer[i]);
     }
-    #endif //NDEBUG
+
+    std::cout << "\n";
+
+    #endif NDEBUG
 
     // find stx, try to get length and match checksum + etx
     for (int y = 0; y < ringbuffer_length; y++)
@@ -239,14 +233,12 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
         // find stx: (byte 0 == 0x02)
         if (ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size] != 0x02)
         {
-            ROS_WARN("First byte in received data frame was not stx (%i)!", ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size]);
-            publishStatus("First byte in received data frame was not stx.", 1);
+            std::cout << "\nFirst byte in received data frame was not stx (" << ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size] << ")!\n";
             continue;
         }
         else
         {
-            ROS_INFO("Found stx in received data frame.");
-            publishStatus("Found stx in received data frame.", 0);
+            std::cout << "\nFound stx in received data frame.\n";
 
             // --- header ---
             temp_packet.stx         = ringbuffer[(ringbuffer_start + y + stx_index)         % ringbuffer_size] % 256;
@@ -294,15 +286,13 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
             bool error_occured = false;
             if (checksum != temp_packet.checksum)
             {
-                ROS_WARN("Checksum mismatch! Calculated checksum: %x. Received checksum: %x. New Parser.", checksum, temp_packet.checksum);
-                publishStatus("Checksum mismatch!", 1);
+                printf("\nChecksum mismatch! Calculated checksum: %x. Received checksum: %x. New Parser.\n", checksum, temp_packet.checksum);
                 error_occured = true;
             }
 
             if (temp_packet.etx != 0x03)
             {
-                ROS_WARN("Etx was not 0x03. Received etx: %x. New parser.", temp_packet.etx);
-                publishStatus("etx was not 0x03!", 1);
+                printf("\nEtx was not 0x03. Received etx: %x. New parser.\n", temp_packet.etx);
                 error_occured = true;
             }
 
@@ -327,8 +317,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
 
             if (ringbuffer_length > 0)
             {
-                ROS_WARN("Ringbuffer was not empty after reading one packet (%i bytes left)! Calling function to receive data again...", ringbuffer_length);
-                publishStatus("Ringbuffer was not empty after reading one packet! Calling function to receive data again...", 1);
+                printf("\nRingbuffer was not empty after reading one packet (%i bytes left)! Calling function to receive data again...\n", ringbuffer_length);
                 
                 if (ringbuffer_old_start != ringbuffer_start)
                     if (!success)
@@ -342,14 +331,12 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
                     }
                     else
                     {
-                        ROS_WARN("Stopped interpreting remaining buffer to avoid infinite loop.");
-                        publishStatus("Stopped interpreting remaining buffer to avoid infinite loop.", 1);
+                        std::cout << "\nStopped interpreting remaining buffer to avoid infinite loop.\n";
                     }
             }
             else
             {
-                ROS_INFO("Successfully extracted packet.");
-                publishStatus("Successfully extracted packet.", 0);
+                std::cout << "\nSuccessfully extracted packet.\n";
             }
 
             return success;
@@ -411,12 +398,17 @@ double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023)
     for (int i = 0; i < 64; i++) bits[i] = resulting_bits[i];
 
     #ifndef NDEBUG
-    ROS_DEBUG("Bits:\n";
+
+    std::cout << "\nBits:\t";
+
     for (int i = 0; i < 64; i++)
     {
-        ROS_DEBUG("%i", bits[i]);
+        printf("%i\t", bits[i]);
     }
-    #endif //NDEBUG
+
+    std::cout << "\n";
+
+    #endif NDEBUG
 
     // calculate sign, fraction and exponent
     int sign_bit = bits[0];
@@ -436,9 +428,11 @@ double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023)
     fraction += 1;
 
     #ifndef NDEBUG
-    ROS_DEBUG("Exponent_lat: %f", exponent_lat-exponent_bias);
-    ROS_DEBUG("fraction_lat: %f", fraction_lat);
-    #endif //NDEBUG
+
+    printf("\nExponent_lat: %f\n", exponent_lat-exponent_bias);
+    printf("\nfraction_lat: %f\n", fraction_lat);
+
+    #endif NDEBUG
 
     int sign_lat = 1;
     if (sign_bit == 1) sign_lat = -1;
@@ -447,8 +441,10 @@ double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023)
     double double_value = sign_lat * (fraction * pow(2, exponent - exponent_bias));
 
     #ifndef NDEBUG
-    ROS_DEBUG("Calculated value: %f\n", latitude_value);
-    #endif //NDEBUG
+
+    printf("\nCalculated value: %f\n", latitude_value);
+
+    #endif NDEBUG
 
     return double_value;
 }
@@ -499,19 +495,17 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
 {
     if (incoming_packet.packet_type != 0x057)
     {
-        ROS_WARN        ("Received data packet has wrong type: %.10x. Expected packet of type 0x057.", incoming_packet.packet_type);
-        publishStatus   ("Received data packet has wrong type. Expected packet of type 0x057.", 1);
+        printf("\nReceived data packet has wrong type: %.10x. Expected packet of type 0x057.\n", incoming_packet.packet_type);
         return false;
     }
 
     if (incoming_packet.record_type != 0x01)
     {
-        ROS_WARN        ("Received data packet has wron record type: %.10x. Expected record of type 0x01.", incoming_packet.record_type);
-        publishStatus   ("Received data packet has wron record type: %.10x. Expected record of type 0x01.", 1);
+        printf("\nReceived data packet has wron record type: %.10x. Expected record of type 0x01.\n", incoming_packet.record_type);
         return false;
     }
 
-    ROS_INFO("Received data packet ok.");
+    std::cout << ("\nReceived data packet ok.\n");
 
     unsigned char latitude_bytes[8]         = {0};
     unsigned char longitude_bytes[8]        = {0};
@@ -545,15 +539,16 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
     double frequency_offset = getDOUBLE(frequency_offset_bytes);
     double pdop             = getDOUBLE(pdop_bytes);
 
-    // debug output
     #ifndef NDEBUG
-    ROS_DEBUG("Calculated longitude: %f", longitude_value);
-    ROS_DEBUG("Calculated latitude:  %f", latitude_value);
-    ROS_DEBUG("Calculated altitude:  %f", altitude_value);
-    ROS_DEBUG("Clock_offset:         %f", clock_offset);
-    ROS_DEBUG("Frequency_offset:     %f", frequency_offset);
-    ROS_DEBUG("Pdop:                 %f", pdop);
-    #endif //NDEBUG
+
+    printf("Calculated longitude: %f", longitude_value);
+    printf("\nCalculated latitude:  %f\n", latitude_value);
+    printf("\nCalculated altitude:  %f\n", altitude_value);
+    printf("\nClock_offset:         %f\n", clock_offset);
+    printf("\nFrequency_offset:     %f\n", frequency_offset);
+    printf("\nPdop:                 %f\n", pdop);
+
+    #endif NDEBUG
 
     // write extracted values to gps_data struct; this is the returned data.
     position_record.latitude_value  = latitude_value;
@@ -601,22 +596,25 @@ bool Dgps::getPosition(gps_data &position_record)
     // send request message to serial port
     byteswrite = m_SerialIO.write(message, length);
 
-    // debug output
     #ifndef NDEBUG
-    ROS_DEBUG("Sent request message to serial port. Total number of bytes sent: %i", byteswrite);
-    #endif //NDEBUG
+
+    printf("\nSent request message to serial port. Total number of bytes sent: %i\n", byteswrite);
+
+    #endif NDEBUG
 
     // read response from serial port
     bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
     
-    // debug output
     #ifndef NDEBUG
-    ROS_DEBUG("Received reply packet. Total number of bytes received: %i", bytesread);
+
+    printf("\nReceived reply packet. Total number of bytes received: %i\n", bytesread);
+
     for (int i = 0; i < bytesread; i++)
     {
-        ROS_DEBUG("%.2x", Buffer[buffer_index + i]);
+        printf("%.2x\t", Buffer[buffer_index + i]);
     }
-    #endif //NDEBUG
+
+    #endif NDEBUG
 
     // create data structure for the extracted data packets from serial port
     // this is not needed, so it could be removed and only used internally by interpretData function

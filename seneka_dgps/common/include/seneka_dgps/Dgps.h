@@ -64,26 +64,31 @@
 /***** includes *****/
 /********************/
 
-//internal includes
+// internal includes
 #include <seneka_dgps/SerialIO.h>
 
-// miscellaneous includes
-#include <math.h>
+// standart includes
+
 #include <iostream>
-#include <errno.h>
-#include <sys/types.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <linux/serial.h>
-#include <cstdlib>
 #include <string>
 #include <stdio.h>
-#include <stdlib.h>
 #include <cstring>
+
+#include <math.h>
+
+#include <errno.h>
+#include <fcntl.h>
+#include <cstdlib>
+#include <stdlib.h>
+
+// miscellaneous includes
+
 #include <endian.h>
 
-using namespace std;
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <sys/ioctl.h>
+#include <linux/serial.h>
 
 /**********************/
 /***** DGPS class *****/
