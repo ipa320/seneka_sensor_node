@@ -50,6 +50,9 @@ target_link_libraries(seneka_dgps
   ${catkin_LIBRARIES}
 )
 
+## Uncomment this if DEBUG sections should be compiled, too.
+## add_definitions(-DDEBUG)
+
 #############
 ## Install ##
 #############
