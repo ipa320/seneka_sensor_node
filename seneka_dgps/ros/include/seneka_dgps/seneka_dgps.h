@@ -1,6 +1,6 @@
 /*!
 *****************************************************************
-* DgpsNode.h
+* seneka_dgps.h
 *
 * Copyright (c) 2013
 * Fraunhofer Institute for Manufacturing Engineering
@@ -24,18 +24,7 @@
 *
 * To-Do:
 *
-* - Generation and publishing of error messages
-* - Extract all fields of a position record message (especially dynamic length of sat-channel_numbers and prns...)
-* - Publish all gps values to ros topic (maybe need a new message if navsatFix cannot take all provided values...)
-*
-* - Monitor frequency/quality/... of incoming data packets... --> inform ROS about bad settings (publishing rate <-> receiving rate)
-*
-* - Rewrite function structure of interpretData and connected functions.. (still in dev state... double check for memory leaks etc...!!)
-*
-* - Extracting multi page messages from buffer...  (not needed for position records)
-* - Clean up SerialIO files
-* - Add more parameter handling (commandline, ...); document parameters and configuration
-* - Testing!
+* --> see seneka_dgps_node.cpp To-Do
 *
 *****************************************************************
 *
@@ -68,8 +57,8 @@
 *
 ****************************************************************/
 
-#ifndef _DGPSNODE_H
-#define _DGPSNODE_H
+#ifndef _SENEKADGPS_H
+#define _SENEKADGPS_H
 
 /********************/
 /***** includes *****/
@@ -86,11 +75,11 @@
 // standart includes
 #include <sstream>
 
-/**************************/
-/***** DgpsNode class *****/
-/**************************/
+/****************************/
+/***** SenekaDgps class *****/
+/****************************/
 
-class DgpsNode
+class SenekaDgps
 {
     private:
 
@@ -114,11 +103,20 @@ class DgpsNode
         ros::Publisher  topicPub_Diagnostic_;
         ros::Time       syncedROSTime;
 
+        // diagnostics handling
+        // see ROS diagnostics (http://wiki.ros.org/diagnostics and http://docs.ros.org/api/diagnostic_msgs/html/msg/DiagnosticStatus.html)
+        enum Status
+        {
+            OK          = 0,
+            WARNING     = 1,
+            ERROR       = 2
+        };
+
         // constructor
-        DgpsNode();
+        SenekaDgps();
 
         // destructor
-        ~DgpsNode();
+        ~SenekaDgps();
 
         // getters
         std::string getPositionTopic    (void)  {return position_topic;}
@@ -140,4 +138,4 @@ class DgpsNode
         void publishStatus(std::string status_str, int level);
 };
 
-#endif //_DGPSNODE_H
+#endif //_SENEKADGPS_H

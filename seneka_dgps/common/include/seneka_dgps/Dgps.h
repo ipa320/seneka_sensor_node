@@ -24,7 +24,7 @@
 *
 * To-Do:
 *
-* --> see seneka_dgps.cpp To-Do-list
+* --> see seneka_dgps_node.cpp To-Do
 *
 *****************************************************************
 *
@@ -144,7 +144,7 @@ class Dgps
             char etx;
         };
 
-        // transfers a status statement to DgpsNode instance for publishing a status message
+        // transfers a status statement to SenekaDgps instance for publishing a status message
         void publishStatus(std::string status_str, int level);
 
         // opens serial port at given baud rate
