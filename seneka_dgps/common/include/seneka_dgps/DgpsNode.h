@@ -101,7 +101,7 @@ class DgpsNode
         int serial_baudrate;            // [] = Bd
         int publishrate;                // [] = Hz
 
-        // parameters getting initialized by parameter server
+        // parameters getting initialized by parameter server in constructor
         std::string     port;   // serial port
         int             baud;   // serial port baud rate
         int             rate;   // ROS publish rate
@@ -120,7 +120,7 @@ class DgpsNode
         // destructor
         ~DgpsNode();
 
-        // setters and getters
+        // getters
         std::string getPositionTopic    (void)  {return position_topic;}
         std::string getDiagnosticsTopic (void)  {return diagnostics_topic;}
         std::string getSerialPort       (void)  {return serial_port;}
@@ -130,6 +130,7 @@ class DgpsNode
         int         getBaud             (void)  {return baud;};
         int         getRate             (void)  {return rate;};
 
+        // setters
         void        setPort (std::string port)  {this->port = port;};
         void        setBaud (int baud)          {this->baud = baud;};
         void        setRate (int rate)          {this->rate = rate;};

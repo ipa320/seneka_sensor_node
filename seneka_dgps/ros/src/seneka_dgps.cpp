@@ -174,18 +174,19 @@ int main(int argc, char** argv)
 
     while (!dgpsSensor_opened)
     {
-        ROS_INFO("Establishing connection to DGPS... (Port: %s, Baud rate: %i)", cDgpsNode.getPort().c_str(), cDgpsNode.getBaud());
+        ROS_INFO("Establishing connection to DGPS device... (Port: %s, Baud rate: %i)", cDgpsNode.getPort().c_str(), cDgpsNode.getBaud());
+        cDgpsNode.publishStatus("Establishing connection to DGPS device...", 0);
         dgpsSensor_opened = cDgps.open(cDgpsNode.getPort().c_str(), cDgpsNode.getBaud());
 
         if (!dgpsSensor_opened)
         {
-            ROS_ERROR("Connection to DGPS failed. DGPS is not available on given port %s. Retrying every second...", cDgpsNode.getPort().c_str());
-            cDgpsNode.publishStatus("Connection to DGPS failed. DGPS is not available on given port. Retrying every second...", 2);
+            ROS_ERROR("Connection to DGPS device failed. Device is not available on given port %s. Retrying to establish connection every second...", cDgpsNode.getPort().c_str());
+            cDgpsNode.publishStatus("Connection to DGPS failed. DGPS is not available on given port. Retrying to establish connection every second...", 2);
         }
         else
         {
-            ROS_INFO("Successfully connected to DPGS.");
-            cDgpsNode.publishStatus("Successfully connected to DPGS.", 0);
+            ROS_INFO("Successfully connected to DPGS device.");
+            cDgpsNode.publishStatus("Successfully connected to DPGS device.", 0);
         }
 
         // in case of success, wait for DPGS to get ready
@@ -200,8 +201,8 @@ int main(int argc, char** argv)
 
     if (!connection_OK)
     {
-        ROS_ERROR("Testing the communications link failed. Check cables, adapters, settings, ...");
-        cDgpsNode.publishStatus("Testing the communications link failed. Check cables, adapters, settings, ...", 2);
+        ROS_ERROR("Testing the communications link failed (see Trimble BD982 GNSS Receiver manual page 65).");
+        cDgpsNode.publishStatus("Testing the communications link failed (see Trimble BD982 GNSS Receiver manual page 65).", 2);
     }
 
     else
@@ -209,8 +210,8 @@ int main(int argc, char** argv)
         ROS_INFO("Successfully tested the communications link.");
         cDgpsNode.publishStatus("Successfully tested the communications link.", 0);
 
-        ROS_INFO("Beginnig to catch and publish GPS data...");
-        cDgpsNode.publishStatus("Beginnig to catch and publish GPS data...", 0);
+        ROS_INFO("Beginnig to obtain and publish DGPS data on topic %s...", cDgpsNode.getPositionTopic().c_str());
+        cDgpsNode.publishStatus("Beginnig to obtain and publish DGPS data...", 0);
 
         /*****************************/
         /***** main program loop *****/
@@ -231,20 +232,19 @@ int main(int argc, char** argv)
             // publish GPS data to ROS topic if getPosition() was successfull, if not just publish status
             if (success_getPosition)
             {
-                #ifdef DEBUG
-                ROS_DEBUG("Successfully catched DGPS data.");
-                cDgpsNode.publishStatus("Successfully catched DGPS data.", 0);
 
-                ROS_DEBUG("Publishing position of DGPS...");
-                cDgpsNode.publishStatus("Publishing position of DGPS...", 0);
-                #endif
+                ROS_DEBUG("Successfully obtained DGPS data.");
+                cDgpsNode.publishStatus("Successfully obtained DGPS data.", 0);
+
+                ROS_DEBUG("Publishing DGPS position on topic %s...", cDgpsNode.getPositionTopic().c_str());
+                cDgpsNode.publishStatus("Publishing DGPS position...", 0);
                 
                 cDgpsNode.publishPosition(position_record);
             }
             else
             {
-                ROS_WARN("No GPS data available.");
-                cDgpsNode.publishStatus("No GPS data available.", 1);
+                ROS_WARN("Failed to obtain DGPS data. No DGPS data available.");
+                cDgpsNode.publishStatus("Failed to obtain DGPS data. No DGPS data available.", 1);
             }
 
             ros::spinOnce();

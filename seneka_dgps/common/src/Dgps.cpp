@@ -68,7 +68,7 @@ using namespace std;
 
 typedef unsigned char BYTE;
 
-// the following variables allow to extract associated packet fields from incoming data frames as described in BD982 manual
+// the following variables allow to extract associated packet fields from incoming data frames as described in Trimble BD982 GNSS receiver manual
 // base unit is 1 char = 8 Bit
 
 int stx_index               = 0;    // index: starting position of data element in incoming data frame
@@ -156,8 +156,8 @@ bool Dgps::open(const char * pcPort, int iBaudRate)
     }
 }
 
-// tests the communications link by sending protocol request "ENQ" (05h) (see BD982 manual, page 65)
-// returns success response "ACK" (06h) (see BD982 manual, page 65)
+// tests the communications link by sending protocol request "ENQ" (05h) (see Trimble BD982 GNSS receiver manual, page 65)
+// returns success response "ACK" (06h) (see Trimble BD982 GNSS receiver manual, page 65)
 bool Dgps::checkConnection()
 {    
     // test command "ENQ" (05h)
@@ -224,32 +224,29 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
     }
 
     #ifdef DEBUG
-    ROS_DEBUG("Buffer start: %i\n", ringbuffer_start);
-    ROS_DEBUG("Buffer length: %i\n", ringbuffer_length);
-    ROS_DEBUG("Content of ringbuffer:\n");
-
+    ROS_DEBUG("Buffer start:    %i\n", ringbuffer_start);
+    ROS_DEBUG("Buffer length:   %i\n", ringbuffer_length);
+    ROS_DEBUG("Content of ringbuffer:");
     for (int i = 0; i < ringbuffer_size; i++)
     {
         ROS_DEBUG(" %.2x ", ringbuffer[i]);
     }
     #endif
 
-    // find stx, try to get length, and match checksum + etx
+    // find stx, try to get length and match checksum + etx
     for (int y = 0; y < ringbuffer_length; y++)
     {
         // find stx: (byte 0 == 0x02)
         if (ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size] != 0x02)
         {
-            ROS_WARN("First byte was not stx: %i\n", ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size]);
+            ROS_WARN("First byte was not stx (%i)!", ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size]);
             publishStatus("First byte was not stx.", 1);
             continue;
         }
         else
         {
-            #ifdef DEBUG
-            ROS_DEBUG("Found stx at byte: %i", i);
+            ROS_INFO("Found stx.");
             publishStatus("Found stx.", 0);
-            #endif
 
             // --- header ---
             temp_packet.stx         = ringbuffer[(ringbuffer_start + y + stx_index)         % ringbuffer_size] % 256;
@@ -297,15 +294,15 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
             bool error_occured = false;
             if (checksum != temp_packet.checksum)
             {
-                ROS_WARN("New parser: checksum mismatch %x (calculated) - %x (received)", checksum, temp_packet.checksum);
-                publishStatus("New parser.",1);
+                ROS_WARN("Checksum mismatch! Calculated checksum: %x. Received checksum: %x. New Parser.", checksum, temp_packet.checksum);
+                publishStatus("Checksum mismatch!", 1);
                 error_occured = true;
             }
 
             if (temp_packet.etx != 0x03)
             {
-                ROS_WARN("New parser: etx was not 0x03 - %x (received)", temp_packet.etx);
-                publishStatus("New parser: Etx was not 0x03.",1);
+                ROS_WARN("Etx was not 0x03. Received etx: %x. New parser.", temp_packet.etx);
+                publishStatus("etx was not 0x03!", 1);
                 error_occured = true;
             }
 
@@ -324,13 +321,15 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
             {
                 incoming_packet = temp_packet;
 
-                // if data is okay -> success = true;  ..then update ringbuffer pointers and write new packet to parameter. ..see  few lines below
+                // if data is okay -> success = true, then update ringbuffer pointers and write new packet to parameter... see  few lines below
                 success = extractGPS(incoming_packet, position_record);
             }
 
             if (ringbuffer_length > 0)
             {
-                printf("ringbuffer was not empty after reading one packet! (%i bytes left).. calling receiveData again\n", ringbuffer_length);
+                ROS_WARN("Ringbuffer was not empty after reading one packet (%i bytes left)! Calling function to receive data again...", ringbuffer_length);
+                publishStatus("Ringbuffer was not empty after reading one packet! Calling function to receive data again...", 1);
+                
                 if (ringbuffer_old_start != ringbuffer_start)
                     if (!success)
                     {
@@ -343,12 +342,14 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
                     }
                     else
                     {
-                    printf("..stopped interpreting remaining buffer to avoid infinite-loop\n");
+                        ROS_WARN("Stopped interpreting remaining buffer to avoid infinite loop.");
+                        publishStatus("Stopped interpreting remaining buffer to avoid infinite loop.", 1);
                     }
             }
             else
             {
-                printf(" extracted packet successfully \n\n");
+                ROS_INFO("Successfully extracted packet.");
+                publishStatus("Successfully extracted packet.", 0);
             }
 
             return success;
@@ -357,7 +358,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
     return success;
 }
 
-// function to reorder incoming bits.
+// function to reorder incoming bits
 bool * invertBitOrder_Double(bool* bits, bool invertBitsPerByte = true, bool invertByteOrder = false)
 {
     bool * reversed = new bool[64];
@@ -366,28 +367,31 @@ bool * invertBitOrder_Double(bool* bits, bool invertBitsPerByte = true, bool inv
     {
         for (int i = 0; i < 8; i++)
         {
-            if (!invertByteOrder && invertBitsPerByte) reversed[k * 8 + i] = bits[(k) * 8 + (7 - i)];
-            else if (!invertByteOrder && !invertBitsPerByte) reversed[k * 8 + i] = bits[(k) * 8 + (i) ];
-            else if (invertByteOrder && invertBitsPerByte) reversed[k * 8 + i] = bits[(7 - k) * 8 + (7 - i)];
-            else if (invertByteOrder && !invertBitsPerByte) reversed[k * 8 + i] = bits[(7 - k) * 8 + (i)];
+            if      (!invertByteOrder   && invertBitsPerByte)   reversed[k * 8 + i] = bits[(k) * 8 + (7 - i)];
+            else if (!invertByteOrder   && !invertBitsPerByte)  reversed[k * 8 + i] = bits[(k) * 8 + (i) ];
+            else if (invertByteOrder    && invertBitsPerByte)   reversed[k * 8 + i] = bits[(7 - k) * 8 + (7 - i)];
+            else if (invertByteOrder    && !invertBitsPerByte)  reversed[k * 8 + i] = bits[(7 - k) * 8 + (i)];
         }
     }
 
     return reversed;
 }
 
-// function to extract IEEE double precision number values from an 8-byte array (8 Bit per Byte; array size is expected to be 8; ==> 64 Bit)
+// function to extract IEEE double precision number values from an 8-byte array
+// (8 Bit per Byte; array size is expected to be 8; ==> 64 Bit)
 //
 // bias is 1023 as default for standard numbers
 // ...(IEEE example -25.25 reads ok with invertedBitsPerByte and bias 1023)
 //
-// example data for -25.25:          ( 8 bytes, last 5 bytes are 0x00, so written at initialization of array..)
+// example data for -25.25:
+// (8 bytes, last 5 bytes are 0x00, so written at initialization of array...)
 //    unsigned char test_minus_25_25[8] = {0x00};
 //    test_minus_25_25[0] = 0xc0;
 //    test_minus_25_25[1] = 0x39;
 //    test_minus_25_25[2] = 0x40;
 
-//int exponent_bias = 1023;         // hopefully working as default parameter..
+// int exponent_bias = 1023;
+// hopefully working as default parameter...
 double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023)
 {
     // init with zero/false
@@ -406,12 +410,13 @@ double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023)
     resulting_bits = invertBitOrder_Double(bits);
     for (int i = 0; i < 64; i++) bits[i] = resulting_bits[i];
 
-// debug output
-//    cout << "bits:\n";
-//    for (int i = 0; i < 64; i++) {
-//        printf("%i", bits[i]);
-//    }
-//    cout << "\n";
+    #ifdef DEBUG
+    ROS_DEBUG("Bits:\n";
+    for (int i = 0; i < 64; i++)
+    {
+        ROS_DEBUG("%i", bits[i]);
+    }
+    #endif
 
     // calculate sign, fraction and exponent
     int sign_bit = bits[0];
@@ -430,23 +435,27 @@ double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023)
     // fraction is value between 1.0 and 2.0.. see IEEE spec for details
     fraction += 1;
 
-// debug output
-//printf("exponent_lat: %f\n", exponent_lat-exponent_bias);
-//printf("fraction_lat: %f\n", fraction_lat);
+    #ifdef DEBUG
+    ROS_DEBUG("Exponent_lat: %f", exponent_lat-exponent_bias);
+    ROS_DEBUG("fraction_lat: %f", fraction_lat);
+    #endif
 
     int sign_lat = 1;
     if (sign_bit == 1) sign_lat = -1;
 
     // calculate number value from extracted values
     double double_value = sign_lat * (fraction * pow(2, exponent - exponent_bias));
-// debug output
-//printf("  calculated value: %f \n", latitude_value);
+
+    #ifdef DEBUG
+    ROS_DEBUG("Calculated value: %f\n", latitude_value);
+    #endif 
+
     return double_value;
 }
 
 // variables for index positions of byte indizes for the fields of a position record packet
-// 
-// index is relative to begin of data_part; so it is byte #: index+8       ... of packet-bytes (stx = 0)
+// index is relative to begin of data_part, so it is byte #: index+8... of packet-bytes (stx = 0)
+
 int latitude_value_index = 0;
 int latitude_value_length = 8;
 int longitude_value_index = 8;
@@ -481,7 +490,7 @@ int channel_number_length = 1;
 int *prn_index;
 int prn_length = 1;
 
-// helper variable, used to find meaning of semi-circles in this case.. (it's just 0-180 normalized to 0.0-1.0)
+// helper variable, used to find meaning of semi-circles in this case... (it's just 0-180 normalized to 0.0-1.0)
 double semi_circle_factor = 180.0;
 
 
@@ -490,17 +499,21 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
 {
     if (incoming_packet.packet_type != 0x057)
     {
-        printf("wrong packet type: %.10x\n", incoming_packet.packet_type);
+        ROS_WARN        ("Received data packet has wrong type: %.10x. Expected packet of type 0x057.", incoming_packet.packet_type);
+        publishStatus   ("Received data packet has wrong type. Expected packet of type 0x057.", 1);
         return false;
     }
 
     if (incoming_packet.record_type != 0x01)
     {
-        printf("wrong record type: %.10x\n", incoming_packet.record_type);
+        ROS_WARN        ("Received data packet has wron record type: %.10x. Expected record of type 0x01.", incoming_packet.record_type);
+        publishStatus   ("Received data packet has wron record type: %.10x. Expected record of type 0x01.", 1);
         return false;
     }
 
-    printf("packet ok\n..reading values\n\n");
+    #ifdef DEBUG
+    ROS_DEBUG("Received data packet ok.");
+    #endif
 
     unsigned char latitude_bytes[8]         = {0};
     unsigned char longitude_bytes[8]        = {0};
@@ -509,7 +522,7 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
     unsigned char frequency_offset_bytes[8] = {0};
     unsigned char pdop_bytes[8]             = {0};
 
-    // get all double fields ( 8 bytes )
+    // get all double fields (8 bytes)
     for (int i = 0; i < 8; i++)
     {
         latitude_bytes[i]           = incoming_packet.data_bytes[i + latitude_value_index];
@@ -520,15 +533,13 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
         pdop_bytes[i]               = incoming_packet.data_bytes[i + pdop_index];
     }
 
-    // get all long fields ( 4 bytes )
-
-    // get all char fields ( 1 byte )
-
+    // get all long fields (4 bytes)
+    // get all char fields (1 byte)
     // extract satellite number
     // generate arrays of this size for channel_number prn_index
     // extract value and generate arrays for the fields: channel_number_index and prn_index
 
-    // Extract number values
+    // extract number values
     double latitude_value   = getDOUBLE(latitude_bytes) * semi_circle_factor;
     double longitude_value  = getDOUBLE(longitude_bytes) * semi_circle_factor;
     double altitude_value   = getDOUBLE(altitude_bytes);
@@ -536,48 +547,46 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
     double frequency_offset = getDOUBLE(frequency_offset_bytes);
     double pdop             = getDOUBLE(pdop_bytes);
 
-    // Debug output
+    // debug output
     #ifdef DEBUG
-    ROS_INFO("Calculated longitude: %f\n\n\n", longitude_value);
-    ROS_INFO("Calculated latitude: %f\n\n\n", latitude_value);
-    ROS_INFO("Calculated altitude: %f\n\n\n", altitude_value);
-    ROS_INFO("Clock_offset: %f\n\n\n", clock_offset);
-    ROS_INFO("Frequency_offset: %f\n\n\n", frequency_offset);
-    ROS_INFO("Pdop: %f\n\n\n", pdop);
+    ROS_DEBUG("Calculated longitude: %f", longitude_value);
+    ROS_DEBUG("Calculated latitude:  %f", latitude_value);
+    ROS_DEBUG("Calculated altitude:  %f", altitude_value);
+    ROS_DEBUG("Clock_offset:         %f", clock_offset);
+    ROS_DEBUG("Frequency_offset:     %f", frequency_offset);
+    ROS_DEBUG("Pdop:                 %f", pdop);
     #endif
 
-    // Write extracted values to gps_data struct; this is the returned data.
-    position_record.latitude_value = latitude_value;
+    // write extracted values to gps_data struct; this is the returned data.
+    position_record.latitude_value  = latitude_value;
     position_record.longitude_value = longitude_value;
-    position_record.altitude_value = altitude_value;
+    position_record.altitude_value  = altitude_value;
 
-    // Implement value checking if needed, e.g. value of longitude and latitude between 0 and 180; ...
-    // ...return false if any check fails...
+    // implement value checking if needed, e.g. value of longitude and latitude between 0 and 180; ...
+    // return false if any check fails
     return true;
 }
 
 bool Dgps::getPosition(gps_data &position_record)
 {
-    // Set to true after extracting position values. Method returns value.
+    // function return value; set to true if extracting position values succeeded
     bool success = false;
 
     unsigned char Buffer[1024] = {0};
     int buffer_index = 0;
     int bytesread, byteswrite;
 
-    // generate request message
+    // generation of request message (see page 73 in Trimble BD982 GNSS receiver manual for packet specification):
     //
-    // see page 73 in BD982 user guide for packet specification
-    //
-    //  start tx,
-    //      status,
-    //          packet type,
-    //              length,
-    //                  type raw data,      [0x00: Real-Time Survey Data Record; 0x01: Position Record]
-    //                      flags,
-    //                          reserved,
-    //                              checksum,
-    //                                  end tx
+    //  - start tx,
+    //  - status,
+    //  - packet type,
+    //  - length,
+    //  - data_type_: type raw data (0x00: Real-Time Survey Data Record; 0x01: Position Record)
+    //  - flags,
+    //  - reserved,
+    //  - checksum,
+    //  - end tx
 
     unsigned char stx_          = 0x02;
     unsigned char status_       = 0x00;
@@ -587,38 +596,36 @@ bool Dgps::getPosition(gps_data &position_record)
     unsigned char etx_          = 0x03;
     unsigned char checksum_     = status_ + packet_type_ + data_type_ + length_;
 
-    char message[]  = {stx_, status_, packet_type_, length_, data_type_, 0x00, 0x00, checksum_, etx_}; // 56h command packet       // expects 57h reply packet (basic coding)
+    // 56h command packet; expects 57h reply packet (basic coding)
+    char message[]  = {stx_, status_, packet_type_, length_, data_type_, 0x00, 0x00, checksum_, etx_};
     int length      = sizeof (message) / sizeof (message[0]);
 
-    // Send request message to serial port
+    // send request message to serial port
     byteswrite = m_SerialIO.write(message, length);
 
-    // Debug output
+    // debug output
     #ifdef DEBUG
-    ROS_INFO("Total number of bytes sent: %i", byteswrite);
+    ROS_DEBUG("Sent request message to serial port. Total number of bytes sent: %i", byteswrite);
     #endif
 
-    // Read response from serial port
+    // read response from serial port
     bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
     
-    // Debug output
+    // debug output
     #ifdef DEBUG
-
-    ROS_INFO("Total number of bytes received: %i", bytesread);
-
+    ROS_DEBUG("Received reply packet. Total number of bytes received: %i", bytesread);
     for (int i = 0; i < bytesread; i++)
     {
-        ROS_INFO("%.2x", Buffer[buffer_index + i]);
+        ROS_DEBUG("%.2x", Buffer[buffer_index + i]);
     }
-
     #endif
 
-    // Create data structure for the extracted data packets from serial port
-    // ... this is not needed... could be removed and only used internally by interpretData function...
-    // ... left from dev code ;)
+    // create data structure for the extracted data packets from serial port
+    // this is not needed, so it could be removed and only used internally by interpretData function
+    // left from dev code... ;)
     Dgps::packet_data incoming_packet;
 
-    // Put received data into buffer; extract packets; extract gps data if available
+    // put received data into buffer, extract packets, extract gps data if available
     success = interpretData(Buffer, bytesread, incoming_packet, position_record);
 
     return success;
