@@ -17,6 +17,7 @@
 * Supervised by: Christophe Maufroy
 *
 * Date of creation: Jan 2013
+* Modified 04/2014: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 *
 * Description:
 *
