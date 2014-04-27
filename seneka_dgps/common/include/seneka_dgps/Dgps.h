@@ -57,8 +57,8 @@
 *
 ****************************************************************/
 
-#ifndef _DGPS_H
-#define _DGPS_H
+#ifndef DGPS_H
+#define DGPS_H
 
 /********************/
 /***** includes *****/
@@ -69,10 +69,12 @@
 
 // standart includes
 
-#include <iostream>
 #include <string>
-#include <stdio.h>
 #include <cstring>
+#include <vector>
+
+#include <iostream>
+#include <stdio.h>
 
 #include <math.h>
 
@@ -104,6 +106,26 @@ class Dgps
 
         // destructor
         ~Dgps();
+
+        // diagnostics handling
+
+        enum DiagnosticFlag
+        {
+            OK          = 0,
+            WARNING     = 1,
+            ERROR       = 2
+        };
+
+        struct DiagnosticStatement
+        {
+            std::string     diagnostic_message;
+            DiagnosticFlag  diagnostic_flag;
+        };
+
+        DiagnosticStatement                 diagnostic_statement;
+        std::vector<DiagnosticStatement>    diagnostic_array;
+
+        void transmitStatement(std::string message, DiagnosticFlag flag);
 
         // packet type 57h: position record (see Trimble BD982 GNSS receiver manual, page 139)
         // this struct contains all the interpreted values of the data fields of a position record packet
@@ -149,11 +171,23 @@ class Dgps
             char etx;
         };
 
-        // transfers a status statement to SenekaDgps instance for publishing a status message
-        void publishStatus(std::string status_str, int level);
-
         // opens serial port at given baud rate
         bool open(const char* pcPort, int iBaudRate);
+
+        // tests the communications link by sending protocol request ENQ (05h) (see Trimble BD982 GNSS receiver manual, page 65)
+        // sends 0x052 and expects to receive 0x06
+        bool checkConnection();
+
+        /*  function getPosition():
+        *
+        *   - requests position record packet from receiver (see Trimble BD982 GNSS receiver manual, page 139)
+        *   - appends incoming data to ringbuffer
+        *   - tries to extract valid packets (incl. checksum verification)
+        *   - tries to read "position record"-fields from valid packets
+        *   - writes "position record"-data into gps_data struct
+        */  
+        bool getPosition(gps_data &position_record);
+
 
         // gets data from serial.IO and serves packet_data
         bool interpretData(unsigned char * incoming_data,
@@ -165,23 +199,9 @@ class Dgps
         bool extractGPS(packet_data &incoming_packet,
                         gps_data &position_record);
         
-        /*  function getPosition():
-        *
-        *   - requests position record packet from receiver (see Trimble BD982 GNSS receiver manual, page 139)
-        *   - appends incoming data to ringbuffer
-        *   - tries to extract valid packets (incl. checksum verification)
-        *   - tries to read "position record"-fields from valid packets
-        *   - writes "position record"-data into gps_data struct
-        */                            
-        bool getPosition(gps_data &position_record);
-    
-        // tests the communications link by sending protocol request ENQ (05h) (see Trimble BD982 GNSS receiver manual, page 65)
-        // sends 0x052 and expects to receive 0x06
-        bool checkConnection();
-
     private:
     
 	   SerialIO m_SerialIO;
 };
 
-#endif
+#endif DGPS_H

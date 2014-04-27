@@ -57,8 +57,8 @@
 *
 ****************************************************************/
 
-#ifndef _SENEKADGPS_H
-#define _SENEKADGPS_H
+#ifndef SENEKA_DGPS_H
+#define SENEKA_DGPS_H
 
 /********************/
 /***** includes *****/
@@ -103,12 +103,12 @@ class SenekaDgps
         ros::Publisher  topicPub_Diagnostic_;
         ros::Time       syncedROSTime;
 
-        // diagnostics handling
+        // enumerated status type for diagnostics statements
         // see ROS diagnostics (http://wiki.ros.org/diagnostics and http://docs.ros.org/api/diagnostic_msgs/html/msg/DiagnosticStatus.html)
-        enum Status
+        enum DiagnosticStatus
         {
-            OK          = 0,
-            WARNING     = 1,
+            OK          = 0,    
+            WARN        = 1,
             ERROR       = 2
         };
 
@@ -136,6 +136,9 @@ class SenekaDgps
         // publishing functions
         void publishPosition(Dgps::gps_data gps);
         void publishStatus(std::string status_str, int level);
+
+        // extracts diagnostic statements from DGPS diagnostic_array and transmits them to the publishStatus-function
+        void extractDiagnostics(Dgps &obj);
 };
 
-#endif //_SENEKADGPS_H
+#endif SENEKA_DGPS_H

@@ -80,32 +80,35 @@
 /***** main program seneka_dgps_node.cpp *****/
 /*********************************************/
 
-int main(int argc, char** argv)
-{
-    // ROS initialization and specification of node name
+int main(int argc, char** argv) {
+
+    // ROS initialization; applying DGPS as node name;
     ros::init(argc, argv, "DGPS");
 
     SenekaDgps      cSenekaDgps;
     Dgps            cDgps;
     Dgps::gps_data  position_record;
 
-    bool dgpsSensor_opened      = false;
+    bool port_opened            = false;
     bool connection_OK          = false;
     bool success_getPosition    = false;
 
-    while (!dgpsSensor_opened)
-    {
+    while (!port_opened) {
+
         ROS_INFO("Establishing connection to DGPS device... (Port: %s, Baud rate: %i)", cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());
         cSenekaDgps.publishStatus("Establishing connection to DGPS device...", cSenekaDgps.OK);
-        dgpsSensor_opened = cDgps.open(cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());
+        port_opened = cDgps.open(cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());
 
-        if (!dgpsSensor_opened)
-        {
+        void cSenekaDgps.extractDiagnostics(Dgps &cDgps);
+
+        if (!port_opened) {
+
             ROS_ERROR("Connection to DGPS device failed. Device is not available on given port %s. Retrying to establish connection every second...", cSenekaDgps.getPort().c_str());
             cSenekaDgps.publishStatus("Connection to DGPS failed. DGPS is not available on given port. Retrying to establish connection every second...", cSenekaDgps.ERROR);
         }
-        else
-        {
+
+        else {
+
             ROS_INFO("Successfully connected to DPGS device.");
             cSenekaDgps.publishStatus("Successfully connected to DPGS device.", cSenekaDgps.OK);
         }
@@ -120,14 +123,16 @@ int main(int argc, char** argv)
     // testing the communications link by sending protocol request ENQ (05h) (see BD982 manual, page 65)
     connection_OK = cDgps.checkConnection();
 
-    if (!connection_OK)
-    {
+    void cSenekaDgps.extractDiagnostics(Dgps &cDgps);
+
+    if (!connection_OK) {
+
         ROS_ERROR("Testing the communications link failed (see Trimble BD982 GNSS Receiver manual page 65).");
         cSenekaDgps.publishStatus("Testing the communications link failed (see Trimble BD982 GNSS Receiver manual page 65).", cSenekaDgps.ERROR);
     }
 
-    else
-    {
+    else {
+
         ROS_INFO("Successfully tested the communications link.");
         cSenekaDgps.publishStatus("Successfully tested the communications link.", cSenekaDgps.OK);
 
@@ -138,8 +143,8 @@ int main(int argc, char** argv)
         /***** main program loop *****/
         /*****************************/
 
-        while (cSenekaDgps.nh.ok())
-        {
+        while (cSenekaDgps.nh.ok()) {
+
             /*  call getPosition on dgps instance:
             *
             *   -> requests position record from receiver
@@ -150,20 +155,30 @@ int main(int argc, char** argv)
             */
             success_getPosition = cDgps.getPosition(position_record);
 
+            #ifndef NDEBUG
+
+            void cSenekaDgps.extractDiagnostics(Dgps &cDgps);
+
+            #endif NDEBUG
+
             // publish GPS data to ROS topic if getPosition() was successfull, if not just publish status
-            if (success_getPosition)
-            {
+            if (success_getPosition) {
 
                 ROS_DEBUG("Successfully obtained DGPS data.");
-                cSenekaDgps.publishStatus("Successfully obtained DGPS data.", cSenekaDgps.OK);
-
                 ROS_DEBUG("Publishing DGPS position on topic %s...", cSenekaDgps.getPositionTopic().c_str());
+                
+                #ifndef NDEBUG
+
+                cSenekaDgps.publishStatus("Successfully obtained DGPS data.", cSenekaDgps.OK);
                 cSenekaDgps.publishStatus("Publishing DGPS position...", cSenekaDgps.OK);
+
+                #endif NDEBUG
                 
                 cSenekaDgps.publishPosition(position_record);
             }
-            else
-            {
+
+            else {
+
                 ROS_WARN("Failed to obtain DGPS data. No DGPS data available.");
                 cSenekaDgps.publishStatus("Failed to obtain DGPS data. No DGPS data available.", cSenekaDgps.WARNING);
             }

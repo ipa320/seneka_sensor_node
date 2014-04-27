@@ -127,6 +127,21 @@ Dgps::~Dgps()
     m_SerialIO.close();
 }
 
+void Dgps::transmitStatement(std::string message, DiagnosticFlag flag){
+
+    diagnostic_statement.diagnostic_message = message;
+    diagnostic_statement.diagnostic_flag    = flag;
+
+    if (!diagnostic_array.empty()) {
+
+        diagnostic_array.push_back(diagnostic_statement);
+    }
+
+    else {
+        diagnostic_array.assign(1, diagnostic_statement);
+    }
+}
+
 // opens serial connection
 bool Dgps::open(const char * pcPort, int iBaudRate)
 {

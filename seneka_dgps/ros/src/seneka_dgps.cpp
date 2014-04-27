@@ -64,9 +64,9 @@
 /*******************************************/
 
 // constructor
-SenekaDgps::SenekaDgps()
-{
-    //default parameters
+SenekaDgps::SenekaDgps() {
+
+    // set default parameters
     position_topic      = "/position";
     diagnostics_topic   = "/diagnostics";
     serial_port         = "/dev/ttyUSB0";
@@ -75,33 +75,35 @@ SenekaDgps::SenekaDgps()
 
     nh = ros::NodeHandle("~");
 
-    // get and set parameters from the ROS parameter server
-    // if there is no matching parameter on the server, a default value is used
+    // get parameters from the ROS parameter server
+    // if there is no matching parameter on the server, the default value is used
 
-    // port
-    if (!nh.hasParam("port"))
-    {
+    // serial port
+    if (!nh.hasParam("port")) {
+
         ROS_WARN("Using default parameter for port: %s", getSerialPort().c_str());
-        publishStatus("Using default parameter for port.", 0);
-
+        publishStatus("Using default parameter for port.", OK);
     }
-    nh.param("port", port, getSerialPort());
 
-    // baud rate
-    if (!nh.hasParam("baud"))
-    {
+        nh.param("port", port, getSerialPort());
+
+    // baud rate for serial connection
+    if (!nh.hasParam("baud")) {
+
         ROS_WARN("Using default parameter for baud rate: %i Bd", getSerialBaudRate());
-        publishStatus("Using default parameter for baud rate.", 0);
-    }    
-    nh.param("baud", baud, getSerialBaudRate());
+        publishStatus("Using default parameter for baud rate.", OK);
+    }   
+
+        nh.param("baud", baud, getSerialBaudRate());
 
     // ROS publish rate
-    if (!nh.hasParam("rate"))
-    {
+    if (!nh.hasParam("rate")) {
+
         ROS_WARN("Using default parameter for publish rate: %i Hz", getPublishRate());
-        publishStatus("Using default parameter for publish rate.", 0);
+        publishStatus("Using default parameter for publish rate.", OK);
     }
-    nh.param("rate", rate, getPublishRate());
+
+        nh.param("rate", rate, getPublishRate());
 
     syncedROSTime = ros::Time::now();
 
@@ -114,8 +116,9 @@ SenekaDgps::~SenekaDgps(){}
 
 // publishing functions
 
-void SenekaDgps::publishPosition(Dgps::gps_data gps)
-{
+// takes position data from DGPS device and publishes it to given ROS topic
+void SenekaDgps::publishPosition(Dgps::gps_data gps) {
+
     sensor_msgs::NavSatFix positions;
 
     positions.latitude          = gps.latitude_value;
@@ -127,8 +130,9 @@ void SenekaDgps::publishPosition(Dgps::gps_data gps)
     topicPub_position.publish(positions);
 }
 
-void SenekaDgps::publishStatus(std::string status_str, int level)
-{
+// takes diagnostic statements and publishes them to given topic
+void SenekaDgps::publishStatus(std::string status_str, int level) {
+    
     diagnostic_msgs::DiagnosticArray diagnostics;
 
     diagnostics.status.resize(1);
@@ -139,4 +143,16 @@ void SenekaDgps::publishStatus(std::string status_str, int level)
     diagnostics.header.stamp        = ros::Time::now();
 
     topicPub_Diagnostic_.publish(diagnostics);
+}
+
+void SenekaDgps::extractDiagnostics(Dgps &obj) {
+
+    int temp = obj.diagnostic_array.size();
+
+    for (int i=0; i<=(temp-1); i++) {
+
+        publishStatus(obj.diagnostic_array[i].diagnostic_message, obj.diagnostic_array[i].diagnostic_flag);
+    }
+
+    obj.diagnostic_array.clear();
 }
