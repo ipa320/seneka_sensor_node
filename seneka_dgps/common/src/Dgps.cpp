@@ -127,7 +127,10 @@ Dgps::~Dgps()
     m_SerialIO.close();
 }
 
-void Dgps::transmitStatement(std::string message, DiagnosticFlag flag){
+void Dgps::transmitStatement(std::string message, DiagnosticFlag flag) {
+
+    if (diagnostic_array.size() >= 100)
+        diagnostic_array.clear();
 
     diagnostic_statement.diagnostic_message = message;
     diagnostic_statement.diagnostic_flag    = flag;
