@@ -83,11 +83,10 @@ int main(int argc, char** argv) {
 
     SenekaDgps      cSenekaDgps;
     Dgps            cDgps;
-    Dgps::GpsData  position_record;
 
     bool port_opened            = false;
-    bool connection_OK          = false;
-    bool success_getPosition    = false;
+    bool connection_is_ok       = false;
+    bool success_getGpsData     = false;
 
     while (!port_opened) {
 
@@ -118,11 +117,11 @@ int main(int argc, char** argv) {
     ros::Rate loop_rate(cSenekaDgps.getRate()); // [] = Hz
 
     // testing the communications link by sending protocol request ENQ (05h) (see BD982 manual, page 65)
-    connection_OK = cDgps.checkConnection();
+    connection_is_ok = cDgps.checkConnection();
 
     cSenekaDgps.extractDiagnostics(cDgps);
 
-    if (!connection_OK) {
+    if (!connection_is_ok) {
 
         ROS_ERROR("Testing the communications link failed (see Trimble BD982 GNSS Receiver manual page 65).");
         cSenekaDgps.publishStatus("Testing the communications link failed (see Trimble BD982 GNSS Receiver manual page 65).", cSenekaDgps.ERROR);
@@ -143,7 +142,7 @@ int main(int argc, char** argv) {
 
         while (cSenekaDgps.nh.ok()) {
 
-            /*  getPosition call on dgps instance:
+            /*  getGpsData call on dgps instance:
             *
             *       -> requests position record from receiver
             *       -> appends incoming data to ringbuffer
@@ -152,12 +151,12 @@ int main(int argc, char** argv) {
             *       -> writes position record data into struct of type gps_data
             *
             */
-            success_getPosition = cDgps.getPosition(position_record);
+            success_getGpsData = cDgps.getGpsData();
 
             cSenekaDgps.extractDiagnostics(cDgps);
 
-            // publish GPS data to ROS topic if getPosition() was successfull, if not just publish status
-            if (success_getPosition) {
+            // publish GPS data to ROS topic if getGpsData() was successfull, if not just publish status
+            if (success_getGpsData) {
 
                 ROS_DEBUG("Successfully obtained DGPS data.");
                 ROS_DEBUG("Publishing DGPS position on topic %s...", cSenekaDgps.getPositionTopic().c_str());
@@ -165,7 +164,7 @@ int main(int argc, char** argv) {
                 cSenekaDgps.publishStatus("Successfully obtained DGPS data.", cSenekaDgps.OK);
                 cSenekaDgps.publishStatus("Publishing DGPS position...", cSenekaDgps.OK);
 
-                cSenekaDgps.publishPosition(position_record);
+                cSenekaDgps.publishPosition(cDgps.getPosition());
             }
 
             else {
@@ -289,4 +288,4 @@ int main(int argc, char** argv) {
 //    return success;
 //}
 
-#endif NDEBUG
+#endif // NDEBUG

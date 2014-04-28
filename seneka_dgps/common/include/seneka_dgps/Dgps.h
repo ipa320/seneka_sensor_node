@@ -98,6 +98,7 @@ class Dgps {
         ~Dgps();
 
 
+
         /****************************************************/
         /*************** diagnostics handling ***************/
         /****************************************************/
@@ -115,14 +116,10 @@ class Dgps {
             DiagnosticFlag  diagnostic_flag;
         };
 
-        DiagnosticStatement                 diagnostic_statement;
-        std::vector<DiagnosticStatement>    diagnostic_array;
+        /****************************************************/
+        /****************************************************/
+        /****************************************************/
 
-        void transmitStatement(std::string message, DiagnosticFlag flag);
-
-        /****************************************************/
-        /****************************************************/
-        /****************************************************/
 
 
         /***************************************************/
@@ -181,8 +178,6 @@ class Dgps {
 
             int data_bytes_index;
         };
-
-        PacketDataStructure packet_data_structure;
 
         // this structure contains all the INTERPRETED data field bytes of a position record packet
         // interpretation of data bytes follows:
@@ -261,16 +256,15 @@ class Dgps {
             double semi_circle_factor;
         };
 
-        GpsDataStrucutre gps_data_structure;
-
         /***************************************************/
         /***************************************************/
         /***************************************************/
 
 
-        /*****************************************************/
-        /*************** general class methods ***************/
-        /*****************************************************/
+
+        /****************************************************/
+        /*************** public class methods ***************/
+        /****************************************************/
 
         // opens serial port at given baud rate
         bool open(const char* pcPort, int iBaudRate);
@@ -280,34 +274,70 @@ class Dgps {
         // (see Trimble BD982 GNSS receiver manual, p. 65)
         bool checkConnection();
 
-        /*  function getPosition():
+        /*  function getGpsData():
         *
-        *   - requests position record packet from receiver (see Trimble BD982 GNSS receiver manual, p. 132/139)
-        *   - appends incoming data to ringbuffer
-        *   - tries to extract valid packets (incl. checksum verification)
-        *   - tries to read position-record-fields from valid packets
-        *   - writes position-record-data into GpsData struct
+        *   --> requests position record packet from receiver (see Trimble BD982 GNSS receiver manual, p. 132/139)
+        *   --> appends incoming data to ringbuffer
+        *   --> tries to extract valid packets (incl. checksum verification)
+        *   --> tries to read position-record-fields from valid packets
+        *   --> writes position-record-data into GpsData struct
         */  
-        bool getPosition(GpsData &position_record);
+        bool getGpsData();
+
+        // getters
+        GpsData                             getPosition()           {return gps_data;}
+        std::vector<DiagnosticStatement>    getDiagnosticArray()    {return diagnostic_array;}
+
+        // setters
+        void clearDiagnosticArray() {diagnostic_array.clear();}
+
+        /*****************************************************/
+        /*****************************************************/
+        /*****************************************************/
+
+
+        
+    private:
+
+        // serial input/output
+        SerialIO m_SerialIO;
+
+        /***************************************************/
+        /*************** data frame handling ***************/
+        /***************************************************/
+
+        PacketDataStructure     packet_data_structure;
+        GpsDataStrucutre        gps_data_structure;
+        GpsData                 gps_data;
 
         // gets data from serial.IO and serves PacketData
         bool interpretData(unsigned char * incoming_data,
                            int incoming_data_length,
                            PacketData incoming_packet,
-                           GpsData &position_record);
+                           GpsData &gps_data);
 
         // takes packet data from interpretData(), serves GpsData
         bool extractGPS(PacketData &incoming_packet,
-                        GpsData &position_record);
+                        GpsData &gps_data);
 
-        /*****************************************************/
-        /*****************************************************/
-        /*****************************************************/
+        /***************************************************/
+        /***************************************************/
+        /***************************************************/
 
-        
-    private:
-    
-	   SerialIO m_SerialIO;
+
+
+        /****************************************************/
+        /*************** diagnostics handling ***************/
+        /****************************************************/
+
+        DiagnosticStatement                 diagnostic_statement;
+        std::vector<DiagnosticStatement>    diagnostic_array;
+
+        void transmitStatement(std::string message, DiagnosticFlag flag);
+
+        /****************************************************/
+        /****************************************************/
+        /****************************************************/
 };
 
 #endif // DGPS_H_

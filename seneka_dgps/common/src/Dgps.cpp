@@ -62,6 +62,7 @@
 typedef unsigned char BYTE;
 
 
+
 /************************************************/
 /*************** helper functions ***************/
 /************************************************/
@@ -196,6 +197,7 @@ int etx_length = 1;
 /************************************************/
 
 
+
 /*********************************************************/
 /*************** Dgps class implementation ***************/
 /*********************************************************/
@@ -298,6 +300,7 @@ Dgps::~Dgps() {
 }
 
 
+
 /****************************************************/
 /*************** diagnostics handling ***************/
 /****************************************************/
@@ -394,15 +397,20 @@ unsigned char ringbuffer[4096 * 4]  = {0};
 int ringbuffer_start                = 0;
 int ringbuffer_length               = 0;
 
+/*****************************************************/
+/*****************************************************/
+/*****************************************************/
+
+
 
 /*****************************************************/
 /*************** Dgps::interpretData() ***************/
 /*****************************************************/
 
-bool Dgps::interpretData(unsigned char *    incoming_data,         // int array from serial.IO
-                         int                incoming_data_length,  // count of received bytes
-                         Dgps::PacketData  incoming_packet,
-                         GpsData           &position_record) {    // function writes to this data address 
+bool Dgps::interpretData(unsigned char *    incoming_data,          // int array from serial.IO
+                         int                incoming_data_length,   // count of received bytes
+                         Dgps::PacketData   incoming_packet,
+                         GpsData            &gps_data) {            // function writes to this data address 
                 
     bool success = false;
 
@@ -525,7 +533,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
                 incoming_packet = temp_packet;
 
                 // if data is okay -> success = true, then update ringbuffer pointers and write new packet to parameter... see  few lines below
-                success = extractGPS(incoming_packet, position_record);
+                success = extractGPS(incoming_packet, gps_data);
             }
 
             if (ringbuffer_length > 0) {
@@ -537,12 +545,12 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
                     if (!success) {
 
                         // call without data to process rest of buffered data
-                        success = interpretData(NULL, 0, incoming_packet, position_record);
+                        success = interpretData(NULL, 0, incoming_packet, gps_data);
                     } 
 
                     else {
 
-                        interpretData(NULL, 0, incoming_packet, position_record);
+                        interpretData(NULL, 0, incoming_packet, gps_data);
                     }
 
                     else {
@@ -568,12 +576,13 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
 /*****************************************************/
 
 
+
 /**************************************************/
 /*************** Dgps::extractGPS() ***************/
 /**************************************************/
 
 // TO-DO: extract ALL fields!
-bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &position_record) {
+bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &gps_data) {
 
     if (incoming_packet.packet_type != 0x057) {
 
@@ -633,9 +642,9 @@ bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &position_recor
     #endif // NDEBUG
 
     // write extracted values to GpsData struct; this is the returned data.
-    position_record.latitude_value  = latitude_value;
-    position_record.longitude_value = longitude_value;
-    position_record.altitude_value  = altitude_value;
+    gps_data.latitude_value  = latitude_value;
+    gps_data.longitude_value = longitude_value;
+    gps_data.altitude_value  = altitude_value;
 
     // implement value checking if needed, e.g. value of longitude and latitude between 0 and 180; ...
     // return false if any check fails
@@ -647,31 +656,21 @@ bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &position_recor
 /**************************************************/
 
 
-/***************************************************/
-/*************** Dgps::getPosition() ***************/
-/***************************************************/
 
-bool Dgps::getPosition(GpsData &position_record) {
+/**************************************************/
+/*************** Dgps::getGpsData() ***************/
+/**************************************************/
 
-    // function return value; set to true if extracting position values succeeded
+bool Dgps::getGpsData() {
+
+    // set to true if extracting DGPS position values succeeded
     bool success = false;
 
     unsigned char Buffer[1024] = {0};
     int buffer_index = 0;
     int bytesread, byteswrite;
 
-    // generation of request message (see page 73 in Trimble BD982 GNSS receiver manual for packet specification):
-    //
-    //  - start tx,
-    //  - status,
-    //  - packet type,
-    //  - length,
-    //  - data_type_: type raw data (0x00: Real-Time Survey Data Record; 0x01: Position Record)
-    //  - flags,
-    //  - reserved,
-    //  - checksum,
-    //  - end tx
-
+    // generation of request message (see Trimble BD982 GNSS receiver manual, p. 73)
     unsigned char stx_          = 0x02;
     unsigned char status_       = 0x00;
     unsigned char packet_type_  = 0x56;
@@ -713,7 +712,7 @@ bool Dgps::getPosition(GpsData &position_record) {
     Dgps::PacketData incoming_packet;
 
     // put received data into buffer, extract packets, extract gps data if available
-    success = interpretData(Buffer, bytesread, incoming_packet, position_record);
+    success = interpretData(Buffer, bytesread, incoming_packet, gps_data);
 
     return success;
 }
@@ -721,6 +720,7 @@ bool Dgps::getPosition(GpsData &position_record) {
 /***************************************************/
 /***************************************************/
 /***************************************************/
+
 
 
 /*****************************************************/

@@ -112,9 +112,22 @@ SenekaDgps::SenekaDgps() {
 }
 
 // destructor
+
 SenekaDgps::~SenekaDgps(){}
 
-// publishing functions
+void SenekaDgps::extractDiagnostics(Dgps &obj) {
+
+    Dgps::DiagnosticStatement statement;
+
+    for (std::vector<Dgps::DiagnosticStatement>::iterator it = obj.getDiagnosticArray().begin(); it != obj.getDiagnosticArray().end(); it++) {
+
+        statement = *it;
+
+        publishStatus(statement.diagnostic_message, statement.diagnostic_flag);
+    }
+
+    obj.clearDiagnosticArray();
+}
 
 // takes position data from DGPS device and publishes it to given ROS topic
 void SenekaDgps::publishPosition(Dgps::GpsData gps) {
@@ -143,20 +156,6 @@ void SenekaDgps::publishStatus(std::string status_str, int level) {
     diagnostics.header.stamp        = ros::Time::now();
 
     topicPub_Diagnostic_.publish(diagnostics);
-}
-
-void SenekaDgps::extractDiagnostics(Dgps &obj) {
-
-    Dgps::DiagnosticStatement statement;
-
-    for (std::vector<Dgps::DiagnosticStatement>::iterator it = obj.diagnostic_array.begin(); it != obj.diagnostic_array.end(); it++) {
-
-        statement = *it;
-
-        publishStatus(statement.diagnostic_message, statement.diagnostic_flag);
-    }
-
-    obj.diagnostic_array.clear();
 }
 
 /***************************************************************/
