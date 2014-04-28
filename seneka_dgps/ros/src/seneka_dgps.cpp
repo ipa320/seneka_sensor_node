@@ -147,11 +147,13 @@ void SenekaDgps::publishStatus(std::string status_str, int level) {
 
 void SenekaDgps::extractDiagnostics(Dgps &obj) {
 
-    int temp = obj.diagnostic_array.size();
+    Dgps::DiagnosticStatement statement;
 
-    for (int i=0; i<=(temp-1); i++) {
+    for (std::vector<Dgps::DiagnosticStatement>::iterator it = obj.diagnostic_array.begin(); it != obj.diagnostic_array.end(); it++) {
 
-        publishStatus(obj.diagnostic_array[i].diagnostic_message, obj.diagnostic_array[i].diagnostic_flag);
+        statement = *it;
+
+        publishStatus(statement.diagnostic_message, statement.diagnostic_flag);
     }
 
     obj.diagnostic_array.clear();

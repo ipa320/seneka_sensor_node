@@ -239,7 +239,7 @@ Dgps::~Dgps() {
 void Dgps::transmitStatement(std::string message, DiagnosticFlag flag) {
 
     if (diagnostic_array.size() >= 100)
-        diagnostic_array.clear();
+        diagnostic_array.pop_back();
 
     diagnostic_statement.diagnostic_message = message;
     diagnostic_statement.diagnostic_flag    = flag;
@@ -642,7 +642,7 @@ bool Dgps::getPosition(gps_data &position_record) {
     printf("\nReceived reply packet. Total number of bytes received: %i\n", bytesread);
 
     for (int i = 0; i < bytesread; i++) {
-        
+
         printf("%.2x\t", Buffer[buffer_index + i]);
     }
 
