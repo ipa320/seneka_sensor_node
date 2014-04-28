@@ -68,17 +68,13 @@
 *
 ****************************************************************/
 
-/********************/
-/***** includes *****/
-/********************/
-
-// internal includes
 #include <seneka_dgps/seneka_dgps.h>
 #include <seneka_dgps/Dgps.h>
 
-/*********************************************/
-/***** main program seneka_dgps_node.cpp *****/
-/*********************************************/
+
+/*****************************************************************/
+/*************** main program seneka_dgps_node.cpp ***************/
+/*****************************************************************/
 
 int main(int argc, char** argv) {
 
@@ -87,7 +83,7 @@ int main(int argc, char** argv) {
 
     SenekaDgps      cSenekaDgps;
     Dgps            cDgps;
-    Dgps::gps_data  position_record;
+    Dgps::GpsData  position_record;
 
     bool port_opened            = false;
     bool connection_OK          = false;
@@ -140,9 +136,10 @@ int main(int argc, char** argv) {
         ROS_INFO("Beginnig to obtain and publish DGPS data on topic %s...", cSenekaDgps.getPositionTopic().c_str());
         cSenekaDgps.publishStatus("Beginnig to obtain and publish DGPS data...", cSenekaDgps.OK);
 
-        /*****************************/
-        /***** main program loop *****/
-        /*****************************/
+
+        /*************************************************/
+        /*************** main program loop ***************/
+        /*************************************************/
 
         while (cSenekaDgps.nh.ok()) {
 
@@ -180,10 +177,20 @@ int main(int argc, char** argv) {
             ros::spinOnce();
             loop_rate.sleep();
         }
+
+        /*************************************************/
+        /*************************************************/
+        /*************************************************/
+
     }
 
     return 0;
 }
+
+/*****************************************************************/
+/*****************************************************************/
+/*****************************************************************/
+
 
 #ifndef NDEBUG
 

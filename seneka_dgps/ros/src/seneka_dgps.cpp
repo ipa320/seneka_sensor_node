@@ -59,9 +59,9 @@
 
 #include <seneka_dgps/seneka_dgps.h>
 
-/*******************************************/
-/***** SenekaDgps class implementation *****/
-/*******************************************/
+/***************************************************************/
+/*************** SenekaDgps class implementation ***************/
+/***************************************************************/
 
 // constructor
 SenekaDgps::SenekaDgps() {
@@ -117,7 +117,7 @@ SenekaDgps::~SenekaDgps(){}
 // publishing functions
 
 // takes position data from DGPS device and publishes it to given ROS topic
-void SenekaDgps::publishPosition(Dgps::gps_data gps) {
+void SenekaDgps::publishPosition(Dgps::GpsData gps) {
 
     sensor_msgs::NavSatFix positions;
 
@@ -158,3 +158,7 @@ void SenekaDgps::extractDiagnostics(Dgps &obj) {
 
     obj.diagnostic_array.clear();
 }
+
+/***************************************************************/
+/***************************************************************/
+/***************************************************************/

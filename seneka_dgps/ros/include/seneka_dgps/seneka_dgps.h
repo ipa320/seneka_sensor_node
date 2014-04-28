@@ -60,24 +60,21 @@
 #ifndef SENEKA_DGPS_H_
 #define SENEKA_DGPS_H_
 
-/********************/
-/***** includes *****/
-/********************/
+/****************************************/
+/*************** includes ***************/
+/****************************************/
 
-// ROS includes
 #include <ros/ros.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
 
-// internal includes
 #include <seneka_dgps/Dgps.h>
 
-// standart includes
 #include <sstream>
 
-/****************************/
-/***** SenekaDgps class *****/
-/****************************/
+/************************************************/
+/*************** SenekaDgps class ***************/
+/************************************************/
 
 class SenekaDgps {
 
@@ -134,7 +131,7 @@ class SenekaDgps {
         void        setRate (int rate)          {this->rate = rate;};
 
         // publishing functions
-        void publishPosition(Dgps::gps_data gps);
+        void publishPosition(Dgps::GpsData gps);
         void publishStatus(std::string status_str, int level);
 
         // extracts diagnostic statements from DGPS diagnostic_array and transmits them to the publishStatus-function

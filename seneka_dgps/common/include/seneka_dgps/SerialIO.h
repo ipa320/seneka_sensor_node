@@ -17,7 +17,6 @@
 * Supervised by: Christophe Maufroy
 *
 * Date of creation: Jan 2013
-* Modified 04/2014: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 *
 * Description:
 *
@@ -55,11 +54,10 @@
 #ifndef _SerialIO_H_
 #define _SerialIO_H_
 
-/********************/
-/***** Includes *****/
-/********************/
+/****************************************/
+/*************** Includes ***************/
+/****************************************/
 
-// miscellaneous includes
 #include <termios.h>
 #include <sys/select.h>
 #include <string>
@@ -80,27 +78,27 @@
 
 using namespace std;
 
-/************************************************/
-/***** Wrapper Class for Serial Communication *****/
-/************************************************/
+/**********************************************************************/
+/*************** Wrapper Class for Serial Communication ***************/
+/**********************************************************************/
 
-class SerialIO
-{
+class SerialIO {
+
 	public:
 
 		// Constants
 
 		// Constants for defining the handshake.
-		enum HandshakeFlags
-		{
+		enum HandshakeFlags {
+
 			HS_NONE,
 			HS_HARDWARE,
 			HS_XONXOFF
 		};
 
 		// Constants for defining the parity bits.
-		enum ParityFlags
-		{
+		enum ParityFlags {
+
 			PA_NONE,
 			PA_EVEN,
 			PA_ODD,
@@ -110,8 +108,8 @@ class SerialIO
 		};
 
 		// Constants for defining the stop bits.
-		enum StopBits
-		{
+		enum StopBits {
+
 			SB_ONE,
 			SB_ONE_5, // ????? returns an error ?????
 			SB_TWO
@@ -164,8 +162,8 @@ class SerialIO
 		/**
 		 * Sets the message format.
 		 */
-		void SetFormat(int ByteSize, ParityFlags Parity, int StopBits)
-		{
+		void SetFormat(int ByteSize, ParityFlags Parity, int StopBits) {
+
 			m_ByteSize = ByteSize; m_Parity = Parity; m_StopBits = StopBits;
 		}
 
@@ -179,8 +177,8 @@ class SerialIO
 		 * @param ReadBufSize number of bytes of the read buffer.
 		 * @param WriteBufSize number of bytes of the write buffer.
 		*/
-		void setBufferSize(int ReadBufSize, int WriteBufSize)
-		{
+		void setBufferSize(int ReadBufSize, int WriteBufSize) {
+
 			m_ReadBufSize = ReadBufSize; m_WriteBufSize = WriteBufSize;
 		}
 
@@ -242,15 +240,15 @@ class SerialIO
 
 		/** Clears the read and transmit buffer.
 	 	*/
-		void purge()
-		{
+		void purge() {
+
 			::tcflush(m_Device, TCIOFLUSH);
 		}
 
 		/** Clears the read buffer.
 	 	*/
-		void purgeRx()
-		{
+		void purgeRx() {
+
 		tcflush(m_Device, TCIFLUSH);
 		}
 
@@ -258,8 +256,8 @@ class SerialIO
 	 	* Clears the transmit buffer.
 	 	* The content of the buffer will not be transmitted.
 	 	*/
-		void purgeTx()
-		{
+		void purgeTx() {
+
 			tcflush(m_Device, TCOFLUSH);
 		}
 
@@ -267,12 +265,13 @@ class SerialIO
 	 	* Sends the transmit buffer.
 	 	* All bytes of the transmit buffer will be sent.
 	 	*/
-		void flushTx()
-		{
+		void flushTx() {
+
 		tcdrain(m_Device);
 		}
 
 	protected:
+		
 		::termios m_tio;
 		std::string m_DeviceName;
 		int m_Device;
