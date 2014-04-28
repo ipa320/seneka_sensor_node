@@ -52,8 +52,8 @@
 *
 ****************************************************************/
 
-#ifndef _SerialIO_H
-#define _SerialIO_H
+#ifndef _SerialIO_H_
+#define _SerialIO_H_
 
 /********************/
 /***** Includes *****/
@@ -287,5 +287,5 @@ class SerialIO
 		bool m_ShortBytePeriod;
 };
 
-#endif // _SerialIO_H
+#endif // _SerialIO_H_
 

@@ -57,8 +57,8 @@
 *
 ****************************************************************/
 
-#ifndef SENEKA_DGPS_H
-#define SENEKA_DGPS_H
+#ifndef SENEKA_DGPS_H_
+#define SENEKA_DGPS_H_
 
 /********************/
 /***** includes *****/
@@ -141,4 +141,4 @@ class SenekaDgps {
         void extractDiagnostics(Dgps &obj);
 };
 
-#endif // SENEKA_DGPS_H
+#endif // SENEKA_DGPS_H_
