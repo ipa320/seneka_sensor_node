@@ -57,8 +57,8 @@
 *
 ****************************************************************/
 
-#ifndef DGPS_H
-#define DGPS_H
+#ifndef DGPS_H_
+#define DGPS_H_
 
 /********************/
 /***** includes *****/
@@ -170,6 +170,83 @@ class Dgps {
             char etx;
         };
 
+        struct DataFrame {
+
+            int stx_index;                          // index: starting position of data element in incoming data frame
+            int stx_length;                         // length of data field in incoming data frame ([] = byte)
+
+            int status_index;
+            int status_length;
+
+            int packet_type_index;
+            int packet_type_length;
+
+            int length_index;
+            int length_length;
+
+            int record_type_index;
+            int record_type_length;
+
+            int page_counter_index;                 // split byte in two parts! its <page> of <total>, each 4 bit
+            int page_counter_length;
+
+            int reply_number_index;
+            int reply_number_length;
+
+            int record_interpretation_flags_index;     
+            int record_interpretation_flags_length;
+
+            int data_bytes_index;
+        };
+
+        DataFrame data_frame;
+
+        // variables for index positions of byte indizes for the fields of a position record packet
+        // index is relative to begin of data_part, so it is byte #: index+8... of packet-bytes (stx = 0)
+        struct PositionRecord {
+
+            int latitude_value_index;
+            int latitude_value_length;
+            int longitude_value_index;
+            int longitude_value_length;
+            int altitude_value_index;
+            int altitude_value_length;
+            int clock_offset_index;
+            int clock_offset_length;
+            int frequency_offset_index;
+            int frequency_offset_length;
+            int pdop_index;
+            int pdop_length;
+            int latitude_rate_index;
+            int latitude_rate_length;
+            int longitude_rate_index;
+            int longitude_rate_length;
+            int altitude_rate_index;
+            int altitude_rate_length;
+
+            int gps_msec_of_week_index;
+            int gps_msec_of_week_length;
+
+            int position_flags_index;
+            int position_flags_length;
+
+            int number_of_SVs_index;
+            int number_of_SVs_length;
+
+            // 78 .. 80 .. 82 .. 84 ..
+            int * channel_number_index;
+            int channel_number_length;
+
+            // 79 .. 81 .. 83 .. 85 ..
+            int * prn_index;
+            int prn_length;
+
+            // helper variable, used to find meaning of semi-circles in this case... (it's just 0-180 normalized to 0.0-1.0)
+            double semi_circle_factor;
+        };
+
+        PositionRecord position_record_packet;
+
         // opens serial port at given baud rate
         bool open(const char* pcPort, int iBaudRate);
 
@@ -203,4 +280,4 @@ class Dgps {
 	   SerialIO m_SerialIO;
 };
 
-#endif // DGPS_H
+#endif // DGPS_H_

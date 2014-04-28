@@ -170,39 +170,6 @@ double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023) {
     return double_value;
 }
 
-/*************************************/
-/***** Dgps class implementation *****/
-/*************************************/
-
-// the following variables allow to extract associated packet fields from incoming data frames as described in Trimble BD982 GNSS receiver manual
-// base unit is 1 char = 8 Bit
-
-int stx_index               = 0;    // index: starting position of data element in incoming data frame
-int stx_length              = 1;    // length of data field in incoming data frame ([] = byte)
-
-int status_index            = 1;
-int status_length           = 1;
-
-int packet_type_index       = 2;
-int packet_type_length      = 1;
-
-int length_index            = 3;
-int length_length           = 1;
-
-int record_type_index       = 4;
-int record_type_length      = 1;
-
-int page_counter_index      = 5;    // split byte in two parts! its <page> of <total>, each 4 bit
-int page_counter_length     = 1;
-
-int reply_number_index      = 6;
-int reply_number_length     = 1;
-
-int record_interpretation_flags_index   = 7;     
-int record_interpretation_flags_length  = 1;
-
-int data_bytes_index        = 8;
-
 int data_bytes_length(int length_value) {
 
     return length_value - 4;
@@ -223,12 +190,92 @@ int etx_index(int length_value) {
 
 int etx_length = 1;
 
-/*************************/
-/***** class methods *****/
-/*************************/
+/*************************************/
+/***** Dgps class implementation *****/
+/*************************************/
 
 // constructor
-Dgps::Dgps(){}
+Dgps::Dgps() {
+
+    // the following variables allow to extract associated packet fields from incoming data frames as described in Trimble BD982 GNSS receiver manual
+    // base unit is 1 char = 8 Bit
+
+    /* data_frame initialization */ {
+
+        data_frame.stx_index                           = 0;    // index: starting position of data element in incoming data frame
+        data_frame.stx_length                          = 1;    // length of data field in incoming data frame ([] = byte)
+
+        data_frame.status_index                        = 1;
+        data_frame.status_length                       = 1;
+
+        data_frame.packet_type_index                   = 2;
+        data_frame.packet_type_length                  = 1;
+
+        data_frame.length_index                        = 3;
+        data_frame.length_length                       = 1;
+
+        data_frame.record_type_index                   = 4;
+        data_frame.record_type_length                  = 1;
+
+        data_frame.page_counter_index                  = 5;    // split byte in two parts! its <page> of <total>, each 4 bit
+        data_frame.page_counter_length                 = 1;
+
+        data_frame.reply_number_index                  = 6;
+        data_frame.reply_number_length                 = 1;
+
+        data_frame.record_interpretation_flags_index   = 7;     
+        data_frame.record_interpretation_flags_length  = 1;
+
+        data_frame.data_bytes_index                    = 8;
+
+    }
+
+    /**/ {
+
+        // variables for index positions of byte indizes for the fields of a position record packet
+        // index is relative to begin of data_part, so it is byte #: index+8... of packet-bytes (stx = 0)
+
+        position_record_packet.latitude_value_index = 0;
+        position_record_packet.latitude_value_length = 8;
+        position_record_packet.longitude_value_index = 8;
+        position_record_packet.longitude_value_length = 8;
+        position_record_packet.altitude_value_index = 16;
+        position_record_packet.altitude_value_length = 8;
+        position_record_packet.clock_offset_index = 24;
+        position_record_packet.clock_offset_length = 8;
+        position_record_packet.frequency_offset_index = 32;
+        position_record_packet.frequency_offset_length = 8;
+        position_record_packet.pdop_index = 40;
+        position_record_packet.pdop_length = 8;
+        position_record_packet.latitude_rate_index = 48;
+        position_record_packet.latitude_rate_length = 8;
+        position_record_packet.longitude_rate_index = 56;
+        position_record_packet.longitude_rate_length = 8;
+        position_record_packet.altitude_rate_index = 64;
+        position_record_packet.altitude_rate_length = 8;
+
+        position_record_packet.gps_msec_of_week_index = 72;
+        position_record_packet.gps_msec_of_week_length = 4;
+
+        position_record_packet.position_flags_index;
+        position_record_packet.position_flags_length = 76;
+
+        position_record_packet.number_of_SVs_index;
+        position_record_packet.number_of_SVs_length = 77;
+
+        // 78 .. 80 .. 82 .. 84 ..
+        position_record_packet.channel_number_index;
+        position_record_packet.channel_number_length = 1;
+
+        // 79 .. 81 .. 83 .. 85 ..
+        position_record_packet.prn_index;
+        position_record_packet.prn_length = 1;
+
+        // helper variable, used to find meaning of semi-circles in this case... (it's just 0-180 normalized to 0.0-1.0)
+        position_record_packet.semi_circle_factor = 180.0;
+
+    }
+}
 
 // destructor
 Dgps::~Dgps() {
@@ -236,21 +283,27 @@ Dgps::~Dgps() {
     m_SerialIO.close();
 }
 
-void Dgps::transmitStatement(std::string message, DiagnosticFlag flag) {
+/*************************/
+/***** class methods *****/
+/*************************/
 
-    if (diagnostic_array.size() >= 100)
-        diagnostic_array.pop_back();
+// takes diagnostic statements and stores them in diagnostic_array
+// if diagnostic_array holds more than 100 elements, the first stored element will get erased
+void Dgps::transmitStatement(std::string message, DiagnosticFlag flag) {
 
     diagnostic_statement.diagnostic_message = message;
     diagnostic_statement.diagnostic_flag    = flag;
 
-    if (!diagnostic_array.empty()) {
+    if (diagnostic_array.size() >= 100) {
 
-        diagnostic_array.push_back(diagnostic_statement);
+        std::vector<DiagnosticStatement>::iterator it = diagnostic_array.begin();
+
+        diagnostic_array.erase(it);
     }
 
     else {
-        diagnostic_array.assign(1, diagnostic_statement);
+
+        diagnostic_array.push_back(diagnostic_statement);
     }
 }
 
@@ -361,9 +414,9 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
     for (int y = 0; y < ringbuffer_length; y++) {
 
         // find stx: (byte 0 == 0x02)
-        if (ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size] != 0x02) {
+        if (ringbuffer[(ringbuffer_start + y + data_frame.stx_index) % ringbuffer_size] != 0x02) {
 
-            std::cout << "\nFirst byte in received data frame was not stx (" << ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size] << ")!\n";
+            std::cout << "\nFirst byte in received data frame was not stx (" << ringbuffer[(ringbuffer_start + y + data_frame.stx_index) % ringbuffer_size] << ")!\n";
             continue;
         }
 
@@ -372,23 +425,23 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
             std::cout << "\nFound stx in received data frame.\n";
 
             // --- header ---
-            temp_packet.stx         = ringbuffer[(ringbuffer_start + y + stx_index)         % ringbuffer_size] % 256;
-            temp_packet.status      = ringbuffer[(ringbuffer_start + y + status_index)      % ringbuffer_size] % 256;
-            temp_packet.packet_type = ringbuffer[(ringbuffer_start + y + packet_type_index) % ringbuffer_size] % 256;
-            temp_packet.length      = ringbuffer[(ringbuffer_start + y + length_index)      % ringbuffer_size] % 256;
+            temp_packet.stx         = ringbuffer[(ringbuffer_start + y + data_frame.stx_index)         % ringbuffer_size] % 256;
+            temp_packet.status      = ringbuffer[(ringbuffer_start + y + data_frame.status_index)      % ringbuffer_size] % 256;
+            temp_packet.packet_type = ringbuffer[(ringbuffer_start + y + data_frame.packet_type_index) % ringbuffer_size] % 256;
+            temp_packet.length      = ringbuffer[(ringbuffer_start + y + data_frame.length_index)      % ringbuffer_size] % 256;
             
             // --- data part ---
-            temp_packet.record_type                 = ringbuffer[(ringbuffer_start + y + record_type_index)                 % ringbuffer_size] % 256;
-            temp_packet.page_counter                = ringbuffer[(ringbuffer_start + y + page_counter_index)                % ringbuffer_size] % 256;
-            temp_packet.reply_number                = ringbuffer[(ringbuffer_start + y + reply_number_index)                % ringbuffer_size] % 256;
-            temp_packet.record_interpretation_flags = ringbuffer[(ringbuffer_start + y + record_interpretation_flags_index) % ringbuffer_size] % 256;
+            temp_packet.record_type                 = ringbuffer[(ringbuffer_start + y + data_frame.record_type_index)                 % ringbuffer_size] % 256;
+            temp_packet.page_counter                = ringbuffer[(ringbuffer_start + y + data_frame.page_counter_index)                % ringbuffer_size] % 256;
+            temp_packet.reply_number                = ringbuffer[(ringbuffer_start + y + data_frame.reply_number_index)                % ringbuffer_size] % 256;
+            temp_packet.record_interpretation_flags = ringbuffer[(ringbuffer_start + y + data_frame.record_interpretation_flags_index) % ringbuffer_size] % 256;
             
             // --- --- data bytes --- ---
             temp_packet.data_bytes = new char[temp_packet.length];
 
             for (int j = 0; j < data_bytes_length(temp_packet.length); j++) {
 
-                temp_packet.data_bytes[j] = ringbuffer[(ringbuffer_start + y + data_bytes_index + j) % ringbuffer_size] % 256;
+                temp_packet.data_bytes[j] = ringbuffer[(ringbuffer_start + y + data_frame.data_bytes_index + j) % ringbuffer_size] % 256;
             }
 
             // --- footer ---
@@ -481,47 +534,6 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
     return success;
 }
 
-// variables for index positions of byte indizes for the fields of a position record packet
-// index is relative to begin of data_part, so it is byte #: index+8... of packet-bytes (stx = 0)
-
-int latitude_value_index = 0;
-int latitude_value_length = 8;
-int longitude_value_index = 8;
-int longitude_value_length = 8;
-int altitude_value_index = 16;
-int altitude_value_length = 8;
-int clock_offset_index = 24;
-int clock_offset_length = 8;
-int frequency_offset_index = 32;
-int frequency_offset_length = 8;
-int pdop_index = 40;
-int pdop_length = 8;
-int latitude_rate_index = 48;
-int latitude_rate_length = 8;
-int longitude_rate_index = 56;
-int longitude_rate_length = 8;
-int altitude_rate_index = 64;
-int altitude_rate_length = 8;
-
-int gps_msec_of_week_index = 72;
-int gps_msec_of_week_length = 4;
-
-int position_flags_index;
-int position_flags_length = 76;
-
-int number_of_SVs_index;
-int number_of_SVs_length = 77;
-// 78 .. 80 .. 82 .. 84 ..
-int *channel_number_index;
-int channel_number_length = 1;
-// 79 .. 81 .. 83 .. 85 ..
-int *prn_index;
-int prn_length = 1;
-
-// helper variable, used to find meaning of semi-circles in this case... (it's just 0-180 normalized to 0.0-1.0)
-double semi_circle_factor = 180.0;
-
-
 // TO-DO: extract ALL fields!
 bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_record) {
 
@@ -549,12 +561,12 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
     // get all double fields (8 bytes)
     for (int i = 0; i < 8; i++) {
 
-        latitude_bytes[i]           = incoming_packet.data_bytes[i + latitude_value_index];
-        longitude_bytes[i]          = incoming_packet.data_bytes[i + longitude_value_index];
-        altitude_bytes[i]           = incoming_packet.data_bytes[i + altitude_value_index];
-        clock_offset_bytes[i]       = incoming_packet.data_bytes[i + clock_offset_index];
-        frequency_offset_bytes[i]   = incoming_packet.data_bytes[i + frequency_offset_index];
-        pdop_bytes[i]               = incoming_packet.data_bytes[i + pdop_index];
+        latitude_bytes[i]           = incoming_packet.data_bytes[i + position_record_packet.latitude_value_index];
+        longitude_bytes[i]          = incoming_packet.data_bytes[i + position_record_packet.longitude_value_index];
+        altitude_bytes[i]           = incoming_packet.data_bytes[i + position_record_packet.altitude_value_index];
+        clock_offset_bytes[i]       = incoming_packet.data_bytes[i + position_record_packet.clock_offset_index];
+        frequency_offset_bytes[i]   = incoming_packet.data_bytes[i + position_record_packet.frequency_offset_index];
+        pdop_bytes[i]               = incoming_packet.data_bytes[i + position_record_packet.pdop_index];
     }
 
     // get all long fields (4 bytes)
@@ -564,8 +576,8 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
     // extract value and generate arrays for the fields: channel_number_index and prn_index
 
     // extract number values
-    double latitude_value   = getDOUBLE(latitude_bytes) * semi_circle_factor;
-    double longitude_value  = getDOUBLE(longitude_bytes) * semi_circle_factor;
+    double latitude_value   = getDOUBLE(latitude_bytes) * position_record_packet.semi_circle_factor;
+    double longitude_value  = getDOUBLE(longitude_bytes) * position_record_packet.semi_circle_factor;
     double altitude_value   = getDOUBLE(altitude_bytes);
     double clock_offset     = getDOUBLE(clock_offset_bytes);
     double frequency_offset = getDOUBLE(frequency_offset_bytes);
