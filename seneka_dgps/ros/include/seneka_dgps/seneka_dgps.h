@@ -79,8 +79,8 @@
 /***** SenekaDgps class *****/
 /****************************/
 
-class SenekaDgps
-{
+class SenekaDgps {
+
     private:
 
         // default parameters
@@ -105,8 +105,8 @@ class SenekaDgps
 
         // enumerated status type for diagnostics statements
         // see ROS diagnostics (http://wiki.ros.org/diagnostics and http://docs.ros.org/api/diagnostic_msgs/html/msg/DiagnosticStatus.html)
-        enum DiagnosticStatus
-        {
+        enum DiagnosticFlag {
+
             OK          = 0,    
             WARN        = 1,
             ERROR       = 2

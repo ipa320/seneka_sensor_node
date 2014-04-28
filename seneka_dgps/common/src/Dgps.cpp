@@ -61,6 +61,115 @@
 
 typedef unsigned char BYTE;
 
+/****************************/
+/***** helper functions *****/
+/****************************/
+
+// function to reorder incoming bits
+bool * invertBitOrder_Double(bool* bits, bool invertBitsPerByte = true, bool invertByteOrder = false) {
+
+    bool * reversed = new bool[64];
+
+    for (int k = 0; k < 8; k++) {
+
+        for (int i = 0; i < 8; i++) {
+
+            if      (!invertByteOrder   && invertBitsPerByte)   reversed[k * 8 + i] = bits[(k) * 8 + (7 - i)];
+            else if (!invertByteOrder   && !invertBitsPerByte)  reversed[k * 8 + i] = bits[(k) * 8 + (i) ];
+            else if (invertByteOrder    && invertBitsPerByte)   reversed[k * 8 + i] = bits[(7 - k) * 8 + (7 - i)];
+            else if (invertByteOrder    && !invertBitsPerByte)  reversed[k * 8 + i] = bits[(7 - k) * 8 + (i)];
+        }
+    }
+
+    return reversed;
+}
+
+/* function to extract IEEE double precision number values from an 8-byte array
+ * (8 Bit per Byte; array size is expected to be 8; ==> 64 Bit)
+ *
+ * bias is 1023 as default for standard numbers
+ * ...(IEEE example -25.25 reads ok with invertedBitsPerByte and bias 1023)
+ *
+ * example data for -25.25:
+ * (8 bytes, last 5 bytes are 0x00, so written at initialization of array...)
+ *    unsigned char test_minus_25_25[8] = {0x00};
+ *    test_minus_25_25[0] = 0xc0;
+ *    test_minus_25_25[1] = 0x39;
+ *    test_minus_25_25[2] = 0x40;
+ *
+ * int exponent_bias = 1023;
+ * hopefully working as default parameter...
+ */
+double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023) {
+
+    // init with zero/false
+    bool bits[64] = {false};
+
+    // get bits of DOUBLE
+    for (int k = 0; k < 8; k++) {
+
+        for (int i = 0; i < 8; i++) {
+
+            bits[((k * 8) + i)] = 0 != (bytes[k] & (1 << i));
+        }
+    }
+
+    bool * resulting_bits;
+    resulting_bits = invertBitOrder_Double(bits);
+    for (int i = 0; i < 64; i++) bits[i] = resulting_bits[i];
+
+    #ifndef NDEBUG
+
+    std::cout << "\nBits:\t";
+
+    for (int i = 0; i < 64; i++) {
+
+        printf("%i\t", bits[i]);
+    }
+
+    std::cout << "\n";
+
+    #endif // NDEBUG
+
+    // calculate sign, fraction and exponent
+    int sign_bit = bits[0];
+    double exponent = 0;
+    double fraction = 0;
+    for (int i = 0; i < 11; i++) {
+
+        exponent = exponent + bits[i + 1] * pow(2, 10 - i);
+    }
+
+    for (int i = 0; i < 52; i++) {
+
+        fraction = fraction + bits[i + 12] * pow(0.5, i + 1);
+    }
+
+    // fraction is value between 1.0 and 2.0.. see IEEE spec for details
+    fraction += 1;
+
+    #ifndef NDEBUG
+
+    printf("\nExponent_lat: %f\n", exponent_lat-exponent_bias);
+    printf("\nfraction_lat: %f\n", fraction_lat);
+
+    #endif // NDEBUG
+
+    int sign_lat = 1;
+    if (sign_bit == 1) sign_lat = -1;
+
+    // calculate number value from extracted values
+    double double_value = sign_lat * (fraction * pow(2, exponent - exponent_bias));
+
+    #ifndef NDEBUG
+
+    printf("\nCalculated value: %f\n", latitude_value);
+
+    #endif // NDEBUG
+
+    return double_value;
+}
+
 /*************************************/
 /***** Dgps class implementation *****/
 /*************************************/
@@ -94,21 +203,21 @@ int record_interpretation_flags_length  = 1;
 
 int data_bytes_index        = 8;
 
-int data_bytes_length(int length_value)
-{
+int data_bytes_length(int length_value) {
+
     return length_value - 4;
 }
 
-int checksum_index(int length_value)
-{
+int checksum_index(int length_value) {
+
     return 4 + length_value;
 }
 
 int checksum_length = 1;
 
 // call with value of byte #3 (length-field)
-int etx_index(int length_value)
-{
+int etx_index(int length_value) {
+
     return 4 + length_value + 1;
 }
 
@@ -122,8 +231,8 @@ int etx_length = 1;
 Dgps::Dgps(){}
 
 // destructor
-Dgps::~Dgps()
-{
+Dgps::~Dgps() {
+
     m_SerialIO.close();
 }
 
@@ -146,28 +255,29 @@ void Dgps::transmitStatement(std::string message, DiagnosticFlag flag) {
 }
 
 // opens serial connection
-bool Dgps::open(const char * pcPort, int iBaudRate)
-{
+bool Dgps::open(const char * pcPort, int iBaudRate) {
+
     int serial_open;
     m_SerialIO.setBaudRate(iBaudRate);
     m_SerialIO.setDeviceName(pcPort);
     serial_open = m_SerialIO.open();
 
-    if (serial_open == 0)
-    {
+    if (serial_open == 0) {
+
         m_SerialIO.purge();
         return true;
     }
-    else
-    {
+
+    else {
+
         return false;
     }
 }
 
 // tests the communications link by sending protocol request "ENQ" (05h) (see Trimble BD982 GNSS receiver manual, page 65)
 // returns success response "ACK" (06h) (see Trimble BD982 GNSS receiver manual, page 65)
-bool Dgps::checkConnection()
-{    
+bool Dgps::checkConnection() {
+
     // test command "ENQ" (05h)
     char message[] = {0x05};
     int length = sizeof (message) / sizeof (message[0]);
@@ -183,18 +293,18 @@ bool Dgps::checkConnection()
     int retry_delay = 1000000;  // [] = us
 
     // expected test response "ACK" (06h)
-    while (!success && (count < max_tries))
-    {
+    while (!success && (count < max_tries)) {
+
         count += 1;
         usleep(retry_delay);
         int bytesRead = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
 
-        if (bytesRead > 0 && Buffer[0] == 6)
-        {
+        if (bytesRead > 0 && Buffer[0] == 6) {
+
             success = true;
         }
-        else
-        {
+
+        else {
             success = false;
         };
     }
@@ -210,22 +320,23 @@ int ringbuffer_length               = 0;
 bool Dgps::interpretData(unsigned char *    incoming_data,         // int array from serial.IO
                          int                incoming_data_length,  // count of received bytes
                          Dgps::packet_data  incoming_packet,
-                         gps_data           &position_record)      // function writes to this data address 
-{                   
+                         gps_data           &position_record) {    // function writes to this data address 
+                
     bool success = false;
 
     Dgps::packet_data temp_packet; // = new packet_data;
 
-    if ((ringbuffer_size - ringbuffer_length) >= incoming_data_length)
-    {
-        for (int i = 0; i < incoming_data_length; i++)
-        {
+    if ((ringbuffer_size - ringbuffer_length) >= incoming_data_length) {
+
+        for (int i = 0; i < incoming_data_length; i++) {
+
             ringbuffer[(ringbuffer_start + ringbuffer_length + 1) % ringbuffer_size] = (char) incoming_data[i];
             ringbuffer_length = (ringbuffer_length + 1) % ringbuffer_size;
         }
     }
-    else
-    {
+
+    else {
+
         // received too much data, buffer is full
         std::cout << "\nBuffer is full! Cannot insert data!\n";
     }
@@ -236,8 +347,9 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
     std::cout << "\nBuffer length: " << ringbuffer_length << "\n";
 
     std::cout << "\nContent of ringbuffer:\t";
-    for (int i = 0; i < ringbuffer_size; i++)
-    {
+    
+    for (int i = 0; i < ringbuffer_size; i++) {
+
         printf("%.2x\t", ringbuffer[i]);
     }
 
@@ -246,16 +358,17 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
     #endif // NDEBUG
 
     // find stx, try to get length and match checksum + etx
-    for (int y = 0; y < ringbuffer_length; y++)
-    {
+    for (int y = 0; y < ringbuffer_length; y++) {
+
         // find stx: (byte 0 == 0x02)
-        if (ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size] != 0x02)
-        {
+        if (ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size] != 0x02) {
+
             std::cout << "\nFirst byte in received data frame was not stx (" << ringbuffer[(ringbuffer_start + y + stx_index) % ringbuffer_size] << ")!\n";
             continue;
         }
-        else
-        {
+
+        else {
+
             std::cout << "\nFound stx in received data frame.\n";
 
             // --- header ---
@@ -273,8 +386,8 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
             // --- --- data bytes --- ---
             temp_packet.data_bytes = new char[temp_packet.length];
 
-            for (int j = 0; j < data_bytes_length(temp_packet.length); j++)
-            {
+            for (int j = 0; j < data_bytes_length(temp_packet.length); j++) {
+
                 temp_packet.data_bytes[j] = ringbuffer[(ringbuffer_start + y + data_bytes_index + j) % ringbuffer_size] % 256;
             }
 
@@ -293,8 +406,8 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
             checksum = checksum + (temp_packet.record_interpretation_flags  % 256);
             
             // calculate checksum over data bytes
-            for (int z = 0; z < data_bytes_length(temp_packet.length); z++)
-            {
+            for (int z = 0; z < data_bytes_length(temp_packet.length); z++) {
+
                 checksum = (checksum + temp_packet.data_bytes[z]);
             }
 
@@ -302,14 +415,14 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
             checksum = checksum % 256;
 
             bool error_occured = false;
-            if (checksum != temp_packet.checksum)
-            {
+            if (checksum != temp_packet.checksum) {
+
                 printf("\nChecksum mismatch! Calculated checksum: %x. Received checksum: %x. New Parser.\n", checksum, temp_packet.checksum);
                 error_occured = true;
             }
 
-            if (temp_packet.etx != 0x03)
-            {
+            if (temp_packet.etx != 0x03) {
+
                 printf("\nEtx was not 0x03. Received etx: %x. New parser.\n", temp_packet.etx);
                 error_occured = true;
             }
@@ -325,146 +438,47 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
             if (ringbuffer_old_start >= ringbuffer_start)
                 ringbuffer_length = ringbuffer_length - (ringbuffer_start + (ringbuffer_size - ringbuffer_old_start));
 
-            if (!error_occured)
-            {
+            if (!error_occured) {
+
                 incoming_packet = temp_packet;
 
                 // if data is okay -> success = true, then update ringbuffer pointers and write new packet to parameter... see  few lines below
                 success = extractGPS(incoming_packet, position_record);
             }
 
-            if (ringbuffer_length > 0)
-            {
+            if (ringbuffer_length > 0) {
+
                 printf("\nRingbuffer was not empty after reading one packet (%i bytes left)! Calling function to receive data again...\n", ringbuffer_length);
                 
                 if (ringbuffer_old_start != ringbuffer_start)
-                    if (!success)
-                    {
+
+                    if (!success) {
+
                         // call without data to process rest of buffered data
                         success = interpretData(NULL, 0, incoming_packet, position_record);
                     } 
-                    else
-                    {
+
+                    else {
+
                         interpretData(NULL, 0, incoming_packet, position_record);
                     }
-                    else
-                    {
+
+                    else {
+
                         std::cout << "\nStopped interpreting remaining buffer to avoid infinite loop.\n";
                     }
             }
-            else
-            {
+
+            else {
+
                 std::cout << "\nSuccessfully extracted packet.\n";
             }
 
             return success;
         }
     }
+
     return success;
-}
-
-// function to reorder incoming bits
-bool * invertBitOrder_Double(bool* bits, bool invertBitsPerByte = true, bool invertByteOrder = false)
-{
-    bool * reversed = new bool[64];
-
-    for (int k = 0; k < 8; k++)
-    {
-        for (int i = 0; i < 8; i++)
-        {
-            if      (!invertByteOrder   && invertBitsPerByte)   reversed[k * 8 + i] = bits[(k) * 8 + (7 - i)];
-            else if (!invertByteOrder   && !invertBitsPerByte)  reversed[k * 8 + i] = bits[(k) * 8 + (i) ];
-            else if (invertByteOrder    && invertBitsPerByte)   reversed[k * 8 + i] = bits[(7 - k) * 8 + (7 - i)];
-            else if (invertByteOrder    && !invertBitsPerByte)  reversed[k * 8 + i] = bits[(7 - k) * 8 + (i)];
-        }
-    }
-
-    return reversed;
-}
-
-// function to extract IEEE double precision number values from an 8-byte array
-// (8 Bit per Byte; array size is expected to be 8; ==> 64 Bit)
-//
-// bias is 1023 as default for standard numbers
-// ...(IEEE example -25.25 reads ok with invertedBitsPerByte and bias 1023)
-//
-// example data for -25.25:
-// (8 bytes, last 5 bytes are 0x00, so written at initialization of array...)
-//    unsigned char test_minus_25_25[8] = {0x00};
-//    test_minus_25_25[0] = 0xc0;
-//    test_minus_25_25[1] = 0x39;
-//    test_minus_25_25[2] = 0x40;
-
-// int exponent_bias = 1023;
-// hopefully working as default parameter...
-double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023)
-{
-    // init with zero/false
-    bool bits[64] = {false};
-
-    // get bits of DOUBLE
-    for (int k = 0; k < 8; k++)
-    {
-        for (int i = 0; i < 8; i++)
-        {
-            bits[((k * 8) + i)] = 0 != (bytes[k] & (1 << i));
-        }
-    }
-
-    bool * resulting_bits;
-    resulting_bits = invertBitOrder_Double(bits);
-    for (int i = 0; i < 64; i++) bits[i] = resulting_bits[i];
-
-    #ifndef NDEBUG
-
-    std::cout << "\nBits:\t";
-
-    for (int i = 0; i < 64; i++)
-    {
-        printf("%i\t", bits[i]);
-    }
-
-    std::cout << "\n";
-
-    #endif // NDEBUG
-
-    // calculate sign, fraction and exponent
-    int sign_bit = bits[0];
-    double exponent = 0;
-    double fraction = 0;
-    for (int i = 0; i < 11; i++)
-    {
-        exponent = exponent + bits[i + 1] * pow(2, 10 - i);
-    }
-
-    for (int i = 0; i < 52; i++)
-    {
-        fraction = fraction + bits[i + 12] * pow(0.5, i + 1);
-    }
-
-    // fraction is value between 1.0 and 2.0.. see IEEE spec for details
-    fraction += 1;
-
-    #ifndef NDEBUG
-
-    printf("\nExponent_lat: %f\n", exponent_lat-exponent_bias);
-    printf("\nfraction_lat: %f\n", fraction_lat);
-
-    #endif // NDEBUG
-
-    int sign_lat = 1;
-    if (sign_bit == 1) sign_lat = -1;
-
-    // calculate number value from extracted values
-    double double_value = sign_lat * (fraction * pow(2, exponent - exponent_bias));
-
-    #ifndef NDEBUG
-
-    printf("\nCalculated value: %f\n", latitude_value);
-
-    #endif // NDEBUG
-
-    return double_value;
 }
 
 // variables for index positions of byte indizes for the fields of a position record packet
@@ -509,16 +523,16 @@ double semi_circle_factor = 180.0;
 
 
 // TO-DO: extract ALL fields!
-bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_record)
-{
-    if (incoming_packet.packet_type != 0x057)
-    {
+bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_record) {
+
+    if (incoming_packet.packet_type != 0x057) {
+
         printf("\nReceived data packet has wrong type: %.10x. Expected packet of type 0x057.\n", incoming_packet.packet_type);
         return false;
     }
 
-    if (incoming_packet.record_type != 0x01)
-    {
+    if (incoming_packet.record_type != 0x01) {
+
         printf("\nReceived data packet has wron record type: %.10x. Expected record of type 0x01.\n", incoming_packet.record_type);
         return false;
     }
@@ -533,8 +547,8 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
     unsigned char pdop_bytes[8]             = {0};
 
     // get all double fields (8 bytes)
-    for (int i = 0; i < 8; i++)
-    {
+    for (int i = 0; i < 8; i++) {
+
         latitude_bytes[i]           = incoming_packet.data_bytes[i + latitude_value_index];
         longitude_bytes[i]          = incoming_packet.data_bytes[i + longitude_value_index];
         altitude_bytes[i]           = incoming_packet.data_bytes[i + altitude_value_index];
@@ -578,8 +592,8 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
     return true;
 }
 
-bool Dgps::getPosition(gps_data &position_record)
-{
+bool Dgps::getPosition(gps_data &position_record) {
+
     // function return value; set to true if extracting position values succeeded
     bool success = false;
 
@@ -627,8 +641,8 @@ bool Dgps::getPosition(gps_data &position_record)
 
     printf("\nReceived reply packet. Total number of bytes received: %i\n", bytesread);
 
-    for (int i = 0; i < bytesread; i++)
-    {
+    for (int i = 0; i < bytesread; i++) {
+        
         printf("%.2x\t", Buffer[buffer_index + i]);
     }
 
@@ -644,5 +658,3 @@ bool Dgps::getPosition(gps_data &position_record)
 
     return success;
 }
-
-

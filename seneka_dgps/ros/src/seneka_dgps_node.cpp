@@ -97,6 +97,7 @@ int main(int argc, char** argv) {
 
         ROS_INFO("Establishing connection to DGPS device... (Port: %s, Baud rate: %i)", cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());
         cSenekaDgps.publishStatus("Establishing connection to DGPS device...", cSenekaDgps.OK);
+        
         port_opened = cDgps.open(cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());
 
         cSenekaDgps.extractDiagnostics(cDgps);
@@ -145,35 +146,28 @@ int main(int argc, char** argv) {
 
         while (cSenekaDgps.nh.ok()) {
 
-            /*  call getPosition on dgps instance:
+            /*  getPosition call on dgps instance:
             *
-            *   -> requests position record from receiver
-            *   -> appends incoming data to ringbuffer
-            *   -> tries to extract valid packets (incl. checksum verification)
-            *   -> tries to read "Position Record"-fields from valid packets
-            *   -> writes "Position Record"-data into struct of type gps_data
+            *       -> requests position record from receiver
+            *       -> appends incoming data to ringbuffer
+            *       -> tries to extract valid packets (incl. checksum verification)
+            *       -> tries to read position record fields from valid packets
+            *       -> writes position record data into struct of type gps_data
+            *
             */
             success_getPosition = cDgps.getPosition(position_record);
 
-            #ifndef NDEBUG
-
             cSenekaDgps.extractDiagnostics(cDgps);
-
-            #endif // NDEBUG
 
             // publish GPS data to ROS topic if getPosition() was successfull, if not just publish status
             if (success_getPosition) {
 
                 ROS_DEBUG("Successfully obtained DGPS data.");
                 ROS_DEBUG("Publishing DGPS position on topic %s...", cSenekaDgps.getPositionTopic().c_str());
-                
-                #ifndef NDEBUG
 
                 cSenekaDgps.publishStatus("Successfully obtained DGPS data.", cSenekaDgps.OK);
                 cSenekaDgps.publishStatus("Publishing DGPS position...", cSenekaDgps.OK);
 
-                #endif // NDEBUG
-                
                 cSenekaDgps.publishPosition(position_record);
             }
 

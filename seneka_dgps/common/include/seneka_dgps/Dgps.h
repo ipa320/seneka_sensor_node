@@ -96,8 +96,7 @@
 /***** DGPS class *****/
 /**********************/
 
-class Dgps
-{
+class Dgps {
 
     public:
 
@@ -109,15 +108,15 @@ class Dgps
 
         // diagnostics handling
 
-        enum DiagnosticFlag
-        {
+        enum DiagnosticFlag {
+
             OK          = 0,
             WARNING     = 1,
             ERROR       = 2
         };
 
-        struct DiagnosticStatement
-        {
+        struct DiagnosticStatement {
+
             std::string     diagnostic_message;
             DiagnosticFlag  diagnostic_flag;
         };
@@ -132,8 +131,8 @@ class Dgps
         // interpretation of data bytes follows:
         // latitude: 8 char bytes --> Motorola Byte-Order --> IEEE Double Precision Floating Point Format
         // ...
-        struct gps_data
-        {
+        struct gps_data {
+
             double  latitude_value;      // in semi-circles
             double  longitude_value;     // in semi-circles
             double  altitude_value;      // [] = m
@@ -151,8 +150,8 @@ class Dgps
         };
 
         // this struct contains all bytes of a 57h packet (see Trimble BD982 GNSS receiver manual, page 132)
-        struct packet_data
-        {
+        struct packet_data {
+
             // header
             // see Trimble BD982 GNSS receiver manual, page 132: 4 bytes packet header
             char stx;
