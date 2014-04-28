@@ -141,4 +141,4 @@ class SenekaDgps
         void extractDiagnostics(Dgps &obj);
 };
 
-#endif SENEKA_DGPS_H
+#endif // SENEKA_DGPS_H

@@ -204,4 +204,4 @@ class Dgps
 	   SerialIO m_SerialIO;
 };
 
-#endif DGPS_H
+#endif // DGPS_H

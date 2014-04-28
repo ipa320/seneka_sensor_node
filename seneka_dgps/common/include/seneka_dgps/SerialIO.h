@@ -287,5 +287,5 @@ class SerialIO
 		bool m_ShortBytePeriod;
 };
 
-#endif //_SerialIO_H
+#endif // _SerialIO_H
 

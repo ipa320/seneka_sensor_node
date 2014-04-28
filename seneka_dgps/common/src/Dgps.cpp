@@ -243,7 +243,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,         // int array 
 
     std::cout << "\n";
 
-    #endif NDEBUG
+    #endif // NDEBUG
 
     // find stx, try to get length and match checksum + etx
     for (int y = 0; y < ringbuffer_length; y++)
@@ -426,7 +426,7 @@ double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023)
 
     std::cout << "\n";
 
-    #endif NDEBUG
+    #endif // NDEBUG
 
     // calculate sign, fraction and exponent
     int sign_bit = bits[0];
@@ -450,7 +450,7 @@ double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023)
     printf("\nExponent_lat: %f\n", exponent_lat-exponent_bias);
     printf("\nfraction_lat: %f\n", fraction_lat);
 
-    #endif NDEBUG
+    #endif // NDEBUG
 
     int sign_lat = 1;
     if (sign_bit == 1) sign_lat = -1;
@@ -462,7 +462,7 @@ double getDOUBLE(unsigned char* bytes, int exponent_bias = 1023)
 
     printf("\nCalculated value: %f\n", latitude_value);
 
-    #endif NDEBUG
+    #endif // NDEBUG
 
     return double_value;
 }
@@ -566,7 +566,7 @@ bool Dgps::extractGPS(Dgps::packet_data &incoming_packet, gps_data &position_rec
     printf("\nFrequency_offset:     %f\n", frequency_offset);
     printf("\nPdop:                 %f\n", pdop);
 
-    #endif NDEBUG
+    #endif // NDEBUG
 
     // write extracted values to gps_data struct; this is the returned data.
     position_record.latitude_value  = latitude_value;
@@ -618,7 +618,7 @@ bool Dgps::getPosition(gps_data &position_record)
 
     printf("\nSent request message to serial port. Total number of bytes sent: %i\n", byteswrite);
 
-    #endif NDEBUG
+    #endif // NDEBUG
 
     // read response from serial port
     bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
@@ -632,7 +632,7 @@ bool Dgps::getPosition(gps_data &position_record)
         printf("%.2x\t", Buffer[buffer_index + i]);
     }
 
-    #endif NDEBUG
+    #endif // NDEBUG
 
     // create data structure for the extracted data packets from serial port
     // this is not needed, so it could be removed and only used internally by interpretData function

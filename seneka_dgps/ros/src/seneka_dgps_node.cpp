@@ -99,7 +99,7 @@ int main(int argc, char** argv) {
         cSenekaDgps.publishStatus("Establishing connection to DGPS device...", cSenekaDgps.OK);
         port_opened = cDgps.open(cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());
 
-        void cSenekaDgps.extractDiagnostics(Dgps &cDgps);
+        cSenekaDgps.extractDiagnostics(cDgps);
 
         if (!port_opened) {
 
@@ -123,7 +123,7 @@ int main(int argc, char** argv) {
     // testing the communications link by sending protocol request ENQ (05h) (see BD982 manual, page 65)
     connection_OK = cDgps.checkConnection();
 
-    void cSenekaDgps.extractDiagnostics(Dgps &cDgps);
+    cSenekaDgps.extractDiagnostics(cDgps);
 
     if (!connection_OK) {
 
@@ -157,9 +157,9 @@ int main(int argc, char** argv) {
 
             #ifndef NDEBUG
 
-            void cSenekaDgps.extractDiagnostics(Dgps &cDgps);
+            cSenekaDgps.extractDiagnostics(cDgps);
 
-            #endif NDEBUG
+            #endif // NDEBUG
 
             // publish GPS data to ROS topic if getPosition() was successfull, if not just publish status
             if (success_getPosition) {
@@ -172,7 +172,7 @@ int main(int argc, char** argv) {
                 cSenekaDgps.publishStatus("Successfully obtained DGPS data.", cSenekaDgps.OK);
                 cSenekaDgps.publishStatus("Publishing DGPS position...", cSenekaDgps.OK);
 
-                #endif NDEBUG
+                #endif // NDEBUG
                 
                 cSenekaDgps.publishPosition(position_record);
             }
@@ -180,7 +180,7 @@ int main(int argc, char** argv) {
             else {
 
                 ROS_WARN("Failed to obtain DGPS data. No DGPS data available.");
-                cSenekaDgps.publishStatus("Failed to obtain DGPS data. No DGPS data available.", cSenekaDgps.WARNING);
+                cSenekaDgps.publishStatus("Failed to obtain DGPS data. No DGPS data available.", cSenekaDgps.WARN);
             }
 
             ros::spinOnce();
