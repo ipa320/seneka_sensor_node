@@ -270,7 +270,7 @@ class Dgps {
         // (see Trimble BD982 GNSS receiver manual, p. 65)
         bool checkConnection();
 
-        /*  function getGpsData():
+        /*  function getDgpsData():
         *
         *   --> requests position record packet from receiver (see Trimble BD982 GNSS receiver manual, p. 132/139)
         *   --> appends incoming data to ringbuffer
@@ -278,7 +278,7 @@ class Dgps {
         *   --> tries to read position-record-fields from valid packets
         *   --> writes position-record-data into GpsData struct
         */  
-        bool getGpsData();
+        bool getDgpsData();
 
         // getters
         GpsData                             getPosition()           {return gps_data;}
@@ -299,6 +299,11 @@ class Dgps {
         /***************************************************/
         /*************** data frame handling ***************/
         /***************************************************/
+
+        int ringbuffer_size;
+        unsigned char ringbuffer[4096 * 4];
+        int ringbuffer_start;
+        int ringbuffer_length;
 
         PacketDataStructure     packet_data_structure;
         GpsDataStrucutre        gps_data_structure;
@@ -324,7 +329,7 @@ class Dgps {
 
         DiagnosticStatement                 diagnostic_statement;
         std::vector<DiagnosticStatement>    diagnostic_array;
-        std::stringstream                   message;                // helper variable
+        std::stringstream                   msg;                // helper variable
 
         void transmitStatement(std::string message, DiagnosticFlag flag);
 

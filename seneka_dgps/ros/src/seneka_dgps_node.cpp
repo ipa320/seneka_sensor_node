@@ -85,7 +85,7 @@ int main(int argc, char** argv) {
 
     bool port_opened            = false;
     bool connection_is_ok       = false;
-    bool success_getGpsData     = false;
+    bool success_getDgpsData     = false;
 
     while (!port_opened) {
 
@@ -149,21 +149,15 @@ int main(int argc, char** argv) {
             // -> tries to extract valid packets (incl. checksum verification)
             // -> tries to read position record fields from valid packets
             // -> writes position record data into struct of type gps_data
-            success_getGpsData = cDgps.getGpsData();
+            success_getDgpsData = cDgps.getDgpsData();
 
             cSenekaDgps.extractDiagnostics(cDgps);
 
-            // publish GPS data to ROS topic if getGpsData() was successfull, if not just publish status
-            if (success_getGpsData) {
+            // publish GPS data to ROS topic if getDgpsData() was successfull, if not just publish status
+            if (success_getDgpsData) {
 
                 cSenekaDgps.message << "Successfully received DGPS data.";
                 cSenekaDgps.publishDiagnostics(cSenekaDgps.message.str(), cSenekaDgps.INFO);
-
-                ROS_DEBUG("Received DGPS data.");
-                ROS_DEBUG("Publishing DGPS position on topic %s...", cSenekaDgps.getPositionTopic().c_str());
-
-                cSenekaDgps.publishDiagnostics("Successfully obtained DGPS data.", cSenekaDgps.INFO);
-                cSenekaDgps.publishDiagnostics("Publishing DGPS position...", cSenekaDgps.INFO);
 
                 cSenekaDgps.publishPosition(cDgps.getPosition());
             }
