@@ -1,6 +1,6 @@
 /*!
 *****************************************************************
-* seneka_dgps.h
+* SenekaDgps.h
 *
 * Copyright (c) 2013
 * Fraunhofer Institute for Manufacturing Engineering
@@ -84,29 +84,36 @@ class SenekaDgps {
         std::string position_topic;
         std::string diagnostics_topic;
         std::string serial_port;
-        int serial_baudrate;            // [] = Bd
-        int publishrate;                // [] = Hz
+        int         serial_baudrate;    // [] = Bd
+        int         publishrate;        // [] = Hz
 
         // parameters getting initialized by parameter server in constructor
-        std::string     port;   // serial port
-        int             baud;   // serial port baud rate
-        int             rate;   // ROS publish rate
+        std::string     port;           // serial port
+        int             baud;           // serial port baud rate
+        int             rate;           // ROS publish rate
+
+        // private member variables
+        diagnostic_msgs::DiagnosticArray diagnostics;
 
     public:
 
         // public member variables
-        ros::NodeHandle nh;
-        ros::Publisher  topicPub_position;
-        ros::Publisher  topicPub_Diagnostic_;
-        ros::Time       syncedROSTime;
+        ros::NodeHandle     nh;
+        ros::Publisher      position_publisher;
+        ros::Publisher      diagnostics_publisher;
+        ros::Time           syncedROSTime;
+        std::stringstream   message;                // helper variable
 
-        // enumerated status type for diagnostics statements
+        // enumerated DiagnosticFlag type for diagnostic statements
+        // see ROS verbosity levels (http://wiki.ros.org/Verbosity Levels)
         // see ROS diagnostics (http://wiki.ros.org/diagnostics and http://docs.ros.org/api/diagnostic_msgs/html/msg/DiagnosticStatus.html)
         enum DiagnosticFlag {
 
-            OK          = 0,    
-            WARN        = 1,
-            ERROR       = 2
+            DEBUG,
+            INFO,  
+            WARN,
+            ERROR,
+            FATAL
         };
 
         // constructor
@@ -130,9 +137,9 @@ class SenekaDgps {
         void        setBaud (int baud)          {this->baud = baud;};
         void        setRate (int rate)          {this->rate = rate;};
 
-        // publishing functions
+        // ROS publishers
         void publishPosition(Dgps::GpsData gps);
-        void publishStatus(std::string status_str, int level);
+        void publishDiagnostics(std::string status_str, DiagnosticFlag flag);
 
         // extracts diagnostic statements from DGPS diagnostic_array and transmits them to the publishStatus-function
         void extractDiagnostics(Dgps &obj);

@@ -61,8 +61,6 @@
 
 typedef unsigned char BYTE;
 
-
-
 /************************************************/
 /*************** helper functions ***************/
 /************************************************/
@@ -197,7 +195,6 @@ int etx_length = 1;
 /************************************************/
 
 
-
 /*********************************************************/
 /*************** Dgps class implementation ***************/
 /*********************************************************/
@@ -300,7 +297,6 @@ Dgps::~Dgps() {
 }
 
 
-
 /****************************************************/
 /*************** diagnostics handling ***************/
 /****************************************************/
@@ -308,6 +304,33 @@ Dgps::~Dgps() {
 // takes diagnostic statements and stores them in diagnostic_array
 // if diagnostic_array holds more than 100 elements, the first stored element will get erased
 void Dgps::transmitStatement(std::string message, DiagnosticFlag flag) {
+
+    std::cout << "\n";
+
+    switch(flag) {
+
+        case DEBUG:
+
+            std::cout << "DGPS [DEBUG]: "   << message;
+            break;
+
+        case INFO:
+
+            std::cout << "DGPS [INFO]: "    << message;
+            break;
+
+        case WARNING:
+
+            std::cout << "DGPS [WARNING]: " << message;
+            break;
+
+        case ERROR:
+
+            std::cout << "DGPS [ERROR]: "   << message;
+            break;
+    }
+
+    std::cout << "\n";
 
     diagnostic_statement.diagnostic_message = message;
     diagnostic_statement.diagnostic_flag    = flag;
@@ -345,11 +368,14 @@ bool Dgps::open(const char * pcPort, int iBaudRate) {
     if (serial_open == 0) {
 
         m_SerialIO.purge();
+
+        message << "DGPS: Opened port " << pcPort << " at " << iBaudRate <<" Bd.";
         return true;
     }
 
     else {
 
+        message << "DGPS: Opening port " << pcPort << " at " << iBaudRate <<" Bd failed. Device is not available.";
         return false;
     }
 }
