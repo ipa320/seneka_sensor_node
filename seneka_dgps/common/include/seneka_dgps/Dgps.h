@@ -108,12 +108,14 @@ class Dgps {
             INFO,
             WARNING,
             ERROR,
+
         };
 
         struct DiagnosticStatement {
 
             std::string     diagnostic_message;
             DiagnosticFlag  diagnostic_flag;
+
         };
 
         /****************************************************/
@@ -140,10 +142,13 @@ class Dgps {
             char page_counter;                  // see user guide for bit interpretation!
             char reply_number;
             char record_interpretation_flags;
+
             char * data_bytes;                  // maximum of 244 bytes for data; concatenate pages if needed!
+            
             // footer
             char checksum;                      // calculated over: all bytes between stx and checksum
             char etx;
+        
         };
 
         // this structure contains all variables to index the positions of position record packet bytes
@@ -175,6 +180,7 @@ class Dgps {
             int record_interpretation_flags_length;
 
             int data_bytes_index;
+
         };
 
         // this structure contains all the INTERPRETED data field bytes of a position record packet
@@ -194,10 +200,11 @@ class Dgps {
             double  longitude_rate;      // [] = rad/s
             double  altitude_rate;       // [] = rad/s
             long    gps_msec_of_week;    // [] = ms
-            char    position_flags;      // (see Trimble BD982 GNSS receiver manual, p. 140)
+            char    position_flags;      // see Trimble BD982 GNSS receiver manual, p. 140
             char    number_of_SVs;       // number of used satellites
             char *  channel_number;      // 1 char for each satellite
             char *  prn;                 // 1 char for each satellite
+        
         };
 
         // this structure contains all variables to index the positions of position record packet data field bytes
@@ -250,8 +257,9 @@ class Dgps {
             int prn_length;
 
             // helper variable, used to find meaning of semi-circles in this case... 
-            //(it's just 0-180 normalized to 0.0-1.0)
+            // (it's just 0-180 normalized to 0.0-1.0)
             double semi_circle_factor;
+        
         };
 
         /***************************************************/
@@ -300,14 +308,14 @@ class Dgps {
         /*************** data frame handling ***************/
         /***************************************************/
 
-        int ringbuffer_size;
-        unsigned char ringbuffer[4096 * 4];
-        int ringbuffer_start;
-        int ringbuffer_length;
+        int             ringbuffer_size;
+        unsigned char   ringbuffer[4096 * 4];
+        int             ringbuffer_start;
+        int             ringbuffer_length;
 
-        PacketDataStructure     packet_data_structure;
-        GpsDataStrucutre        gps_data_structure;
-        GpsData                 gps_data;
+        PacketDataStructure packet_data_structure;
+        GpsDataStrucutre    gps_data_structure;
+        GpsData             gps_data;
 
         // gets data from serial.IO and serves PacketData
         bool interpretData(unsigned char * incoming_data,

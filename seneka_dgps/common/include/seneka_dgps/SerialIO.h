@@ -125,41 +125,46 @@ class SerialIO {
 		 * Sets the device name
 		 * @param Name 'COM1', 'COM2', ...
 		 */
-		void binary (int dec, char* binary);
-        void binary_old (int dec, char* binary);
+		// ...
+
 		/**
 		 * decimal to binary conversion, the value is stored in as ASCII
 		 */
-		//void latlongcalc(char *value, double* lat);
+		void binary (int dec, char* binary);
+
+        void binary_old (int dec, char* binary);
+		
+		// void latlongcalc(char* value, double* lat);
+		
 		/*
 		 * binary values to latitude and longtitude
 		 */
 		void alphatointeg(char* binary, int* value);
-		//To convert alphabet to integer for more readability
+		// To convert alphabet to integer for more readability
 
 		void setDeviceName(const char *Name) { m_DeviceName = Name; }
 
-		/**
+		/*
 		 * Sets the baudrate.
 		 * @param BaudRate baudrate.
 		 */
 		void setBaudRate(int BaudRate) { m_BaudRate = BaudRate; }
 
-		/**
+		/*
 		 * Changes the baudrate.
 		 * The serial port is allready open.
 		 * @param BaudRate new baudrate.
 		 */
 		void changeBaudRate(int BaudRate);
 
-		/**
+		/*
 		 * Sets a multiplier for the baudrate.
 		 * Some serial cards need a specific multiplier for the baudrate.
 		 * @param Multiplier default is one.
 		 */
 		void setMultiplier(double Multiplier = 1) { m_Multiplier = Multiplier; };
 
-		/**
+		/*
 		 * Sets the message format.
 		 */
 		void SetFormat(int ByteSize, ParityFlags Parity, int StopBits) {
@@ -167,28 +172,28 @@ class SerialIO {
 			m_ByteSize = ByteSize; m_Parity = Parity; m_StopBits = StopBits;
 		}
 
-		/**
+		/*
 		 * Defines the handshake type.
 		 */
 		void setHandshake(HandshakeFlags Handshake) { m_Handshake = Handshake; }
 
-		/**
+		/*
 		 * Sets the buffer sizes.
 		 * @param ReadBufSize number of bytes of the read buffer.
 		 * @param WriteBufSize number of bytes of the write buffer.
-		*/
+		 */
 		void setBufferSize(int ReadBufSize, int WriteBufSize) {
 
 			m_ReadBufSize = ReadBufSize; m_WriteBufSize = WriteBufSize;
 		}
 
-		/**
+		/*
 		 * Sets the timeout.
 		 * @param Timeout in seconds
-	 	*/
+	 	 */
 		void setTimeout(double Timeout);
 
-		/**
+		/*
 	 	* Sets the byte period for transmitting bytes.
 	 	* If the period is not equal to 0, the transmit will be repeated with the given
 	 	* period until all bytes are transmitted.
