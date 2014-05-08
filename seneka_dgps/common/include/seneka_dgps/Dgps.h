@@ -307,9 +307,9 @@ class Dgps {
 
         };
 
-        bool *  invertBitOrder      (bool * bits, DataType data_type, bool invertBitsPerByte, bool invertByteOrder);
+        bool *  invertBitOrder      (bool * bits, DataType data_type, bool invertBitsPerByte = true, bool invertByteOrder = false);
         long    getLONG             (unsigned char * bytes);
-        double  getDOUBLE           (unsigned char * bytes, int exponent_bias);
+        double  getDOUBLE           (unsigned char * bytes, int exponent_bias = 1023);
         int     data_bytes_length   (int length_value);
         int     checksum_index      (int length_value);
         int     etx_index           (int length_value);

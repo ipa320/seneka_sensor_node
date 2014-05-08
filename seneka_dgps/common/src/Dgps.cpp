@@ -707,7 +707,7 @@ bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &gps_data) {
 /************************************************/
 
 // function to reorder incoming bits
-bool * Dgps::invertBitOrder(bool * bits, Dgps::DataType data_type, bool invertBitsPerByte = true, bool invertByteOrder = false) {
+bool * Dgps::invertBitOrder(bool * bits, Dgps::DataType data_type, bool invertBitsPerByte, bool invertByteOrder) {
 
 bool * reversed_CHAR    = new bool[ 8];
 bool * reversed_SHORT   = new bool[16];
@@ -852,7 +852,7 @@ long Dgps::getLONG(unsigned char * bytes) {
  *
  * int exponent_bias = 1023;
  * hopefully working as default parameter... */
-double Dgps::getDOUBLE(unsigned char * bytes, int exponent_bias = 1023) {
+double Dgps::getDOUBLE(unsigned char * bytes, int exponent_bias) {
 
     // init with zero/false
     bool bits[64] = {false};
