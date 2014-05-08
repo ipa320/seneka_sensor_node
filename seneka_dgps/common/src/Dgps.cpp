@@ -73,10 +73,11 @@ Dgps::Dgps() {
     /*************** data frame handling ***************/
     /***************************************************/
 
-    int             ringbuffer_size         = 4096 * 4; // ! important: change next line too (array init), when changing buffer size!
-    unsigned char   ringbuffer[4096 * 4]    = {0};
-    int             ringbuffer_start        = 0;
-    int             ringbuffer_length       = 0;
+    unsigned char   ringbuffer[4096 * 4]    = {0};      // ! important: change next line too (int ringbuffer_size = ...), when changing count of ringbuffer elements!
+    int             ringbuffer_size         = 4096 * 4;
+    int             ringbuffer_start        = 0; // variable ringbuffer_start really neccessary...?
+    //int             ringbuffer_length       = 0; // shouldn't be initialized with -1, so data get's inserted at the beginning of ringbuffer[]...? see interpretData()-function --> data insertion at the beginning
+    int             ringbuffer_length       = -1;
 
     // the following variables allow to extract associated packet fields from incoming data frames as described in Trimble BD982 GNSS receiver manual
     // base unit is 1 char = 8 Bit
@@ -184,7 +185,9 @@ Dgps::~Dgps() {
 
 // takes diagnostic statements and stores them in diagnostic_array
 // if diagnostic_array holds more than 100 elements, the oldest stored element will get erased
-void Dgps::transmitStatement(std::string msg, DiagnosticFlag flag) {
+void Dgps::transmitStatement(DiagnosticFlag flag) {
+
+    std::stringstream msg_tagged;
 
     std::cout << "\n";
 
@@ -192,29 +195,38 @@ void Dgps::transmitStatement(std::string msg, DiagnosticFlag flag) {
 
         case DEBUG:
 
-            std::cout << "DGPS [DEBUG]: "   << msg;
+            msg_tagged  << "DGPS [DEBUG]: "     << msg.str();
+            std::cout   << msg_tagged.str();
             break;
 
         case INFO:
 
-            std::cout << "DGPS [INFO]: "    << msg;
+            msg_tagged  << "DGPS [INFO]: "      << msg.str();
+            std::cout   << msg_tagged.str();
             break;
 
         case WARNING:
 
-            std::cout << "DGPS [WARNING]: " << msg;
+            msg_tagged  << "DGPS [WARNING]: "   << msg.str();
+            std::cout   << msg_tagged.str();
             break;
 
         case ERROR:
 
-            std::cout << "DGPS [ERROR]: "   << msg;
+            msg_tagged  << "DGPS [ERROR]: "     << msg.str();
+            std::cout   << msg_tagged.str();
+            break;
+
+        default:
+
+            std::cout   << msg.str();
             break;
     
     }
 
     std::cout << "\n";
 
-    diagnostic_statement.diagnostic_message = msg;
+    diagnostic_statement.diagnostic_message = msg_tagged.str();
     diagnostic_statement.diagnostic_flag    = flag;
 
     if (diagnostic_array.size() >= 100) {
@@ -225,11 +237,10 @@ void Dgps::transmitStatement(std::string msg, DiagnosticFlag flag) {
     
     }
 
-    else {
+    diagnostic_array.push_back(diagnostic_statement);
 
-        diagnostic_array.push_back(diagnostic_statement);
-
-    }
+    msg_tagged.str("");
+    msg.str("");
 
 }
 
@@ -244,25 +255,28 @@ void Dgps::transmitStatement(std::string msg, DiagnosticFlag flag) {
 // opens serial connection
 bool Dgps::open(const char * pcPort, int iBaudRate) {
 
-    int serial_open;
+    msg << "Establishing serial connection...";
+    transmitStatement(INFO);
+
     m_SerialIO.setBaudRate(iBaudRate);
     m_SerialIO.setDeviceName(pcPort);
-    serial_open = m_SerialIO.open();
+
+    int serial_open = m_SerialIO.open();
 
     if (serial_open == 0) {
 
         m_SerialIO.purge();
 
-        msg << "DGPS: Opened port " << pcPort << " at " << iBaudRate <<" Bd.";
-        transmitStatement(msg.str(), INFO);
+        msg << "Opened port " << pcPort << " at " << iBaudRate <<" Bd.";
+        transmitStatement(INFO);
         return true;
 
     }
 
     else {
 
-        msg << "DGPS: Opening port " << pcPort << " at " << iBaudRate <<" Bd failed. Device is not available.";
-        transmitStatement(msg.str(), ERROR);
+        msg << "Opening port " << pcPort << " at " << iBaudRate <<" Bd failed. Device is not available.";
+        transmitStatement(ERROR);
         return false;
 
     }
@@ -281,12 +295,32 @@ bool Dgps::open(const char * pcPort, int iBaudRate) {
 // returns success response "ACK" (06h) (see Trimble BD982 GNSS receiver manual, page 65)
 bool Dgps::checkConnection() {
 
-    // test command "ENQ" (05h)
+    // creation of test connection link command "ENQ" (05h)
     char message[]  = {0x05};
     int length      = sizeof (message) / sizeof (message[0]);
 
-    // send connection check message
-    int bytesWritten = m_SerialIO.write(message, length);
+    // sending of test connection link command "ENQ" (05h)
+
+    msg << "Sending test connection link command...";
+    transmitStatement(INFO);
+
+    bytes_sent = 0;
+    bytes_sent = m_SerialIO.write(message, length);
+
+    if (bytes_sent > 0) {
+
+        msg << "Sending test connection link command succeeded. Waiting for response...";
+        transmitStatement(INFO);
+
+    }
+
+    else {
+
+        msg << "Sending test connection link command failed.";
+        transmitStatement(ERROR);
+        return false;
+
+    }
 
     unsigned char Buffer[1024] = {0};
 
@@ -302,9 +336,10 @@ bool Dgps::checkConnection() {
 
         usleep(retry_delay);
 
-        int bytesRead = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
+        bytes_received = 0;
+        bytes_received = m_SerialIO.readNonBlocking((char *) Buffer, 1020);
 
-        if (bytesRead > 0 && Buffer[0] == 6) {
+        if (bytes_received > 0 && Buffer[0] == 6) {
 
             success = true;
 
@@ -318,7 +353,21 @@ bool Dgps::checkConnection() {
 
     }
 
-    return success;
+    if (!success) {
+
+        msg << "Received either wrong or no response packet to test connection link command.";
+        transmitStatement(ERROR);
+        return false;
+    
+    }
+
+    else {
+
+        msg << "Received expected response. Testing the connection link succeeded.";
+        transmitStatement(INFO);
+        return true;
+   
+    }
 
 }
 
@@ -337,8 +386,6 @@ bool Dgps::getDgpsData() {
 
     unsigned char Buffer[1024]  = {0};
     int buffer_index            =  0;
-    int bytesread;
-    int byteswrite;
 
     // generation of request message (see Trimble BD982 GNSS receiver manual, p. 73)
     unsigned char stx_          = 0x02;
@@ -354,44 +401,40 @@ bool Dgps::getDgpsData() {
     int length      = sizeof (message) / sizeof (message[0]);
 
     // send request message to serial port
-    byteswrite = m_SerialIO.write(message, length);
+    bytes_sent = 0;
+    bytes_sent = m_SerialIO.write(message, length);
 
-    msg << "Sent request message to serial port.";
-    transmitStatement(msg.str(), INFO);
+    if (bytes_sent > 0) {
 
-    #ifndef NDEBUG
-
-    msg << "Total number of bytes sent: " << byteswrite;
-    transmitStatement(msg.str(), DEBUG);
-
-    #endif // NDEBUG
-
+        msg << "Sent request message to serial port.";
+        transmitStatement(INFO);
+    }
+    
     // read response from serial port
-    bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
+    bytes_received = 0;
+    bytes_received = m_SerialIO.readNonBlocking((char*) Buffer, 1020);
 
     msg << "Received reply packet.";
-    transmitStatement(msg.str(), INFO);    
+    transmitStatement(INFO);
+
+    // put received data into buffer, extract packets, extract gps data if available
+    success = interpretData(Buffer, bytes_received);
 
     #ifndef NDEBUG
 
-    msg << "Total number of bytes received: " << bytesread;
-    transmitStatement(msg.str(), DEBUG);
+    msg << "Total number of bytes sent: " << bytes_sent;
+    transmitStatement(DEBUG);
 
-    for (int i = 0; i < bytesread; i++) {
+    msg << "Total number of bytes received: " << bytes_received;
+    transmitStatement(DEBUG);
+
+    for (int i = 0; i < bytes_received; i++) {
 
         msg << "Buffer[" << i << "]: " << Buffer[buffer_index + i];
-        transmitStatement(msg.str(), DEBUG);
+        transmitStatement(DEBUG);
     }
 
     #endif // NDEBUG
-
-    // create data structure for the extracted data packets from serial port
-    // this is not needed, so it could be removed and only used internally by interpretData function
-    // left from dev code... ;)
-    Dgps::PacketData incoming_packet;
-
-    // put received data into buffer, extract packets, extract gps data if available
-    success = interpretData(Buffer, bytesread, incoming_packet, gps_data);
 
     return success;
 }
@@ -405,9 +448,7 @@ bool Dgps::getDgpsData() {
 /*****************************************************/
 
 bool Dgps::interpretData(unsigned char *    incoming_data,          // int array from serial.IO
-                         int                incoming_data_length,   // count of received bytes
-                         Dgps::PacketData   incoming_packet,
-                         GpsData            &gps_data) {            // function writes to this data address 
+                         int                incoming_data_length) { // count of received bytes            // function writes to this data address 
                 
     bool                success = false;
     Dgps::PacketData    temp_packet; // = new PacketData;
@@ -416,32 +457,39 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 
         for (int i = 0; i < incoming_data_length; i++) {
 
-            ringbuffer[(ringbuffer_start + ringbuffer_length + 1) % ringbuffer_size] = (char) incoming_data[i];
-            ringbuffer_length = (ringbuffer_length + 1) % ringbuffer_size;
+            //ringbuffer[(ringbuffer_start + ringbuffer_length + 1) % ringbuffer_size] = (char) incoming_data[i];
+            ringbuffer[ringbuffer_length + 1] = (char) incoming_data[i];
+            //ringbuffer_length = (ringbuffer_length + 1) % ringbuffer_size;
+            ringbuffer_length++;
+
         }
+
     }
 
     else {
 
-        msg << "Buffer is full! Cannot insert data!";
-        transmitStatement(msg.str(), WARNING);
+        msg << "Buffer is full! Cannot insert new data!";
+        //msg << "Buffer is full! Deleting oldest data to enable insertion of latest data...";
+        //...
+        transmitStatement(WARNING);
+
     }
 
     #ifndef NDEBUG
 
     msg << "Buffer start: " << ringbuffer_start;
-    transmitStatement(msg.str(), DEBUG);
+    transmitStatement(DEBUG);
 
     msg << "Buffer length: " << ringbuffer_length;
-    transmitStatement(msg.str(), DEBUG);    
+    transmitStatement(DEBUG);    
 
     msg << "Content of ringbuffer: " << ringbuffer_length;
-    transmitStatement(msg.str(), DEBUG);
+    transmitStatement(DEBUG);
     
     for (int i = 0; i < ringbuffer_size; i++) {
 
         msg << "Ringbuffer[" << ringbuffer[i] << "]: " << ringbuffer[i];
-        transmitStatement(msg.str(), DEBUG);
+        transmitStatement(DEBUG);
         // printf("%.2x\t", ringbuffer[i]);
     }
 
@@ -454,14 +502,14 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
         if (ringbuffer[(ringbuffer_start + y + packet_data_structure.stx_index) % ringbuffer_size] != 0x02) {
 
             msg << "First byte in received data frame was not stx: " << ringbuffer[(ringbuffer_start + y + packet_data_structure.stx_index) % ringbuffer_size] << "!";
-            transmitStatement(msg.str(), WARNING);
+            transmitStatement(WARNING);
             continue;
         }
 
         else {
 
             msg << "Found stx in received data frame.";
-            transmitStatement(msg.str(), INFO);
+            transmitStatement(INFO);
 
             // --- header ---
             temp_packet.stx         = ringbuffer[(ringbuffer_start + y + packet_data_structure.stx_index)         % ringbuffer_size] % 256;
@@ -511,14 +559,14 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
             if (checksum != temp_packet.checksum) {
 
                 msg << "Checksum mismatch! Calculated checksum: " << checksum << ". Received checksum: " << temp_packet.checksum << ".";
-                transmitStatement(msg.str(), WARNING);
+                transmitStatement(WARNING);
                 error_occured = true;
             }
 
             if (temp_packet.etx != 0x03) {
 
                 msg << "Etc was not 0x03. Received etx: " << temp_packet.etx << ".";
-                transmitStatement(msg.str(), WARNING);
+                transmitStatement(WARNING);
                 error_occured = true;
             }
 
@@ -538,38 +586,38 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
                 incoming_packet = temp_packet;
 
                 // if data is okay -> success = true, then update ringbuffer pointers and write new packet to parameter... see  few lines below
-                success = extractGPS(incoming_packet, gps_data);
+                success = extractGPS();
             }
 
             if (ringbuffer_length > 0) {
 
                 msg << "Ringbuffer was not empty after reading one packet: " << ringbuffer_length << " bytes left! Calling function to receive data again...";
-                transmitStatement(msg.str(), WARNING);
+                transmitStatement(WARNING);
                 
                 if (ringbuffer_old_start != ringbuffer_start)
 
                     if (!success) {
 
                         // call without data to process rest of buffered data
-                        success = interpretData(NULL, 0, incoming_packet, gps_data);
+                        success = interpretData(NULL, 0);
                     } 
 
                     else {
 
-                        interpretData(NULL, 0, incoming_packet, gps_data);
+                        interpretData(NULL, 0);
                     }
 
                     else {
 
                         msg << "Stopped interpreting remaining buffer to avoid infinite loop.";
-                        transmitStatement(msg.str(), WARNING);
+                        transmitStatement(WARNING);
                     }
             }
 
             else {
 
                 msg << "Successfully extracted packet.";
-                transmitStatement(msg.str(), INFO);
+                transmitStatement(INFO);
             }
 
             return success;
@@ -583,12 +631,12 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 /*************** Dgps::extractGPS() ***************/
 /**************************************************/
 
-bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &gps_data) {
+bool Dgps::extractGPS() {
 
     if (incoming_packet.packet_type != 0x057) {
 
         msg << "Received data packet has wrong type! Received packet type: " << incoming_packet.packet_type << ". Expected packet type: 0x057.";
-        transmitStatement(msg.str(), WARNING);
+        transmitStatement(WARNING);
         return false;
 
     }
@@ -596,7 +644,7 @@ bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &gps_data) {
     else if (incoming_packet.record_type != 0x01) {
 
         msg << "Received data packet has wrong record type! Received record type: " << incoming_packet.record_type << ". Expected record type: 0x01.";
-        transmitStatement(msg.str(), WARNING);
+        transmitStatement(WARNING);
         return false;
 
     }
@@ -604,7 +652,7 @@ bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &gps_data) {
     else {
 
         msg << ("Received data packet is ok.");
-        transmitStatement(msg.str(), INFO);
+        transmitStatement(INFO);
 
     }
 
@@ -670,22 +718,22 @@ bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &gps_data) {
     #ifndef NDEBUG
 
     msg << "Calculated longitude: " << longitude_value;
-    transmitStatement(msg.str(), DEBUG);
+    transmitStatement(DEBUG);
 
     msg << "Calculated latitude: "  << latitude_value;
-    transmitStatement(msg.str(), DEBUG);
+    transmitStatement(DEBUG);
 
     msg << "Calculated altitude: "  << altitude_value;
-    transmitStatement(msg.str(), DEBUG);
+    transmitStatement(DEBUG);
 
     msg << "Clock_offset: "         << clock_offset;
-    transmitStatement(msg.str(), DEBUG);
+    transmitStatement(DEBUG);
 
     msg << "Frequency_offset: "     << frequency_offset;
-    transmitStatement(msg.str(), DEBUG);
+    transmitStatement(DEBUG);
 
     msg << "Pdop: "                 << pdop;
-    transmitStatement(msg.str(), DEBUG);
+    transmitStatement(DEBUG);
 
     #endif // NDEBUG
 
@@ -709,11 +757,10 @@ bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &gps_data) {
 // function to reorder incoming bits
 bool * Dgps::invertBitOrder(bool * bits, Dgps::DataType data_type, bool invertBitsPerByte, bool invertByteOrder) {
 
-bool * reversed_CHAR    = new bool[ 8];
-bool * reversed_SHORT   = new bool[16];
-bool * reversed_LONG    = new bool[32];
-bool * reversed_FLOAT   = new bool[32];
-bool * reversed_DOUBLE  = new bool[64];
+bool * reversed_8_bit   = new bool[ 8];
+bool * reversed_16_bit  = new bool[16];
+bool * reversed_32_bit  = new bool[32];
+bool * reversed_64_bit  = new bool[64];
 
     switch (data_type) {
 
@@ -721,12 +768,12 @@ bool * reversed_DOUBLE  = new bool[64];
 
             for (int i = 0; i < 8; i++) {
 
-            if      (invertBitsPerByte)   reversed_SHORT[i] = bits[7-i];
-            else if (!invertBitsPerByte)  reversed_SHORT[i] = bits[i  ];
+            if      (invertBitsPerByte)   reversed_8_bit[i] = bits[7-i];
+            else if (!invertBitsPerByte)  reversed_8_bit[i] = bits[i  ];
 
             }
 
-            return reversed_CHAR;
+            return reversed_8_bit;
 
         case SHORT:
 
@@ -734,50 +781,34 @@ bool * reversed_DOUBLE  = new bool[64];
 
                 for (int i = 0; i < 8; i++) {
 
-                if      (!invertByteOrder   && invertBitsPerByte)   reversed_SHORT[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
-                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_SHORT[k * 8 + i] = bits[(k)      * 8 + (i)       ];
-                else if (invertByteOrder    && invertBitsPerByte)   reversed_SHORT[k * 8 + i] = bits[(1 - k)  * 8 + (7 - i)   ];
-                else if (invertByteOrder    && !invertBitsPerByte)  reversed_SHORT[k * 8 + i] = bits[(1 - k)  * 8 + (i)       ];
+                if      (!invertByteOrder   && invertBitsPerByte)   reversed_16_bit[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
+                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_16_bit[k * 8 + i] = bits[(k)      * 8 + (i)       ];
+                else if (invertByteOrder    && invertBitsPerByte)   reversed_16_bit[k * 8 + i] = bits[(1 - k)  * 8 + (7 - i)   ];
+                else if (invertByteOrder    && !invertBitsPerByte)  reversed_16_bit[k * 8 + i] = bits[(1 - k)  * 8 + (i)       ];
         
                 }
     
             }
 
-            return reversed_SHORT;
+            return reversed_16_bit;
 
         case LONG:
-         
-            for (int k = 0; k < 4; k++) {
-
-                for (int i = 0; i < 8; i++) {
-
-                if      (!invertByteOrder   && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
-                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (i)       ];
-                else if (invertByteOrder    && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (7 - i)   ];
-                else if (invertByteOrder    && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (i)       ];
-        
-                }
-    
-            }
-
-            return reversed_LONG;
-
         case FLOAT:
          
             for (int k = 0; k < 4; k++) {
 
                 for (int i = 0; i < 8; i++) {
 
-                if      (!invertByteOrder   && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
-                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (i)       ];
-                else if (invertByteOrder    && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (7 - i)   ];
-                else if (invertByteOrder    && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (i)       ];
+                if      (!invertByteOrder   && invertBitsPerByte)   reversed_32_bit[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
+                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_32_bit[k * 8 + i] = bits[(k)      * 8 + (i)       ];
+                else if (invertByteOrder    && invertBitsPerByte)   reversed_32_bit[k * 8 + i] = bits[(3 - k)  * 8 + (7 - i)   ];
+                else if (invertByteOrder    && !invertBitsPerByte)  reversed_32_bit[k * 8 + i] = bits[(3 - k)  * 8 + (i)       ];
         
                 }
     
             }
 
-            return reversed_FLOAT;
+            return reversed_32_bit;
 
         case DOUBLE:
 
@@ -785,16 +816,16 @@ bool * reversed_DOUBLE  = new bool[64];
 
                 for (int i = 0; i < 8; i++) {
 
-                if      (!invertByteOrder   && invertBitsPerByte)   reversed_DOUBLE[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
-                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_DOUBLE[k * 8 + i] = bits[(k)      * 8 + (i)       ];
-                else if (invertByteOrder    && invertBitsPerByte)   reversed_DOUBLE[k * 8 + i] = bits[(7 - k)  * 8 + (7 - i)   ];
-                else if (invertByteOrder    && !invertBitsPerByte)  reversed_DOUBLE[k * 8 + i] = bits[(7 - k)  * 8 + (i)       ];
+                if      (!invertByteOrder   && invertBitsPerByte)   reversed_64_bit[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
+                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_64_bit[k * 8 + i] = bits[(k)      * 8 + (i)       ];
+                else if (invertByteOrder    && invertBitsPerByte)   reversed_64_bit[k * 8 + i] = bits[(7 - k)  * 8 + (7 - i)   ];
+                else if (invertByteOrder    && !invertBitsPerByte)  reversed_64_bit[k * 8 + i] = bits[(7 - k)  * 8 + (i)       ];
         
                 }
     
             }
 
-            return reversed_DOUBLE;
+            return reversed_64_bit;
 
     }
 
@@ -836,7 +867,7 @@ long Dgps::getLONG(unsigned char * bytes) {
 }
 
 /* function to extract IEEE double precision number values from an 8-byte array
- * (8 Bit per Byte; array size is expected to be 8; ==> 64 Bit)
+ * (8 bits per byte; array size is expected to be 8; ==> 64 Bit)
  *
  * bias is 1023 as default for standard numbers
  * ...(IEEE example -25.25 reads ok with invertedBitsPerByte and bias 1023)
@@ -875,12 +906,12 @@ double Dgps::getDOUBLE(unsigned char * bytes, int exponent_bias) {
     #ifndef NDEBUG
 
     msg << "Bits: ";
-    transmitStatement(msg.str(), DEBUG);
+    transmitStatement(DEBUG);
 
     for (int i = 0; i < 64; i++) {
 
         msg << bits[i];
-        transmitStatement(msg.str(), DEBUG);
+        transmitStatement(DEBUG);
 
     }
 

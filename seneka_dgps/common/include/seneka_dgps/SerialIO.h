@@ -94,6 +94,7 @@ class SerialIO {
 			HS_NONE,
 			HS_HARDWARE,
 			HS_XONXOFF
+
 		};
 
 		// Constants for defining the parity bits.
@@ -105,6 +106,7 @@ class SerialIO {
 			// UNIX serial drivers only support even, odd, and no parity bit generation.
 			PA_MARK,
 			PA_SPACE
+
 		};
 
 		// Constants for defining the stop bits.
@@ -113,6 +115,7 @@ class SerialIO {
 			SB_ONE,
 			SB_ONE_5, // ????? returns an error ?????
 			SB_TWO
+
 		};
 
 		// default constructor
@@ -130,25 +133,33 @@ class SerialIO {
 		/**
 		 * decimal to binary conversion, the value is stored in as ASCII
 		 */
-		void binary (int dec, char* binary);
+		void binary (int dec, char * binary);
 
-        void binary_old (int dec, char* binary);
+        void binary_old (int dec, char * binary);
 		
 		// void latlongcalc(char* value, double* lat);
 		
 		/*
 		 * binary values to latitude and longtitude
 		 */
-		void alphatointeg(char* binary, int* value);
+		void alphatointeg(char * binary, int * value);
 		// To convert alphabet to integer for more readability
 
-		void setDeviceName(const char *Name) { m_DeviceName = Name; }
+		void setDeviceName(const char *Name) {
+
+			m_DeviceName = Name;
+
+		}
 
 		/*
 		 * Sets the baudrate.
 		 * @param BaudRate baudrate.
 		 */
-		void setBaudRate(int BaudRate) { m_BaudRate = BaudRate; }
+		void setBaudRate(int BaudRate) {
+
+			m_BaudRate = BaudRate;
+
+		}
 
 		/*
 		 * Changes the baudrate.
@@ -162,7 +173,11 @@ class SerialIO {
 		 * Some serial cards need a specific multiplier for the baudrate.
 		 * @param Multiplier default is one.
 		 */
-		void setMultiplier(double Multiplier = 1) { m_Multiplier = Multiplier; };
+		void setMultiplier(double Multiplier = 1) {
+
+			m_Multiplier = Multiplier;
+
+		};
 
 		/*
 		 * Sets the message format.
@@ -170,12 +185,17 @@ class SerialIO {
 		void SetFormat(int ByteSize, ParityFlags Parity, int StopBits) {
 
 			m_ByteSize = ByteSize; m_Parity = Parity; m_StopBits = StopBits;
+
 		}
 
 		/*
 		 * Defines the handshake type.
 		 */
-		void setHandshake(HandshakeFlags Handshake) { m_Handshake = Handshake; }
+		void setHandshake(HandshakeFlags Handshake) {
+
+			m_Handshake = Handshake;
+
+		}
 
 		/*
 		 * Sets the buffer sizes.
@@ -185,6 +205,7 @@ class SerialIO {
 		void setBufferSize(int ReadBufSize, int WriteBufSize) {
 
 			m_ReadBufSize = ReadBufSize; m_WriteBufSize = WriteBufSize;
+
 		}
 
 		/*
@@ -219,7 +240,7 @@ class SerialIO {
 	 	* @param Buffer pointer to the buffer.
 	 	* @param Length number of bytes to read
 	 	*/
-		int readBlocking(char *Buffer, int Length);
+		int readBlocking(char * Buffer, int Length);
 
 
 		/**
@@ -228,14 +249,14 @@ class SerialIO {
 	 	* @param Buffer pointer to the buffer.
 	 	* @param Length number of bytes to read
 		*/
-		int readNonBlocking(char *Buffer, int Length);
+		int readNonBlocking(char * Buffer, int Length);
 
 		/**
 	 	* Writes bytes to the serial port.
 	 	* @param Buffer buffer of the message
 	 	* @param Length number of bytes to send
 	 	*/
-		int write(const char *Buffer, int Length);
+		int write(const char * Buffer, int Length);
 
 		/**
 	 	* Returns the number of bytes available in the read buffer.
@@ -248,6 +269,7 @@ class SerialIO {
 		void purge() {
 
 			::tcflush(m_Device, TCIOFLUSH);
+
 		}
 
 		/** Clears the read buffer.
@@ -255,6 +277,7 @@ class SerialIO {
 		void purgeRx() {
 
 		tcflush(m_Device, TCIFLUSH);
+
 		}
 
 		/**
@@ -264,6 +287,7 @@ class SerialIO {
 		void purgeTx() {
 
 			tcflush(m_Device, TCOFLUSH);
+			
 		}
 
 		/**
@@ -273,6 +297,7 @@ class SerialIO {
 		void flushTx() {
 
 		tcdrain(m_Device);
+
 		}
 
 	protected:

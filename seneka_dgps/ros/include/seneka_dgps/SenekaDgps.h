@@ -139,7 +139,7 @@ class SenekaDgps {
 
         // ROS publishers
         void publishPosition(Dgps::GpsData gps);
-        void publishDiagnostics(std::string status_str, DiagnosticFlag flag);
+        void publishDiagnostics(DiagnosticFlag flag);
 
         // extracts diagnostic statements from DGPS diagnostic_array and transmits them to the publishStatus-function
         void extractDiagnostics(Dgps &obj);

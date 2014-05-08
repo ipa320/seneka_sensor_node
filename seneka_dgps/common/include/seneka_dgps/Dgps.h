@@ -332,19 +332,20 @@ class Dgps {
         int             ringbuffer_start;
         int             ringbuffer_length;
 
+        int             bytes_sent;
+        int             bytes_received;
+
         PacketDataStructure packet_data_structure;
+        PacketData          incoming_packet;
         GpsDataStrucutre    gps_data_structure;
         GpsData             gps_data;
 
         // gets data from serial.IO and serves PacketData
-        bool interpretData(unsigned char * incoming_data,
-                           int incoming_data_length,
-                           PacketData incoming_packet,
-                           GpsData &gps_data);
+        bool interpretData(unsigned char *  incoming_data,
+                           int              incoming_data_length);
 
         // takes packet data from interpretData(), serves GpsData
-        bool extractGPS(PacketData &incoming_packet,
-                        GpsData &gps_data);
+        bool extractGPS();
 
         /***************************************************/
         /***************************************************/
@@ -358,7 +359,7 @@ class Dgps {
         std::vector<DiagnosticStatement>    diagnostic_array;
         std::stringstream                   msg;                // helper variable
 
-        void transmitStatement(std::string message, DiagnosticFlag flag);
+        void transmitStatement(DiagnosticFlag flag);
 
         /****************************************************/
         /****************************************************/

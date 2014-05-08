@@ -81,8 +81,9 @@ SenekaDgps::SenekaDgps() {
     // gather serial port for connection establishment
     if (!nh.hasParam("port")) {
 
-        ROS_WARN("Using default parameter for port: %s", getSerialPort().c_str());
-        publishDiagnostics("Using default parameter for port.", INFO);
+        message << "Using default parameter for port: " << getSerialPort();
+        publishDiagnostics(WARN);
+
     }
 
         nh.param("port", port, getSerialPort());
@@ -90,8 +91,9 @@ SenekaDgps::SenekaDgps() {
     // gather baud rate for serial connection
     if (!nh.hasParam("baud")) {
 
-        ROS_WARN("Using default parameter for baud rate: %i Bd", getSerialBaudRate());
-        publishDiagnostics("Using default parameter for baud rate.", INFO);
+        message << "Using default parameter for baud rate: " << getSerialBaudRate() << "Bd";
+        publishDiagnostics(WARN);
+
     }   
 
         nh.param("baud", baud, getSerialBaudRate());
@@ -99,8 +101,9 @@ SenekaDgps::SenekaDgps() {
     // gather ROS publish rate
     if (!nh.hasParam("rate")) {
 
-        ROS_WARN("Using default parameter for publish rate: %i Hz", getPublishRate());
-        publishDiagnostics("Using default parameter for publish rate.", INFO);
+        message << "Using default parameter for publish rate: " << getPublishRate() << "Hz";
+        publishDiagnostics(WARN);
+
     }
 
         nh.param("rate", rate, getPublishRate());
@@ -109,6 +112,7 @@ SenekaDgps::SenekaDgps() {
 
     position_publisher      = nh.advertise<sensor_msgs::NavSatFix>              (position_topic.c_str(), 1);
     diagnostics_publisher   = nh.advertise<diagnostic_msgs::DiagnosticArray>    (diagnostics_topic.c_str(), 1);
+
 }
 
 // destructor
@@ -125,34 +129,38 @@ void SenekaDgps::extractDiagnostics(Dgps &obj) {
 
     for (std::vector<Dgps::DiagnosticStatement>::iterator it = obj.getDiagnosticArray().begin(); it != obj.getDiagnosticArray().end(); it++) {
 
-        statement = *it;
+        statement = * it;
 
         switch (statement.diagnostic_flag) {
 
             case Dgps::DEBUG:
 
-                publishDiagnostics   (statement.diagnostic_message, DEBUG);
+                message << statement.diagnostic_message;
+                publishDiagnostics(DEBUG);
                 break;
 
             case Dgps::INFO:
 
-                publishDiagnostics   (statement.diagnostic_message, INFO);
+                message << statement.diagnostic_message;
+                publishDiagnostics(INFO);
                 break;
 
             case Dgps::WARNING:
 
-                publishDiagnostics   (statement.diagnostic_message, WARN);
+                message << statement.diagnostic_message;
+                publishDiagnostics(WARN);
                 break;
 
             case Dgps::ERROR:
 
-                publishDiagnostics   (statement.diagnostic_message, ERROR);
+                message << statement.diagnostic_message;
+                publishDiagnostics(ERROR);
                 break;
 
             default:
 
                 message << "No matching ROS verbosity level for DGPS device diagnostics message: " << statement.diagnostic_message;
-                publishDiagnostics(message.str(), WARN);
+                publishDiagnostics(WARN);
                 break;
         }
     }
@@ -164,7 +172,10 @@ void SenekaDgps::extractDiagnostics(Dgps &obj) {
 // enumerated DiagnosticFlag type for diagnostic statements
 // see ROS verbosity levels (http://wiki.ros.org/Verbosity Levels)
 // see ROS diagnostics (http://wiki.ros.org/diagnostics and http://docs.ros.org/api/diagnostic_msgs/html/msg/DiagnosticStatus.html)
-void SenekaDgps::publishDiagnostics(std::string message, DiagnosticFlag flag) {
+void SenekaDgps::publishDiagnostics(DiagnosticFlag flag) {
+
+    std::stringstream message_extended;
+    message_extended << "\n" << message.str() << "\n";
 
     // allocates another element in diagnostics array
     diagnostics.status.resize(1);
@@ -173,53 +184,60 @@ void SenekaDgps::publishDiagnostics(std::string message, DiagnosticFlag flag) {
     diagnostics.header.frame_id     = "dgps_frame_id";
     diagnostics.header.stamp        = ros::Time::now();
     diagnostics.status[0].name      = nh.getNamespace();
-    diagnostics.status[0].message   = message;
+    diagnostics.status[0].message   = message.str();
 
     switch(flag) {
 
         case DEBUG:
 
-            ROS_DEBUG   ("%s", message.c_str());
+            ROS_DEBUG   ("%s", message_extended.str().c_str());
             break;
 
         case INFO:
 
-            ROS_INFO    ("%s", message.c_str());
+            ROS_INFO    ("%s", message_extended.str().c_str());
             diagnostics.status[0].level = 0;
             break;
 
         case WARN:
 
-            ROS_WARN    ("%s", message.c_str());
+            ROS_WARN    ("%s", message_extended.str().c_str());
             diagnostics.status[0].level = 1;
             break;
 
         case ERROR:
 
-            ROS_ERROR   ("%s", message.c_str());
+            ROS_ERROR   ("%s", message_extended.str().c_str());
             diagnostics.status[0].level = 2;
             break;
 
         case FATAL:
 
-            ROS_FATAL("");
+            ROS_FATAL   ("%s", message_extended.str().c_str());
             break;
 
         default:
 
-            ROS_WARN("No matching ROS verbosity level for message: %s", message.c_str());
+            ROS_WARN("No matching ROS verbosity level for message: %s", message_extended.str().c_str());
 
             break;
     }
 
     diagnostics_publisher.publish(diagnostics);
+
+    /* this expression clears the stringstream instance "message" after each transmit process;
+     * if it doesn't get cleared, every new diagnostic statement will get attached
+     * to the existing ones within the object "message", so that it grows and grows...
+     */
+    message.str("");
+    message_extended.str("");
 }
 
 // takes position data from DGPS device and publishes it to given ROS topic
 void SenekaDgps::publishPosition(Dgps::GpsData gps) {
 
     message << "Publishing GPS position on topic " << getPositionTopic() << "...";
-    publishDiagnostics(message.str(), INFO);
+    publishDiagnostics(INFO);
 
     sensor_msgs::NavSatFix positions;
 
