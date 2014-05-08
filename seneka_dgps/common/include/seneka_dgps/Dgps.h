@@ -295,6 +295,25 @@ class Dgps {
         // setters
         void clearDiagnosticArray() {diagnostic_array.clear();}
 
+        // helper functions
+
+        enum DataType {
+
+            CHAR,
+            SHORT,
+            LONG,
+            FLOAT,
+            DOUBLE,
+
+        };
+
+        bool *  invertBitOrder      (bool * bits, DataType data_type, bool invertBitsPerByte, bool invertByteOrder);
+        long    getLONG             (unsigned char * bytes);
+        double  getDOUBLE           (unsigned char * bytes, int exponent_bias);
+        int     data_bytes_length   (int length_value);
+        int     checksum_index      (int length_value);
+        int     etx_index           (int length_value);
+
         /*****************************************************/
         /*****************************************************/
         /*****************************************************/

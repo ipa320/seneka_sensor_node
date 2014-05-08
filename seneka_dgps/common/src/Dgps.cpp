@@ -63,271 +63,6 @@
 /*************** Dgps class implementation ***************/
 /*********************************************************/
 
-/************************************************/
-/*************** helper functions ***************/
-/************************************************/
-
-enum DataType {
-
-    CHAR,
-    SHORT,
-    LONG,
-    FLOAT,
-    DOUBLE,
-
-};
-
-// function to reorder incoming bits
-bool * invertBitOrder(bool * bits, DataType data_type, bool invertBitsPerByte = true, bool invertByteOrder = false) {
-
-bool * reversed_CHAR    = new bool[ 8];
-bool * reversed_SHORT   = new bool[16];
-bool * reversed_LONG    = new bool[32];
-bool * reversed_FLOAT   = new bool[32];
-bool * reversed_DOUBLE  = new bool[64];
-
-    switch (data_type) {
-
-        case CHAR:
-
-            for (int i = 0; i < 8; i++) {
-
-            if      (invertBitsPerByte)   reversed_SHORT[i] = bits[7-i];
-            else if (!invertBitsPerByte)  reversed_SHORT[i] = bits[i  ];
-
-            }
-
-            return reversed_CHAR;
-
-        case SHORT:
-
-            for (int k = 0; k < 2; k++) {
-
-                for (int i = 0; i < 8; i++) {
-
-                if      (!invertByteOrder   && invertBitsPerByte)   reversed_SHORT[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
-                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_SHORT[k * 8 + i] = bits[(k)      * 8 + (i)       ];
-                else if (invertByteOrder    && invertBitsPerByte)   reversed_SHORT[k * 8 + i] = bits[(1 - k)  * 8 + (7 - i)   ];
-                else if (invertByteOrder    && !invertBitsPerByte)  reversed_SHORT[k * 8 + i] = bits[(1 - k)  * 8 + (i)       ];
-        
-                }
-    
-            }
-
-            return reversed_SHORT;
-
-        case LONG:
-         
-            for (int k = 0; k < 4; k++) {
-
-                for (int i = 0; i < 8; i++) {
-
-                if      (!invertByteOrder   && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
-                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (i)       ];
-                else if (invertByteOrder    && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (7 - i)   ];
-                else if (invertByteOrder    && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (i)       ];
-        
-                }
-    
-            }
-
-            return reversed_LONG;
-
-        case FLOAT:
-         
-            for (int k = 0; k < 4; k++) {
-
-                for (int i = 0; i < 8; i++) {
-
-                if      (!invertByteOrder   && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
-                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (i)       ];
-                else if (invertByteOrder    && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (7 - i)   ];
-                else if (invertByteOrder    && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (i)       ];
-        
-                }
-    
-            }
-
-            return reversed_FLOAT;
-
-        case DOUBLE:
-
-            for (int k = 0; k < 8; k++) {
-
-                for (int i = 0; i < 8; i++) {
-
-                if      (!invertByteOrder   && invertBitsPerByte)   reversed_DOUBLE[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
-                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_DOUBLE[k * 8 + i] = bits[(k)      * 8 + (i)       ];
-                else if (invertByteOrder    && invertBitsPerByte)   reversed_DOUBLE[k * 8 + i] = bits[(7 - k)  * 8 + (7 - i)   ];
-                else if (invertByteOrder    && !invertBitsPerByte)  reversed_DOUBLE[k * 8 + i] = bits[(7 - k)  * 8 + (i)       ];
-        
-                }
-    
-            }
-
-            return reversed_DOUBLE;
-
-    }
-
-}
-
-long getLONG(unsigned char * bytes) {
-
-    bool bits[32] = {0};
-
-    for (int k = 0; k < 4; k++) {
-
-        for (int i = 0; i < 8; i++) {
-
-            bits[((k * 4) + i)] = 0 != (bytes[k] & (1 << i));
-
-        }
-
-    }
-
-    bool * resulting_bits;
-    resulting_bits = invertBitOrder(bits, LONG);
-
-    for (int i = 0; i < 32; i++) {
-
-        bits[i] = resulting_bits[i];
-
-    }
-
-    long value = 0;
-
-    for (int i = 0; i < 32; i++) {
-
-        value = value + bits[i] * pow(2, 31 - i);
-
-    }
-
-    return value;
-
-}
-
-/* function to extract IEEE double precision number values from an 8-byte array
- * (8 Bit per Byte; array size is expected to be 8; ==> 64 Bit)
- *
- * bias is 1023 as default for standard numbers
- * ...(IEEE example -25.25 reads ok with invertedBitsPerByte and bias 1023)
- *
- * example data for -25.25:
- *
- * (8 bytes, last 5 bytes are 0x00, so written at initialization of array...)
- *
- *    unsigned char test_minus_25_25[8] = {0x00};
- *    test_minus_25_25[0]               = 0xc0;
- *    test_minus_25_25[1]               = 0x39;
- *    test_minus_25_25[2]               = 0x40;
- *
- * int exponent_bias = 1023;
- * hopefully working as default parameter... */
-double getDOUBLE(unsigned char * bytes, int exponent_bias = 1023) {
-
-    // init with zero/false
-    bool bits[64] = {false};
-
-    // get bits of DOUBLE
-    for (int k = 0; k < 8; k++) {
-
-        for (int i = 0; i < 8; i++) {
-
-            bits[((k * 8) + i)] = 0 != (bytes[k] & (1 << i));
-
-        }
-
-    }
-
-    bool * resulting_bits;
-    resulting_bits = invertBitOrder(bits, DOUBLE);
-    for (int i = 0; i < 64; i++) bits[i] = resulting_bits[i];
-
-    #ifndef NDEBUG
-
-    msg << "Bits: ";
-    transmitStatement(msg.str(), DEBUG);
-
-    for (int i = 0; i < 64; i++) {
-
-        msg << bits[i];
-        transmitStatement(msg.str(), DEBUG);
-
-    }
-
-    std::cout << "\n";
-
-    #endif // NDEBUG
-
-    // calculate sign, fraction and exponent
-    int sign_bit = bits[0];
-    double exponent = 0;
-    double fraction = 0;
-    for (int i = 0; i < 11; i++) {
-
-        exponent = exponent + bits[i + 1] * pow(2, 10 - i);
-
-    }
-
-    for (int i = 0; i < 52; i++) {
-
-        fraction = fraction + bits[i + 12] * pow(0.5, i + 1);
-
-    }
-
-    // fraction is value between 1.0 and 2.0.. see IEEE spec for details
-    fraction += 1;
-
-    #ifndef NDEBUG
-
-    printf("\nExponent_lat: %f\n", exponent_lat-exponent_bias);
-    printf("\nfraction_lat: %f\n", fraction_lat);
-
-    #endif // NDEBUG
-
-    int sign_lat = 1;
-    if (sign_bit == 1) sign_lat = -1;
-
-    // calculate number value from extracted values
-    double double_value = sign_lat * (fraction * pow(2, exponent - exponent_bias));
-
-    #ifndef NDEBUG
-
-    printf("\nCalculated value: %f\n", latitude_value);
-
-    #endif // NDEBUG
-
-    return double_value;
-
-}
-
-int data_bytes_length(int length_value) {
-
-    return length_value - 4;
-
-}
-
-int checksum_index(int length_value) {
-
-    return 4 + length_value;
-
-}
-
-int checksum_length = 1;
-
-// call with value of byte #3 (length-field)
-int etx_index(int length_value) {
-
-    return 4 + length_value + 1;
-
-}
-
-int etx_length = 1;
-
-/************************************************/
-/************************************************/
-/************************************************/
-
 /*******************************************/
 /*************** Constructor ***************/
 /*******************************************/
@@ -442,7 +177,6 @@ Dgps::~Dgps() {
     m_SerialIO.close();
 
 }
-
 
 /****************************************************/
 /*************** diagnostics handling ***************/
@@ -845,9 +579,9 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
     return success;
 }
 
-/****************************************************************************************************/
-/****************************************************************************************************/
-/****************************************************************************************************/
+/**************************************************/
+/*************** Dgps::extractGPS() ***************/
+/**************************************************/
 
 bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &gps_data) {
 
@@ -926,8 +660,8 @@ bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &gps_data) {
 
     gps_data.position_flags = incoming_packet.data_bytes[gps_data_structure.position_flags_index];
     gps_data.number_of_SVs  = incoming_packet.data_bytes[gps_data_structure.number_of_SVs_index];
-    gps_data.channel_number = incoming_packet.data_bytes[gps_data_structure.channel_number_index];
-    gps_data.prn            = incoming_packet.data_bytes[gps_data_structure.prn_index];
+    //gps_data.channel_number = incoming_packet.data_bytes[gps_data_structure.channel_number_index];
+    //gps_data.prn            = incoming_packet.data_bytes[gps_data_structure.prn_index];
 
     // extract satellite number
     // generate arrays of this size for channel_number prn_index
@@ -967,6 +701,261 @@ bool Dgps::extractGPS(Dgps::PacketData &incoming_packet, GpsData &gps_data) {
 /**************************************************/
 /**************************************************/
 /**************************************************/
+
+/************************************************/
+/*************** helper functions ***************/
+/************************************************/
+
+// function to reorder incoming bits
+bool * Dgps::invertBitOrder(bool * bits, Dgps::DataType data_type, bool invertBitsPerByte = true, bool invertByteOrder = false) {
+
+bool * reversed_CHAR    = new bool[ 8];
+bool * reversed_SHORT   = new bool[16];
+bool * reversed_LONG    = new bool[32];
+bool * reversed_FLOAT   = new bool[32];
+bool * reversed_DOUBLE  = new bool[64];
+
+    switch (data_type) {
+
+        case CHAR:
+
+            for (int i = 0; i < 8; i++) {
+
+            if      (invertBitsPerByte)   reversed_SHORT[i] = bits[7-i];
+            else if (!invertBitsPerByte)  reversed_SHORT[i] = bits[i  ];
+
+            }
+
+            return reversed_CHAR;
+
+        case SHORT:
+
+            for (int k = 0; k < 2; k++) {
+
+                for (int i = 0; i < 8; i++) {
+
+                if      (!invertByteOrder   && invertBitsPerByte)   reversed_SHORT[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
+                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_SHORT[k * 8 + i] = bits[(k)      * 8 + (i)       ];
+                else if (invertByteOrder    && invertBitsPerByte)   reversed_SHORT[k * 8 + i] = bits[(1 - k)  * 8 + (7 - i)   ];
+                else if (invertByteOrder    && !invertBitsPerByte)  reversed_SHORT[k * 8 + i] = bits[(1 - k)  * 8 + (i)       ];
+        
+                }
+    
+            }
+
+            return reversed_SHORT;
+
+        case LONG:
+         
+            for (int k = 0; k < 4; k++) {
+
+                for (int i = 0; i < 8; i++) {
+
+                if      (!invertByteOrder   && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
+                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (i)       ];
+                else if (invertByteOrder    && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (7 - i)   ];
+                else if (invertByteOrder    && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (i)       ];
+        
+                }
+    
+            }
+
+            return reversed_LONG;
+
+        case FLOAT:
+         
+            for (int k = 0; k < 4; k++) {
+
+                for (int i = 0; i < 8; i++) {
+
+                if      (!invertByteOrder   && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
+                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(k)      * 8 + (i)       ];
+                else if (invertByteOrder    && invertBitsPerByte)   reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (7 - i)   ];
+                else if (invertByteOrder    && !invertBitsPerByte)  reversed_LONG[k * 8 + i] = bits[(3 - k)  * 8 + (i)       ];
+        
+                }
+    
+            }
+
+            return reversed_FLOAT;
+
+        case DOUBLE:
+
+            for (int k = 0; k < 8; k++) {
+
+                for (int i = 0; i < 8; i++) {
+
+                if      (!invertByteOrder   && invertBitsPerByte)   reversed_DOUBLE[k * 8 + i] = bits[(k)      * 8 + (7 - i)   ];
+                else if (!invertByteOrder   && !invertBitsPerByte)  reversed_DOUBLE[k * 8 + i] = bits[(k)      * 8 + (i)       ];
+                else if (invertByteOrder    && invertBitsPerByte)   reversed_DOUBLE[k * 8 + i] = bits[(7 - k)  * 8 + (7 - i)   ];
+                else if (invertByteOrder    && !invertBitsPerByte)  reversed_DOUBLE[k * 8 + i] = bits[(7 - k)  * 8 + (i)       ];
+        
+                }
+    
+            }
+
+            return reversed_DOUBLE;
+
+    }
+
+}
+
+long Dgps::getLONG(unsigned char * bytes) {
+
+    bool bits[32] = {0};
+
+    for (int k = 0; k < 4; k++) {
+
+        for (int i = 0; i < 8; i++) {
+
+            bits[((k * 4) + i)] = 0 != (bytes[k] & (1 << i));
+
+        }
+
+    }
+
+    bool * resulting_bits;
+    resulting_bits = invertBitOrder(bits, LONG);
+
+    for (int i = 0; i < 32; i++) {
+
+        bits[i] = resulting_bits[i];
+
+    }
+
+    long value = 0;
+
+    for (int i = 0; i < 32; i++) {
+
+        value = value + bits[i] * pow(2, 31 - i);
+
+    }
+
+    return value;
+
+}
+
+/* function to extract IEEE double precision number values from an 8-byte array
+ * (8 Bit per Byte; array size is expected to be 8; ==> 64 Bit)
+ *
+ * bias is 1023 as default for standard numbers
+ * ...(IEEE example -25.25 reads ok with invertedBitsPerByte and bias 1023)
+ *
+ * example data for -25.25:
+ *
+ * (8 bytes, last 5 bytes are 0x00, so written at initialization of array...)
+ *
+ *    unsigned char test_minus_25_25[8] = {0x00};
+ *    test_minus_25_25[0]               = 0xc0;
+ *    test_minus_25_25[1]               = 0x39;
+ *    test_minus_25_25[2]               = 0x40;
+ *
+ * int exponent_bias = 1023;
+ * hopefully working as default parameter... */
+double Dgps::getDOUBLE(unsigned char * bytes, int exponent_bias = 1023) {
+
+    // init with zero/false
+    bool bits[64] = {false};
+
+    // get bits of DOUBLE
+    for (int k = 0; k < 8; k++) {
+
+        for (int i = 0; i < 8; i++) {
+
+            bits[((k * 8) + i)] = 0 != (bytes[k] & (1 << i));
+
+        }
+
+    }
+
+    bool * resulting_bits;
+    resulting_bits = invertBitOrder(bits, DOUBLE);
+    for (int i = 0; i < 64; i++) bits[i] = resulting_bits[i];
+
+    #ifndef NDEBUG
+
+    msg << "Bits: ";
+    transmitStatement(msg.str(), DEBUG);
+
+    for (int i = 0; i < 64; i++) {
+
+        msg << bits[i];
+        transmitStatement(msg.str(), DEBUG);
+
+    }
+
+    std::cout << "\n";
+
+    #endif // NDEBUG
+
+    // calculate sign, fraction and exponent
+    int sign_bit = bits[0];
+    double exponent = 0;
+    double fraction = 0;
+    for (int i = 0; i < 11; i++) {
+
+        exponent = exponent + bits[i + 1] * pow(2, 10 - i);
+
+    }
+
+    for (int i = 0; i < 52; i++) {
+
+        fraction = fraction + bits[i + 12] * pow(0.5, i + 1);
+
+    }
+
+    // fraction is value between 1.0 and 2.0.. see IEEE spec for details
+    fraction += 1;
+
+    #ifndef NDEBUG
+
+    printf("\nExponent_lat: %f\n", exponent_lat-exponent_bias);
+    printf("\nfraction_lat: %f\n", fraction_lat);
+
+    #endif // NDEBUG
+
+    int sign_lat = 1;
+    if (sign_bit == 1) sign_lat = -1;
+
+    // calculate number value from extracted values
+    double double_value = sign_lat * (fraction * pow(2, exponent - exponent_bias));
+
+    #ifndef NDEBUG
+
+    printf("\nCalculated value: %f\n", latitude_value);
+
+    #endif // NDEBUG
+
+    return double_value;
+
+}
+
+int Dgps::data_bytes_length(int length_value) {
+
+    return length_value - 4;
+
+}
+
+int Dgps::checksum_index(int length_value) {
+
+    return 4 + length_value;
+
+}
+
+int checksum_length = 1;
+
+// call with value of byte #3 (length-field)
+int Dgps::etx_index(int length_value) {
+
+    return 4 + length_value + 1;
+
+}
+
+int etx_length = 1;
+
+/************************************************/
+/************************************************/
+/************************************************/
 
 /*********************************************************/
 /*********************************************************/
