@@ -73,11 +73,10 @@ Dgps::Dgps() {
     /*************** data frame handling ***************/
     /***************************************************/
 
-    unsigned char   ringbuffer[4096 * 4]    = {0};      // ! important: change next line too (int ringbuffer_size = ...), when changing count of ringbuffer elements!
+    unsigned char   ringbuffer[4096 * 4]    = {0};      // ! important: change next line too (int ringbuffer_size = ...), when changing count of ringbuffer elements ringbuffer[...]!
     int             ringbuffer_size         = 4096 * 4;
-    int             ringbuffer_start        = 0; // variable ringbuffer_start really neccessary...?
-    //int             ringbuffer_length       = 0; // shouldn't be initialized with -1, so data get's inserted at the beginning of ringbuffer[]...? see interpretData()-function --> data insertion at the beginning
-    int             ringbuffer_length       = -1;
+    int             ringbuffer_start        = 0;
+    int             ringbuffer_length       = 0;
 
     // the following variables allow to extract associated packet fields from incoming data frames as described in Trimble BD982 GNSS receiver manual
     // base unit is 1 char = 8 Bit
@@ -239,7 +238,6 @@ void Dgps::transmitStatement(DiagnosticFlag flag) {
 
     diagnostic_array.push_back(diagnostic_statement);
 
-    msg_tagged.str("");
     msg.str("");
 
 }
@@ -385,7 +383,7 @@ bool Dgps::getDgpsData() {
     bool success = false;
 
     unsigned char Buffer[1024]  = {0};
-    int buffer_index            =  0;
+    //int buffer_index            =  0;
 
     // generation of request message (see Trimble BD982 GNSS receiver manual, p. 73)
     unsigned char stx_          = 0x02;
@@ -430,7 +428,7 @@ bool Dgps::getDgpsData() {
 
     for (int i = 0; i < bytes_received; i++) {
 
-        msg << "Buffer[" << i << "]: " << Buffer[buffer_index + i];
+        msg << "Buffer[" << i << "]: " << Buffer[i];
         transmitStatement(DEBUG);
     }
 
@@ -457,10 +455,10 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 
         for (int i = 0; i < incoming_data_length; i++) {
 
-            //ringbuffer[(ringbuffer_start + ringbuffer_length + 1) % ringbuffer_size] = (char) incoming_data[i];
-            ringbuffer[ringbuffer_length + 1] = (char) incoming_data[i];
-            //ringbuffer_length = (ringbuffer_length + 1) % ringbuffer_size;
-            ringbuffer_length++;
+            ringbuffer[(ringbuffer_start + ringbuffer_length + 1) % ringbuffer_size] = (char) incoming_data[i];
+            //ringbuffer[ringbuffer_length + 1] = (char) incoming_data[i];
+            ringbuffer_length = (ringbuffer_length + 1) % ringbuffer_size;
+            //ringbuffer_length++;
 
         }
 
@@ -491,6 +489,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
         msg << "Ringbuffer[" << ringbuffer[i] << "]: " << ringbuffer[i];
         transmitStatement(DEBUG);
         // printf("%.2x\t", ringbuffer[i]);
+
     }
 
     #endif // NDEBUG
@@ -504,6 +503,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
             msg << "First byte in received data frame was not stx: " << ringbuffer[(ringbuffer_start + y + packet_data_structure.stx_index) % ringbuffer_size] << "!";
             transmitStatement(WARNING);
             continue;
+
         }
 
         else {

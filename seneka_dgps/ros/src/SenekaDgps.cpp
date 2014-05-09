@@ -127,7 +127,7 @@ void SenekaDgps::extractDiagnostics(Dgps &obj) {
 
     Dgps::DiagnosticStatement statement;
 
-    for (std::vector<Dgps::DiagnosticStatement>::iterator it = obj.getDiagnosticArray().begin(); it != obj.getDiagnosticArray().end(); it++) {
+    for (std::vector<Dgps::DiagnosticStatement>::iterator it = obj.diagnostic_array.begin(); it != obj.diagnostic_array.end(); it++) {
 
         statement = * it;
 
@@ -165,7 +165,7 @@ void SenekaDgps::extractDiagnostics(Dgps &obj) {
         }
     }
 
-    obj.clearDiagnosticArray();
+    obj.diagnostic_array.clear();
 }
 
 // takes diagnostic statements and publishes them to given topic
@@ -234,16 +234,16 @@ void SenekaDgps::publishDiagnostics(DiagnosticFlag flag) {
 }
 
 // takes position data from DGPS device and publishes it to given ROS topic
-void SenekaDgps::publishPosition(Dgps::GpsData gps) {
+void SenekaDgps::publishPosition(Dgps::GpsData gps_data) {
 
     message << "Publishing GPS position on topic " << getPositionTopic() << "...";
     publishDiagnostics(INFO);
 
     sensor_msgs::NavSatFix positions;
 
-    positions.latitude          = gps.latitude_value;
-    positions.longitude         = gps.longitude_value;
-    positions.altitude          = gps.altitude_value;
+    positions.latitude          = gps_data.latitude_value;
+    positions.longitude         = gps_data.longitude_value;
+    positions.altitude          = gps_data.altitude_value;
     positions.header.frame_id   = "dgps_frame_id";
     positions.header.stamp      = ros::Time::now();
 

@@ -30,9 +30,9 @@
 * - Rewrite function structure of interpretData and connected functions.. (still in dev state... double check for memory leaks etc...!!!)
 * - Extracting multi page messages from buffer...  (not needed for position records)
 * - Monitor frequency/quality/... of incoming data packets... --> inform ROS about bad settings (publishing rate <-> receiving rate)
-* - Clean up / improve code readability (especially SerialIO files)
-* - Comments!
 * - Add more parameter handling (commandline, ...); document parameters and configuration
+* - Clean up / improve code readability (especially SerialIO files)
+* - Add / improve Comments!
 * - Testing!
 *
 *****************************************************************

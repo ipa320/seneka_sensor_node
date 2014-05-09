@@ -118,6 +118,8 @@ class Dgps {
 
         };
 
+        std::vector<DiagnosticStatement>    diagnostic_array;
+
         /****************************************************/
         /****************************************************/
         /****************************************************/
@@ -290,10 +292,6 @@ class Dgps {
 
         // getters
         GpsData                             getPosition()           {return gps_data;}
-        std::vector<DiagnosticStatement>    getDiagnosticArray()    {return diagnostic_array;}
-
-        // setters
-        void clearDiagnosticArray() {diagnostic_array.clear();}
 
         // helper functions
 
@@ -356,7 +354,7 @@ class Dgps {
         /****************************************************/
 
         DiagnosticStatement                 diagnostic_statement;
-        std::vector<DiagnosticStatement>    diagnostic_array;
+        
         std::stringstream                   msg;                // helper variable
 
         void transmitStatement(DiagnosticFlag flag);
