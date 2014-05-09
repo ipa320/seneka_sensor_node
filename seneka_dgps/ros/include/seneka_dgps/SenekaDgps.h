@@ -92,17 +92,19 @@ class SenekaDgps {
         int             baud;           // serial port baud rate
         int             rate;           // ROS publish rate
 
-        // private member variables
+        // ROS messages
         diagnostic_msgs::DiagnosticArray diagnostics;
+        sensor_msgs::NavSatFix positions;
 
     public:
 
-        // public member variables
+        // ROS instances (need to be public)
         ros::NodeHandle     nh;
         ros::Publisher      position_publisher;
         ros::Publisher      diagnostics_publisher;
-        ros::Time           syncedROSTime;
-        std::stringstream   message;                // helper variable
+
+        // helper variable; stores diagnostic messages temporarily
+        std::stringstream   message;  
 
         // enumerated DiagnosticFlag type for diagnostic statements
         // see ROS verbosity levels (http://wiki.ros.org/Verbosity Levels)
@@ -114,6 +116,7 @@ class SenekaDgps {
             WARN,
             ERROR,
             FATAL
+
         };
 
         // constructor
@@ -138,10 +141,18 @@ class SenekaDgps {
         void        setRate (int rate)          {this->rate = rate;};
 
         // ROS publishers
+
+        // takes position data from DGPS device and publishes it to given ROS topic
         void publishPosition(Dgps::GpsData gps);
+
+        // takes diagnostic statements and publishes them to given topic;
         void publishDiagnostics(DiagnosticFlag flag);
 
-        // extracts diagnostic statements from DGPS diagnostic_array and transmits them to the publishStatus-function
+        // gathers all console output which occured due to execution of functions on Dgps instance;
+        // done by extracting the diagnostic statements from Dgps::diagnostic_array;
+        // publishes extracted diagnostic statements on given topic by transmitting them to publishDiagnostics()-function;
+        // ROS diagnostics handling:
+        // see ROS diagnostics (http://wiki.ros.org/diagnostics and http://docs.ros.org/api/diagnostic_msgs/html/msg/DiagnosticStatus.html);
         void extractDiagnostics(Dgps &obj);
 };
 

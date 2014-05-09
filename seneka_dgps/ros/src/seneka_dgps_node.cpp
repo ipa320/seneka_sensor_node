@@ -75,111 +75,81 @@
 
 int main(int argc, char** argv) {
 
-    // ROS initialization; applying DGPS as node name;
+    // ROS initialization; applying "DGPS" as node name;
     ros::init(argc, argv, "DGPS");
 
     SenekaDgps      cSenekaDgps;
     Dgps            cDgps;
 
     bool port_opened            = false;
+    int  count                  = 0;
     bool connection_is_ok       = false;
     bool success_getDgpsData    = false;
-
-    cSenekaDgps.message << "Establishing connection to DGPS device... \n\nPort:\t\t" << cSenekaDgps.getPort() << ", " << "\nBaud rate:\t" << cSenekaDgps.getBaud() << ")";
-    cSenekaDgps.publishDiagnostics(cSenekaDgps.INFO);
-
-    while (!port_opened) {
+    
+    while (!port_opened && count < 10) {
 
         port_opened = cDgps.open(cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());
         cSenekaDgps.extractDiagnostics(cDgps);
 
         if (!port_opened) {
 
-            cSenekaDgps.message << "Connection to DGPS device failed.\nDevice is not available on given port " << cSenekaDgps.getPort() << ".\nRetrying to establish connection every second...";
-            cSenekaDgps.publishDiagnostics(cSenekaDgps.ERROR);
+            cSenekaDgps.message << "Trying to reconnect...";
+            cSenekaDgps.publishDiagnostics(SenekaDgps::WARN);
+
         }
 
-        else {
+        count++;6
 
-            cSenekaDgps.message << "Successfully connected to DGPS device.";
-            cSenekaDgps.publishDiagnostics(cSenekaDgps.INFO);
-        }
-
-        // in case of success, wait for DPGS to get ready
-        // in case of an error, wait before retry to connect
+        // in case of success, waiting for DPGS to get ready;
+        // in case of an error, waiting before retry to connect;
         sleep(1);
     }
 
     ros::Rate loop_rate(cSenekaDgps.getRate()); // [] = Hz
 
-    cSenekaDgps.message << "Testing the communications link...";
-    cSenekaDgps.publishDiagnostics(cSenekaDgps.INFO);
-
-    // testing the communications link by sending protocol request ENQ (05h) (see BD982 manual, page 65)
+    // testing the communications link by sending protocol request ENQ (05h; see BD982 manual, p. 65)
     connection_is_ok = cDgps.checkConnection();
-
     cSenekaDgps.extractDiagnostics(cDgps);
-
-    if (!connection_is_ok) {
-
-        cSenekaDgps.message << "Testing the communications link failed (see Trimble BD982 GNSS Receiver manual, p. 65).";
-        cSenekaDgps.publishDiagnostics(cSenekaDgps.ERROR);
-    }
-
-    else {
-
-        cSenekaDgps.message << "Successfully tested the communications link.";
-        cSenekaDgps.publishDiagnostics(cSenekaDgps.INFO);
-
-        cSenekaDgps.message << "Initiate continuous request and publishing of DGPS data... (Topic: " << cSenekaDgps.getPositionTopic() <<", Rate: " << cSenekaDgps.getRate() << " Hz)";
-        cSenekaDgps.publishDiagnostics( cSenekaDgps.INFO);
 
         /*************************************************/
         /*************** main program loop ***************/
         /*************************************************/
 
+        cSenekaDgps.message << "Initiating continuous requesting and publishing of DGPS data...";
+        cSenekaDgps.publishDiagnostics(cSenekaDgps.INFO);
+
         while (cSenekaDgps.nh.ok()) {
 
             // this...
-            // -> requests position record from receiver
+            // -> requests position record packet from receiver
             // -> appends incoming data to ringbuffer
             // -> tries to extract valid packets (incl. checksum verification)
             // -> tries to read position record fields from valid packets
             // -> writes position record data into struct of type gps_data
             success_getDgpsData = cDgps.getDgpsData();
-
             cSenekaDgps.extractDiagnostics(cDgps);
 
-            // publish GPS data to ROS topic if getDgpsData() was successfull, if not just publish status
-            if (success_getDgpsData) {
-
-                cSenekaDgps.message << "Successfully received DGPS data.";
-                cSenekaDgps.publishDiagnostics(cSenekaDgps.INFO);
-
-                cSenekaDgps.publishPosition(cDgps.getPosition());
-            }
-
-            else {
-
-                cSenekaDgps.message << "Failed to obtain DGPS data. No DGPS data available.";
-                cSenekaDgps.publishDiagnostics(cSenekaDgps.WARN);
-            }
+            // gathering data from DGPS instance and publishing it to given ROS topic
+            if (success_getDgpsData) cSenekaDgps.publishPosition(cDgps.getPosition());
 
             ros::spinOnce();
             loop_rate.sleep();
+
         }
 
-        /*************************************************/
-        /*************************************************/
-        /*************************************************/
+        /**************************************************/
+        /**************************************************/
+        /**************************************************/
+
     }
 
     return 0;
+
 }
 
-/*****************************************************************/
-/*****************************************************************/
-/*****************************************************************/
+/**************************************************/
+/**************************************************/
+/**************************************************/
 
 #ifndef NDEBUG
 

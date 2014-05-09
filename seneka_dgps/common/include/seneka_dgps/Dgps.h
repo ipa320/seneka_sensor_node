@@ -98,6 +98,8 @@ class Dgps {
         // destructor
         ~Dgps();
 
+        bool cout_enabled;
+
         /****************************************************/
         /*************** diagnostics handling ***************/
         /****************************************************/
@@ -291,7 +293,7 @@ class Dgps {
         bool getDgpsData();
 
         // getters
-        GpsData                             getPosition()           {return gps_data;}
+        GpsData getPosition() {return gps_data;}
 
         // helper functions
 

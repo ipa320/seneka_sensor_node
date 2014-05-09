@@ -69,14 +69,16 @@
 
 Dgps::Dgps() {
 
+    bool cout_enabled = false;
+
     /***************************************************/
     /*************** data frame handling ***************/
     /***************************************************/
 
-    unsigned char   ringbuffer[4096 * 4]    = {0};      // ! important: change next line too (int ringbuffer_size = ...), when changing count of ringbuffer elements ringbuffer[...]!
-    int             ringbuffer_size         = 4096 * 4;
-    int             ringbuffer_start        = 0;
-    int             ringbuffer_length       = 0;
+    ringbuffer[4096 * 4]    = {0};      // ! important: change next line too (int ringbuffer_size = ...), when changing count of ringbuffer elements ringbuffer[...]!
+    ringbuffer_size         = 4096 * 4;
+    ringbuffer_start        = 0;
+    ringbuffer_length       = 0;
 
     // the following variables allow to extract associated packet fields from incoming data frames as described in Trimble BD982 GNSS receiver manual
     // base unit is 1 char = 8 Bit
@@ -188,42 +190,42 @@ void Dgps::transmitStatement(DiagnosticFlag flag) {
 
     std::stringstream msg_tagged;
 
-    std::cout << "\n";
+    if (cout_enabled) std::cout << "\n";
 
     switch(flag) {
 
         case DEBUG:
 
             msg_tagged  << "DGPS [DEBUG]: "     << msg.str();
-            std::cout   << msg_tagged.str();
+            if (cout_enabled) std::cout        << msg_tagged.str();
             break;
 
         case INFO:
 
             msg_tagged  << "DGPS [INFO]: "      << msg.str();
-            std::cout   << msg_tagged.str();
+            if (cout_enabled) std::cout        << msg_tagged.str();
             break;
 
         case WARNING:
 
             msg_tagged  << "DGPS [WARNING]: "   << msg.str();
-            std::cout   << msg_tagged.str();
+            if (cout_enabled) std::cout        << msg_tagged.str();
             break;
 
         case ERROR:
 
             msg_tagged  << "DGPS [ERROR]: "     << msg.str();
-            std::cout   << msg_tagged.str();
+            if (cout_enabled) std::cout        << msg_tagged.str();
             break;
 
         default:
 
-            std::cout   << msg.str();
+            if (cout_enabled) std::cout        << msg.str();
             break;
     
     }
 
-    std::cout << "\n";
+    //std::cout << "\n";
 
     diagnostic_statement.diagnostic_message = msg_tagged.str();
     diagnostic_statement.diagnostic_flag    = flag;
@@ -253,7 +255,11 @@ void Dgps::transmitStatement(DiagnosticFlag flag) {
 // opens serial connection
 bool Dgps::open(const char * pcPort, int iBaudRate) {
 
-    msg << "Establishing serial connection...";
+    msg << "Establishing connection to DGPS device...";
+    transmitStatement(INFO);
+    msg << "Port: " << pcPort;
+    transmitStatement(INFO);
+    msg << "Baud rate: " << iBaudRate;
     transmitStatement(INFO);
 
     m_SerialIO.setBaudRate(iBaudRate);
@@ -265,7 +271,7 @@ bool Dgps::open(const char * pcPort, int iBaudRate) {
 
         m_SerialIO.purge();
 
-        msg << "Opened port " << pcPort << " at " << iBaudRate <<" Bd.";
+        msg << "Successfully connected to DGPS device.";
         transmitStatement(INFO);
         return true;
 
@@ -273,7 +279,7 @@ bool Dgps::open(const char * pcPort, int iBaudRate) {
 
     else {
 
-        msg << "Opening port " << pcPort << " at " << iBaudRate <<" Bd failed. Device is not available.";
+        msg << "Connection failed. Device is not available on given port.";
         transmitStatement(ERROR);
         return false;
 
@@ -289,9 +295,12 @@ bool Dgps::open(const char * pcPort, int iBaudRate) {
 /*************** Dgps::checkConnection() ***************/
 /*******************************************************/
 
-// tests the communications link by sending protocol request "ENQ" (05h) (see Trimble BD982 GNSS receiver manual, page 65)
-// returns success response "ACK" (06h) (see Trimble BD982 GNSS receiver manual, page 65)
+// tests the communications link by sending protocol request "ENQ" (05h; see Trimble BD982 GNSS receiver manual, p. 65);
+// expects success response "ACK" (06h; see Trimble BD982 GNSS receiver manual, p. 65);
 bool Dgps::checkConnection() {
+
+    msg << "Testing the communications link...";
+    transmitStatement(INFO);
 
     // creation of test connection link command "ENQ" (05h)
     char message[]  = {0x05};
@@ -299,7 +308,7 @@ bool Dgps::checkConnection() {
 
     // sending of test connection link command "ENQ" (05h)
 
-    msg << "Sending test connection link command...";
+    msg << "Sending test command...";
     transmitStatement(INFO);
 
     bytes_sent = 0;
@@ -307,14 +316,16 @@ bool Dgps::checkConnection() {
 
     if (bytes_sent > 0) {
 
-        msg << "Sending test connection link command succeeded. Waiting for response...";
+        msg << "Sending test command succeeded. Waiting for response...";
         transmitStatement(INFO);
 
     }
 
     else {
 
-        msg << "Sending test connection link command failed.";
+        msg << "Sending test command failed.";
+        transmitStatement(ERROR);
+        msg << "Testing the communications link failed. Device is not available!";
         transmitStatement(ERROR);
         return false;
 
@@ -340,32 +351,24 @@ bool Dgps::checkConnection() {
         if (bytes_received > 0 && Buffer[0] == 6) {
 
             success = true;
+            msg << "Received expected test response packet.";
+            transmitStatement(INFO);
+            msg << "Testing the communications link succeded. Device is available.";
+            transmitStatement(INFO);
 
         }
 
         else {
 
             success = false;
+            msg << "Testing the communications link failed. Device is not available!";
+            transmitStatement(ERROR);
 
         }
 
     }
 
-    if (!success) {
-
-        msg << "Received either wrong or no response packet to test connection link command.";
-        transmitStatement(ERROR);
-        return false;
-    
-    }
-
-    else {
-
-        msg << "Received expected response. Testing the connection link succeeded.";
-        transmitStatement(INFO);
-        return true;
-   
-    }
+    return success;
 
 }
 
@@ -379,11 +382,10 @@ bool Dgps::checkConnection() {
 
 bool Dgps::getDgpsData() {
 
-    // is set to true if extracting DGPS position values succeeded
+    // is set to true if extracting DGPS data succeeded
     bool success = false;
 
     unsigned char Buffer[1024]  = {0};
-    //int buffer_index            =  0;
 
     // generation of request message (see Trimble BD982 GNSS receiver manual, p. 73)
     unsigned char stx_          = 0x02;
@@ -394,7 +396,7 @@ bool Dgps::getDgpsData() {
     unsigned char etx_          = 0x03;
     unsigned char checksum_     = status_ + packet_type_ + data_type_ + length_;
 
-    // 56h command packet; expects 57h reply packet (basic coding)
+    // 56h command packet; expects 57h reply packet (basic coding);
     char message[]  = {stx_, status_, packet_type_, length_, data_type_, 0x00, 0x00, checksum_, etx_};
     int length      = sizeof (message) / sizeof (message[0]);
 
@@ -418,23 +420,22 @@ bool Dgps::getDgpsData() {
     // put received data into buffer, extract packets, extract gps data if available
     success = interpretData(Buffer, bytes_received);
 
-    #ifndef NDEBUG
+    if (success) {
 
-    msg << "Total number of bytes sent: " << bytes_sent;
-    transmitStatement(DEBUG);
+        msg << "Successfully gathered DGPS data.";
+        transmitStatement(INFO);
 
-    msg << "Total number of bytes received: " << bytes_received;
-    transmitStatement(DEBUG);
-
-    for (int i = 0; i < bytes_received; i++) {
-
-        msg << "Buffer[" << i << "]: " << Buffer[i];
-        transmitStatement(DEBUG);
     }
 
-    #endif // NDEBUG
+    else {
+
+        msg << "Gathering DGPS data failed!";
+        transmitStatement(WARNING);
+
+    }
 
     return success;
+
 }
 
 /***************************************************/
@@ -448,8 +449,8 @@ bool Dgps::getDgpsData() {
 bool Dgps::interpretData(unsigned char *    incoming_data,          // int array from serial.IO
                          int                incoming_data_length) { // count of received bytes            // function writes to this data address 
                 
-    bool                success = false;
-    Dgps::PacketData    temp_packet; // = new PacketData;
+    bool                success         = false;
+    Dgps::PacketData    temp_packet;             // = new PacketData;
 
     if ((ringbuffer_size - ringbuffer_length) >= incoming_data_length) {
 
@@ -458,7 +459,6 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
             ringbuffer[(ringbuffer_start + ringbuffer_length + 1) % ringbuffer_size] = (char) incoming_data[i];
             //ringbuffer[ringbuffer_length + 1] = (char) incoming_data[i];
             ringbuffer_length = (ringbuffer_length + 1) % ringbuffer_size;
-            //ringbuffer_length++;
 
         }
 
@@ -467,13 +467,11 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
     else {
 
         msg << "Buffer is full! Cannot insert new data!";
-        //msg << "Buffer is full! Deleting oldest data to enable insertion of latest data...";
-        //...
         transmitStatement(WARNING);
 
     }
 
-    #ifndef NDEBUG
+    /*#ifndef NDEBUG
 
     msg << "Buffer start: " << ringbuffer_start;
     transmitStatement(DEBUG);
@@ -492,13 +490,13 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 
     }
 
-    #endif // NDEBUG
+    #endif // NDEBUG*/
 
     // find stx, try to get length and match checksum + etx
     for (int y = 0; y < ringbuffer_length; y++) {
 
         // find stx: (byte 0 == 0x02)
-        if (ringbuffer[(ringbuffer_start + y + packet_data_structure.stx_index) % ringbuffer_size] != 0x02) {
+        if (ringbuffer[(ringbuffer_start + y + packet_data_structure.stx_index)] != 0x02) {
 
             msg << "First byte in received data frame was not stx: " << ringbuffer[(ringbuffer_start + y + packet_data_structure.stx_index) % ringbuffer_size] << "!";
             transmitStatement(WARNING);
@@ -622,6 +620,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 
             return success;
         }
+
     }
 
     return success;
