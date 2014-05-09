@@ -98,7 +98,7 @@ int main(int argc, char** argv) {
 
         }
 
-        count++;6
+        count++;
 
         // in case of success, waiting for DPGS to get ready;
         // in case of an error, waiting before retry to connect;
@@ -140,8 +140,6 @@ int main(int argc, char** argv) {
         /**************************************************/
         /**************************************************/
         /**************************************************/
-
-    }
 
     return 0;
 
