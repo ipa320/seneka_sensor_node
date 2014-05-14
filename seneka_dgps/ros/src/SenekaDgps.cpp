@@ -102,7 +102,7 @@ SenekaDgps::SenekaDgps() {
 
     if (!nh.hasParam("baud")) {
 
-        message << "Using default parameter for baud rate: " << getSerialBaudRate() << "Bd";
+        message << "Using default parameter for baud rate: " << getSerialBaudRate() << " Bd";
         publishDiagnostics(WARN);
 
     }
@@ -119,14 +119,14 @@ SenekaDgps::SenekaDgps() {
 
     if (!nh.hasParam("rate")) {
 
-        message << "Using default parameter for publish rate: " << getPublishRate() << "Hz";
+        message << "Using default parameter for publish rate: " << getPublishRate() << " Hz";
         publishDiagnostics(WARN);
 
     }
 
     else {
 
-        message << "Publish rate: " << getRate() << "Bd";
+        message << "Publish rate: " << getRate() << " Hz";
         publishDiagnostics(INFO);
 
     }
@@ -162,7 +162,7 @@ SenekaDgps::~SenekaDgps(){}
 // see ROS diagnostics (http://wiki.ros.org/diagnostics and http://docs.ros.org/api/diagnostic_msgs/html/msg/DiagnosticStatus.html);
 void SenekaDgps::extractDiagnostics(Dgps &obj) {
 
-    message << "Extracting diagnostic statements from DGPS device driver...";
+    message << "Extracting latest diagnostic statements from DGPS device driver...";
     publishDiagnostics(INFO);
 
     Dgps::DiagnosticStatement statement;

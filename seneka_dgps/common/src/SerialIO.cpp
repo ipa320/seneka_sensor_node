@@ -53,6 +53,10 @@
 
 #include <seneka_dgps/SerialIO.h>
 
+// enables/disables console output;
+// default = false (initialized in constructor);
+bool console_output = false;
+
 //#define _PRINT_BYTES
 
 /*
@@ -132,7 +136,7 @@ void SerialIO::binary(int dec, char* binary) {
         dec /= 2;
     }
 
-    cout << "binary of: " << dec_in << " --> " << bin8 << "\n";
+    if(console_output) cout << "binary of: " << dec_in << " --> " << bin8 << "\n";
     strcat(binary, bin8);
 }
 
@@ -160,7 +164,7 @@ int SerialIO::open() {
 
     if (m_Device < 0) {
         //RF_ERR("Open " << m_DeviceName << " failed, error code " << errno);
-        std::cout << "Trying to open " << m_DeviceName << " failed: "
+        if(console_output) std::cout << "Trying to open " << m_DeviceName << " failed: "
                 << strerror(errno) << " (Error code " << errno << ")" << std::endl;
         return -1;
     }
@@ -168,7 +172,7 @@ int SerialIO::open() {
     // set parameters
     Res = tcgetattr(m_Device, &m_tio);
     if (Res == -1) {
-        std::cout << "tcgetattr of " << m_DeviceName << " failed: " << strerror(errno) << " (Error code " << errno << ")" << std::endl;
+        if(console_output) std::cout << "tcgetattr of " << m_DeviceName << " failed: " << strerror(errno) << " (Error code " << errno << ")" << std::endl;
         ::close(m_Device);
         m_Device = -1;
         return -1;
@@ -201,7 +205,7 @@ int SerialIO::open() {
 
     // set baud rate
     int iNewBaudrate = int(m_BaudRate * m_Multiplier + 0.5);
-    std::cout << "Setting Baudrate to " << iNewBaudrate << std::endl;
+    if(console_output) std::cout << "Setting Baudrate to " << iNewBaudrate << std::endl;
     int iBaudrateCode = 0;
     bool bBaudrateValid = getBaudrateCode(iNewBaudrate, &iBaudrateCode);
 
@@ -209,7 +213,7 @@ int SerialIO::open() {
     cfsetospeed(&m_tio, iBaudrateCode);
 
     if (!bBaudrateValid) {
-        std::cout << "Baudrate code not available - setting baudrate directly" << std::endl;
+        if(console_output) std::cout << "Baudrate code not available - setting baudrate directly" << std::endl;
         struct serial_struct ss;
         ioctl(m_Device, TIOCGSERIAL, &ss);
         ss.flags |= ASYNC_SPD_CUST;
@@ -285,7 +289,7 @@ int SerialIO::open() {
     Res = tcsetattr(m_Device, TCSANOW, &m_tio);
 
     if (Res == -1) {
-        std::cout << "tcsetattr " << m_DeviceName << " failed: " << strerror(errno) << " (Error code " << errno << ")" << std::endl;
+        if(console_output) std::cout << "tcsetattr " << m_DeviceName << " failed: " << strerror(errno) << " (Error code " << errno << ")" << std::endl;
 
         ::close(m_Device);
         m_Device = -1;
@@ -325,24 +329,24 @@ void SerialIO::setBytePeriod(double Period) {
 //-----------------------------------------------
 
 int SerialIO::readBlocking(char *Buffer, int Length) {
-    cout << "serialIO.readBlocking:\n";
+    if(console_output) cout << "serialIO.readBlocking:\n";
     ssize_t BytesRead;
     BytesRead = ::read(m_Device, Buffer, Length);
-    printf("%2d Bytes read:", (int) BytesRead);
+    if(console_output) printf("%2d Bytes read:", (int) BytesRead);
     for (int i = 0; i < BytesRead; i++)
-        printf(" %.2x", (unsigned char) Buffer[i]);
-    printf("\n");
+        if(console_output) printf(" %.2x", (unsigned char) Buffer[i]);
+    if(console_output) printf("\n");
 
 #ifdef PRINT_BYTES
-    printf("%2d Bytes read:", BytesRead);
+    if(console_output) printf("%2d Bytes read:", BytesRead);
     for (int i = 0; i < BytesRead; i++)
-        printf(" %.2x", (unsigned char) Buffer[i]);
-    printf("\n");
+        if(console_output) printf(" %.2x", (unsigned char) Buffer[i]);
+    if(console_output) printf("\n");
 #endif
     if (BytesRead < 0) {
-        printf("Reading error\n");
-        printf("Error no is : %d\n", errno);
-        printf("Error description is : %s\n", strerror(errno));
+        if(console_output) printf("Reading error\n");
+        if(console_output) printf("Error no is : %d\n", errno);
+        if(console_output) printf("Error description is : %s\n", strerror(errno));
         //				return leng;
     } else
         return BytesRead;
@@ -351,7 +355,7 @@ int SerialIO::readBlocking(char *Buffer, int Length) {
 int SerialIO::readNonBlocking(char *Buffer, int Length) {
     
     sleep(1);
-    cout << "serialIO.readNonBlocking:\n";
+    if(console_output) cout << "serialIO.readNonBlocking:\n";
     int iAvaibleBytes = getSizeRXQueue();
 
     int iBytesToRead = (Length < iAvaibleBytes) ? Length : iAvaibleBytes;
@@ -371,11 +375,11 @@ int SerialIO::readNonBlocking(char *Buffer, int Length) {
 }
 
 int SerialIO::write(const char *Buffer, int Length) {
-    cout << "serialIO.write:\n";
+    if(console_output) cout << "serialIO.write:\n";
     ssize_t BytesWritten;
 
     if (m_BytePeriod.tv_usec || m_BytePeriod.tv_sec) {
-        cout << "sending byte after byte" << "\n";
+        if(console_output) cout << "sending byte after byte" << "\n";
         int i;
         for (i = 0; i < Length; i++) {
             BytesWritten = ::write(m_Device, Buffer + i, 1);
@@ -385,26 +389,26 @@ int SerialIO::write(const char *Buffer, int Length) {
         }
         BytesWritten = i;
     } else {
-        cout << "sending all at once" << "\n";
+        if(console_output) cout << "sending all at once" << "\n";
         BytesWritten = ::write(m_Device, Buffer, Length);
     }
 
-    printf("Bytes sent: %d\n", (int) BytesWritten);
+    if(console_output) printf("Bytes sent: %d\n", (int) BytesWritten);
     for (int i = 0; i < BytesWritten; i++) {
-        printf("%.2x ", (unsigned char)Buffer[i]);
+        if(console_output) printf("%.2x ", (unsigned char)Buffer[i]);
         if (i % 50 == 49) {
-            cout << "\n";
+            if(console_output) cout << "\n";
         }
 
         //if (i < BytesWritten-1) printf(" , ");
     }
-    printf("\n");
+    if(console_output) printf("\n");
 
 #ifdef PRINT_BYTES
-    printf("%2d Bytes sent:", BytesWritten);
+    if(console_output) printf("%2d Bytes sent:", BytesWritten);
     for (int i = 0; i < BytesWritten; i++)
-        printf(" %.2x", (unsigned char) Buffer[i]);
-    printf("\n");
+        if(console_output) printf(" %.2x", (unsigned char) Buffer[i]);
+    if(console_output) printf("\n");
 #endif
 
     return BytesWritten;

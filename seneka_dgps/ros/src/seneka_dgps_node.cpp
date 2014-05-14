@@ -81,65 +81,118 @@ int main(int argc, char** argv) {
     SenekaDgps      cSenekaDgps;
     Dgps            cDgps;
 
-    bool port_opened            = false;
-    int  count                  = 0;
-    bool connection_is_ok       = false;
-    bool success_getDgpsData    = false;
+    cSenekaDgps.extractDiagnostics(cDgps);
+
+    // establishing serial connection
+
+    int  counter        = 0;
+    bool port_opened    = false;
     
-    while (!port_opened && count < 10) {
+    while (!port_opened && (counter < 10)) {
 
-        port_opened = cDgps.open(cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());
-        cSenekaDgps.extractDiagnostics(cDgps);
+        if (counter > 0) {
 
-        if (!port_opened) {
-
-            cSenekaDgps.message << "Trying to reconnect...";
+            cSenekaDgps.message << "Retrying...";
             cSenekaDgps.publishDiagnostics(SenekaDgps::WARN);
 
         }
 
-        count++;
+        port_opened = cDgps.open(cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());
+        cSenekaDgps.extractDiagnostics(cDgps);      
 
-        // in case of success, waiting for DPGS to get ready;
-        // in case of an error, waiting before retry to connect;
-        sleep(1);
+        counter++;
+        sleep(1); // delay
+
     }
 
-    ros::Rate loop_rate(cSenekaDgps.getRate()); // [] = Hz
+    if (!port_opened) {
 
-    // testing the communications link by sending protocol request ENQ (05h; see BD982 manual, p. 65)
-    connection_is_ok = cDgps.checkConnection();
-    cSenekaDgps.extractDiagnostics(cDgps);
+        return 0;
 
-        /*************************************************/
-        /*************** main program loop ***************/
-        /*************************************************/
+    }
 
-        cSenekaDgps.message << "Initiating continuous requesting and publishing of DGPS data...";
-        cSenekaDgps.publishDiagnostics(cSenekaDgps.INFO);
+    // testing the communications link by sending protocol request "ENQ" (05h);
+    // see BD982 manual, p. 65;
 
-        while (cSenekaDgps.nh.ok()) {
+    bool    connection_is_ok    = false;    // connection check response
+            counter             = 0;        // resetting counter; count of how many times connection check has been retried;
 
-            // this...
-            // -> requests position record packet from receiver
-            // -> appends incoming data to ringbuffer
-            // -> tries to extract valid packets (incl. checksum verification)
-            // -> tries to read position record fields from valid packets
-            // -> writes position record data into struct of type gps_data
-            success_getDgpsData = cDgps.getDgpsData();
-            cSenekaDgps.extractDiagnostics(cDgps);
+    while (!connection_is_ok && (counter < 10)) {
 
-            // gathering data from DGPS instance and publishing it to given ROS topic
-            if (success_getDgpsData) cSenekaDgps.publishPosition(cDgps.getPosition());
+        connection_is_ok = cDgps.checkConnection();
+        cSenekaDgps.extractDiagnostics(cDgps);
 
-            ros::spinOnce();
-            loop_rate.sleep();
+        if (counter > 0) {
+
+            cSenekaDgps.message << "Retrying...";
+            cSenekaDgps.publishDiagnostics(SenekaDgps::WARN);
 
         }
 
-        /**************************************************/
-        /**************************************************/
-        /**************************************************/
+        else {
+
+            cSenekaDgps.message << "Testing the communications link succeeded. DGPS device is available.";
+            cSenekaDgps.publishDiagnostics(SenekaDgps::INFO);
+
+        }
+
+        counter++;
+        sleep(1); // delay
+
+    }
+
+    if (!connection_is_ok) {
+
+        cSenekaDgps.message << "Testing the communications link failed. Device is not available!";
+        cSenekaDgps.publishDiagnostics(SenekaDgps::ERROR);
+
+        return 0;
+
+    }
+
+    /*************************************************/
+    /*************** main program loop ***************/
+    /*************************************************/
+
+    ros::Rate loop_rate(cSenekaDgps.getRate()); // [] = Hz
+
+    cSenekaDgps.message << "Initiating continuous requesting and publishing of DGPS data...";
+    cSenekaDgps.publishDiagnostics(SenekaDgps::INFO);
+
+    while (cSenekaDgps.nh.ok()) {
+
+        // this...
+        // -> requests position record packet from receiver
+        // -> appends incoming data to ringbuffer
+        // -> tries to extract valid packets (incl. checksum verification)
+        // -> tries to read position record fields from valid packets
+        // -> writes position record data into struct of type gps_data
+        if(cDgps.getDgpsData()) {
+
+            cSenekaDgps.extractDiagnostics(cDgps);
+
+            // gathering data from DGPS instance and publishing it to given ROS topic
+            cSenekaDgps.publishPosition(cDgps.getPosition());
+
+        }
+
+        else {
+
+            cSenekaDgps.extractDiagnostics(cDgps);
+
+        }
+
+        ROS_ERROR("WAIT");
+        if (cin.get() == '\n') {}
+
+        ros::spinOnce();
+        loop_rate.sleep();
+
+    }
+
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
 
     return 0;
 

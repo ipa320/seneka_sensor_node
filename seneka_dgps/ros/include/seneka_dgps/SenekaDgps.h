@@ -71,6 +71,7 @@
 #include <seneka_dgps/Dgps.h>
 
 #include <sstream>
+#include <iomanip>
 
 /************************************************/
 /*************** SenekaDgps class ***************/

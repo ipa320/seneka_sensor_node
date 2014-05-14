@@ -71,6 +71,7 @@
 #include <cstring>
 #include <vector>
 #include <iostream>
+#include <iomanip>
 #include <stdio.h>
 #include <math.h>
 #include <endian.h>
@@ -78,7 +79,6 @@
 #include <fcntl.h>
 #include <cstdlib>
 #include <stdlib.h>
-
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
@@ -98,6 +98,8 @@ class Dgps {
         // destructor
         ~Dgps();
 
+        // enables/disables console output;
+        // default = false (initialized in constructor);
         bool cout_enabled;
 
         /****************************************************/
@@ -120,11 +122,7 @@ class Dgps {
 
         };
 
-        std::vector<DiagnosticStatement>    diagnostic_array;
-
-        /****************************************************/
-        /****************************************************/
-        /****************************************************/
+        std::vector<DiagnosticStatement> diagnostic_array;
 
         /***************************************************/
         /*************** data frame handling ***************/
@@ -140,8 +138,8 @@ class Dgps {
             char packet_type;
             char length;
             
-            // data_part
-            // including 4 bytes of paging and interpretation data
+            // data_part;
+            // including 4 bytes of paging and interpretation data;
             char record_type;
             char page_counter;                  // see user guide for bit interpretation!
             char reply_number;
@@ -184,6 +182,12 @@ class Dgps {
             int record_interpretation_flags_length;
 
             int data_bytes_index;
+
+            // checksum_index see helper function checksum_index()
+            int checksum_length;
+            
+            // etx_index see helper function etx_index()
+            int etx_length;
 
         };
 
@@ -252,11 +256,11 @@ class Dgps {
             int number_of_SVs_index;
             int number_of_SVs_length;
 
-            // 78 .. 80 .. 82 .. 84 ..
+            // 78 ... 80 ... 82 ... 84 ...
             int * channel_number_index;
             int channel_number_length;
 
-            // 79 .. 81 .. 83 .. 85 ..
+            // 79 ... 81 ... 83 ... 85 ...
             int * prn_index;
             int prn_length;
 
@@ -266,15 +270,11 @@ class Dgps {
         
         };
 
-        /***************************************************/
-        /***************************************************/
-        /***************************************************/
+        /**************************************************/
+        /**************************************************/
+        /**************************************************/
 
-        /****************************************************/
-        /*************** public class methods ***************/
-        /****************************************************/
-
-        // opens serial port at given baud rate
+        // establishes serial connection at given port and baud rate
         bool open(const char* pcPort, int iBaudRate);
 
         // tests the communications link by sending protocol request ENQ (05h)
@@ -307,16 +307,19 @@ class Dgps {
 
         };
 
+        // function to reorder incoming bits
         bool *  invertBitOrder      (bool * bits, DataType data_type, bool invertBitsPerByte = true, bool invertByteOrder = false);
+        // function to extract IEEE double precision number values from an 8-byte array
         long    getLONG             (unsigned char * bytes);
+        // function to extract IEEE double precision number values from an 8-byte array
         double  getDOUBLE           (unsigned char * bytes, int exponent_bias = 1023);
         int     data_bytes_length   (int length_value);
-        int     checksum_index      (int length_value);
+        int     checksum_index      (int length_value);      
         int     etx_index           (int length_value);
 
-        /*****************************************************/
-        /*****************************************************/
-        /*****************************************************/
+        /**************************************************/
+        /**************************************************/
+        /**************************************************/
 
     private:
 
@@ -327,13 +330,10 @@ class Dgps {
         /*************** data frame handling ***************/
         /***************************************************/
 
-        int             ringbuffer_size;
-        unsigned char   ringbuffer[4096 * 4];
+        unsigned char   ringbuffer[4096 * 4];   // ! important: change int ringbuffer_size = ... (in constructor) too, when changing number of ringbuffer elements ringbuffer[...]!
+        int             ringbuffer_size;        // ! must be euqal to number of elements in ringbuffer array!
         int             ringbuffer_start;
         int             ringbuffer_length;
-
-        int             bytes_sent;
-        int             bytes_received;
 
         PacketDataStructure packet_data_structure;
         PacketData          incoming_packet;
@@ -347,23 +347,20 @@ class Dgps {
         // takes packet data from interpretData(), serves GpsData
         bool extractGPS();
 
-        /***************************************************/
-        /***************************************************/
-        /***************************************************/
-
         /****************************************************/
         /*************** diagnostics handling ***************/
         /****************************************************/
 
-        DiagnosticStatement                 diagnostic_statement;
+        DiagnosticStatement diagnostic_statement;
         
-        std::stringstream                   msg;                // helper variable
+        std::stringstream   msg;                    // helper variable for temporary storage;
 
         void transmitStatement(DiagnosticFlag flag);
 
         /****************************************************/
         /****************************************************/
         /****************************************************/
+
 };
 
 #endif // DGPS_H_
