@@ -136,7 +136,7 @@ SenekaDgps::SenekaDgps() {
 
 
     // advertising ROS topics
-    position_publisher      = nh.advertise<sensor_msgs::NavSatFix>              (position_topic.c_str(), 1);
+    position_publisher      = nh.advertise<seneka_msg::dgpsPosition>            (position_topic.c_str(), 1);
     diagnostics_publisher   = nh.advertise<diagnostic_msgs::DiagnosticArray>    (diagnostics_topic.c_str(), 1);
 
     message << "DGPS node is ready. Calling DGPS device driver for action...";
@@ -290,11 +290,41 @@ void SenekaDgps::publishPosition(Dgps::GpsData gps_data) {
     message << "Publishing GPS position...";
     publishDiagnostics(INFO);
 
-    positions.latitude          = gps_data.latitude_value;
-    positions.longitude         = gps_data.longitude_value;
-    positions.altitude          = gps_data.altitude_value;
-    positions.header.frame_id   = "dgps_frame_id";
-    positions.header.stamp      = ros::Time::now();
+    positions.header.frame_id           = "dgps_frame_id";
+    positions.header.stamp              = ros::Time::now();
+
+    positions.NavSatFix.header.frame_id = "dgps_frame_id";
+    positions.NavSatFix.header.stamp    = ros::Time::now();
+    positions.NavSatFix.latitude        = gps_data.latitude_value;
+    positions.NavSatFix.longitude       = gps_data.longitude_value;
+    positions.NavSatFix.altitude        = gps_data.altitude_value;
+
+    positions.clock_offset              = gps_data.clock_offset;
+    positions.frequency_offset          = gps_data.frequency_offset;
+    positions.pdop                      = gps_data.pdop;
+    positions.latitude_rate             = gps_data.latitude_rate;
+    positions.longitude_rate            = gps_data.longitude_rate;
+    positions.altitude_rate             = gps_data.altitude_rate;
+    positions.gps_msec_of_week          = gps_data.gps_msec_of_week;
+    positions.position_flags            = gps_data.position_flags;
+    positions.number_of_SVs             = gps_data.number_of_SVs;
+
+    // first getting rid of old values
+    positions.channel_numbers.clear();
+    positions.prn.clear();
+
+    std::vector<char>::iterator it1 = gps_data.channel_numbers.begin();
+    std::vector<char>::iterator it2 = gps_data.prn.begin();
+
+    // gathering new values according to number of satellites
+    for (int i = 0; i< gps_data.number_of_SVs; i++) {
+
+        positions.channel_numbers.push_back(*it1);
+        positions.prn.push_back(*it2);
+        it1++;
+        it2++;
+
+    }
 
     position_publisher.publish(positions);
 

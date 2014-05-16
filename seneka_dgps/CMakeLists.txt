@@ -11,6 +11,7 @@ find_package(catkin REQUIRED
   roscpp
   sensor_msgs
   diagnostic_msgs
+  seneka_msg
 )
 
 ###################################
@@ -30,6 +31,7 @@ catkin_package(
     roscpp
     sensor_msgs
     diagnostic_msgs
+    seneka_msg
 )
 
 ###########
@@ -64,4 +66,3 @@ install(TARGETS seneka_dgps_node
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-

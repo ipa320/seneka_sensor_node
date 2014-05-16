@@ -198,22 +198,20 @@ class Dgps {
         // position record packet (packet type: 57h, see Trimble BD982 GNSS receiver manual, p. 132/139)
         struct GpsData {
 
-            double  latitude_value;      // in semi-circles
-            double  longitude_value;     // in semi-circles
-            double  altitude_value;      // [] = m
-            double  clock_offset;        // [] = m
-            double  frequency_offset;    // [] = Hz
-            double  pdop;                //
-            double  latitude_rate;       // [] = rad/s
-            double  longitude_rate;      // [] = rad/s
-            double  altitude_rate;       // [] = rad/s
-            long    gps_msec_of_week;    // [] = ms
-            char    position_flags;      // see Trimble BD982 GNSS receiver manual, p. 140
-            char    number_of_SVs;       // number of used satellites
-            std::vector<char> channel_numbers; // 1 char for each satellite
-            std::vector<char> prn; // 1 char for each satellite
-            //char *  channel_number;      // 1 char for each satellite
-            //char *  prn;                 // 1 char for each satellite
+            double  latitude_value;             // in semi-circles
+            double  longitude_value;            // in semi-circles
+            double  altitude_value;             // [] = m
+            double  clock_offset;               // [] = m
+            double  frequency_offset;           // [] = Hz
+            double  pdop;                       //
+            double  latitude_rate;              // [] = rad/s
+            double  longitude_rate;             // [] = rad/s
+            double  altitude_rate;              // [] = rad/s
+            long    gps_msec_of_week;           // [] = ms
+            char    position_flags;             // see Trimble BD982 GNSS receiver manual, p. 140
+            char    number_of_SVs;              // number of used satellites
+            std::vector<char> channel_numbers;  // 1 char for each satellite
+            std::vector<char> prn;              // 1 char for each satellite
         
         };
 

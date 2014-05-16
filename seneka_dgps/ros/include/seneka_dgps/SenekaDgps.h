@@ -67,6 +67,7 @@
 #include <ros/ros.h>
 #include <sensor_msgs/NavSatFix.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
+#include <seneka_msg/dgpsPosition.h>
 
 #include <seneka_dgps/Dgps.h>
 
@@ -95,7 +96,7 @@ class SenekaDgps {
 
         // ROS messages
         diagnostic_msgs::DiagnosticArray diagnostics;
-        sensor_msgs::NavSatFix positions;
+        seneka_msg::dgpsPosition positions;
 
     public:
 
