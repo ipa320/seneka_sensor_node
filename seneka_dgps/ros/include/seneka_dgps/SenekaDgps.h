@@ -22,7 +22,7 @@
 *
 * Description:
 *
-* To-Do:
+* TODO:
 *
 * --> see seneka_dgps_node.cpp To-Do
 *

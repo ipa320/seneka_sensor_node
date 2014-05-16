@@ -22,7 +22,7 @@
 *
 * Description:
 *
-* To-Do:
+* TODO:
 *
 * --> see seneka_dgps_node.cpp To-Do
 *
@@ -210,15 +210,17 @@ class Dgps {
             long    gps_msec_of_week;    // [] = ms
             char    position_flags;      // see Trimble BD982 GNSS receiver manual, p. 140
             char    number_of_SVs;       // number of used satellites
-            char *  channel_number;      // 1 char for each satellite
-            char *  prn;                 // 1 char for each satellite
+            std::vector<char> channel_numbers; // 1 char for each satellite
+            std::vector<char> prn; // 1 char for each satellite
+            //char *  channel_number;      // 1 char for each satellite
+            //char *  prn;                 // 1 char for each satellite
         
         };
 
         // this structure contains all variables to index the positions of position record packet data field bytes
         // index is relative to begin of data_part, so it is byte #: index+8... of packet-bytes (stx = 0)
         // position record packet (packet type: 57h, see Trimble BD982 GNSS receiver manual, p. 132/139)
-        struct GpsDataStrucutre {
+        struct GpsDataStructure {
 
             int latitude_value_index;
             int latitude_value_length;
@@ -257,16 +259,14 @@ class Dgps {
             int number_of_SVs_length;
 
             // 78 ... 80 ... 82 ... 84 ...
-            int * channel_number_index;
+            //int * channel_number_index;
+            int channel_number_index;
             int channel_number_length;
 
             // 79 ... 81 ... 83 ... 85 ...
-            int * prn_index;
+            //int * prn_index;
+            int prn_index;
             int prn_length;
-
-            // helper variable, used to find meaning of semi-circles in this case... 
-            // (it's just 0-180 normalized to 0.0-1.0)
-            double semi_circle_factor;
         
         };
 
@@ -309,10 +309,12 @@ class Dgps {
 
         // function to reorder incoming bits
         bool *  invertBitOrder      (bool * bits, DataType data_type, bool invertBitsPerByte = true, bool invertByteOrder = false);
-        // function to extract IEEE double precision number values from an 8-byte array
+        // function to extract numbers of data type LONG INTEGER from an 4-byte array
         long    getLONG             (unsigned char * bytes);
         // function to extract IEEE double precision number values from an 8-byte array
         double  getDOUBLE           (unsigned char * bytes, int exponent_bias = 1023);
+        // function to extract numbers of data type CHAR INTEGER from an 1-byte-value
+        char    getCHAR             (unsigned char byte);
         int     data_bytes_length   (int length_value);
         int     checksum_index      (int length_value);      
         int     etx_index           (int length_value);
@@ -337,8 +339,12 @@ class Dgps {
 
         PacketDataStructure packet_data_structure;
         PacketData          incoming_packet;
-        GpsDataStrucutre    gps_data_structure;
+        GpsDataStructure    gps_data_structure;
         GpsData             gps_data;
+
+        // helper variable, used to find meaning of semi-circles in this case... 
+        // (it's just 0-180 normalized to 0.0-1.0)
+        double semi_circle_factor;
 
         // gets data from serial.IO and serves PacketData
         bool interpretData(unsigned char *  incoming_data,

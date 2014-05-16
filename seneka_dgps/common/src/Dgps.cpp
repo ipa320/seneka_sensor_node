@@ -22,7 +22,7 @@
 *
 * Description:
 *
-* To-Do:
+* TODO:
 *
 * --> see seneka_dgps_node.cpp To-Do
 *
@@ -160,26 +160,27 @@ Dgps::Dgps() {
     gps_data_structure.gps_msec_of_week_index   = 72;
     gps_data_structure.gps_msec_of_week_length  = 4;
 
-    gps_data_structure.position_flags_index;
-    gps_data_structure.position_flags_length    = 76;
+    gps_data_structure.position_flags_index     = 76;
+    gps_data_structure.position_flags_length    = 1;
 
-    gps_data_structure.number_of_SVs_index;
-    gps_data_structure.number_of_SVs_length     = 77;
+    gps_data_structure.number_of_SVs_index      = 77;
+    gps_data_structure.number_of_SVs_length     = 1;
 
     // 78 .. 80 .. 82 .. 84 ..
-    gps_data_structure.channel_number_index;
-    gps_data_structure.channel_number_length    = 1;
+    gps_data_structure.channel_number_index     = 78;
+    //gps_data_structure.channel_number_length    = 1;
 
     // 79 .. 81 .. 83 .. 85 ..
-    gps_data_structure.prn_index;
-    gps_data_structure.prn_length               = 1;
-
-    // helper variable, used to find meaning of semi-circles in this case... (it's just 0-180 normalized to 0.0-1.0)
-    gps_data_structure.semi_circle_factor       = 180.0;
+    gps_data_structure.prn_index                = 79;
+    //gps_data_structure.prn_length               = 1;
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
+
+    // helper variable, used to find meaning of semi-circles in this case...
+    // (it's just 0-180 normalized to 0.0-1.0)
+    semi_circle_factor = 180.0;
 
     msg << "Ready.";
     transmitStatement(INFO);
@@ -502,6 +503,11 @@ bool Dgps::getDgpsData() {
 bool Dgps::interpretData(unsigned char *    incoming_data,          // int array from serial.IO
                          int                incoming_data_length) { // count of received bytes            // function writes to this data address 
 
+    // preparing for output of hex numbers
+    msg << showbase         // show the 0x prefix
+        << internal         // fill between the prefix and the number
+        << setfill('0');    // fill with 0s
+
     bool                success         = false;
     Dgps::PacketData    temp_packet;             // = new PacketData;
 
@@ -553,15 +559,6 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
             msg << "Found stx.";
             transmitStatement(INFO);
 
-cout << endl;
-             printf(" buffer_start: %i\n", ringbuffer_start);
-    printf(" buffer_length: %i\n", ringbuffer_length);
-    printf("content of ringbuffer:\n");
-    for (int i = ringbuffer_start + y; i < incoming_data_length; i++) {
-        printf(" %.2x", ringbuffer[i]);
-    }
-    cout << endl;
-
             // --- header ---
             temp_packet.stx         = ringbuffer[(ringbuffer_start + y + packet_data_structure.stx_index)         % ringbuffer_size] % 256;
             temp_packet.status      = ringbuffer[(ringbuffer_start + y + packet_data_structure.status_index)      % ringbuffer_size] % 256;
@@ -580,6 +577,7 @@ cout << endl;
             for (int j = 0; j < data_bytes_length(temp_packet.length); j++) {
 
                 temp_packet.data_bytes[j] = ringbuffer[(ringbuffer_start + y + packet_data_structure.data_bytes_index + j) % ringbuffer_size] % 256;
+
             }
 
             // --- footer ---
@@ -600,6 +598,7 @@ cout << endl;
             for (int z = 0; z < data_bytes_length(temp_packet.length); z++) {
 
                 checksum = (checksum + temp_packet.data_bytes[z]);
+
             }
 
             // wrap checksum into 1 byte
@@ -609,16 +608,25 @@ cout << endl;
 
             if (checksum != temp_packet.checksum) {
 
-                msg << "Checksum mismatch! Calculated checksum: " << checksum << ". Received checksum: " << temp_packet.checksum << ".";
+                msg << "Checksum mismatch!";
                 transmitStatement(WARNING);
+                msg << "Calculated checksum: "  << std::hex << setw(4) << int(checksum);
+                transmitStatement(WARNING);
+                msg << "Received checksum: "    << std::hex << setw(4) << int(temp_packet.checksum);
+                transmitStatement(WARNING);
+
                 error_occured = true;
+
             }
 
             if (temp_packet.etx != 0x03) {
 
-                msg << "Etc was not 0x03. Received etx: " << temp_packet.etx << ".";
+                msg << "Etx was not 0x03!";
+                transmitStatement(WARNING);
+                msg << "Received etx: " << std::hex << setw(4) << int(temp_packet.etx);
                 transmitStatement(WARNING);
                 error_occured = true;
+
             }
 
             // calculate new ringbuffer pointers
@@ -700,13 +708,13 @@ bool Dgps::extractGPS() {
     msg << "Checking types...";
     transmitStatement(INFO);
 
-    if (incoming_packet.packet_type != 0x057) {
+    if (incoming_packet.packet_type != 0x57) {
 
         msg << "Received reply packet has wrong type!";
         transmitStatement(WARNING);
         msg << "Received reply packet of type: " << std::hex << setw(4) << int(incoming_packet.packet_type);
         transmitStatement(WARNING);
-        msg << "Expected reply packet of type: " << std::hex << setw(4) << 87; // 57hex = 87dec
+        msg << "Expected reply packet of type: 0x57";
         transmitStatement(WARNING);
 
         return false;
@@ -719,7 +727,7 @@ bool Dgps::extractGPS() {
         transmitStatement(WARNING);
         msg << "Received reply packet of record type: " << std::hex << setw(4) << int(incoming_packet.record_type);
         transmitStatement(WARNING);
-        msg << "Expected reply packet of record type: " << std::hex << setw(4) << 1;
+        msg << "Expected reply packet of record type: 0x01";
         transmitStatement(WARNING);
 
         return false;
@@ -737,7 +745,7 @@ bool Dgps::extractGPS() {
     /**************************************************/
     /**************************************************/
 
-    // get all double fields (8 bytes)
+    // getting all fields of type DOUBLE (8 bytes)
 
     unsigned char latitude_bytes            [8];
     unsigned char longitude_bytes           [8];
@@ -763,8 +771,9 @@ bool Dgps::extractGPS() {
 
     }
 
-    gps_data.latitude_value     = getDOUBLE(latitude_bytes) * gps_data_structure.semi_circle_factor;
-    gps_data.longitude_value    = getDOUBLE(longitude_bytes) * gps_data_structure.semi_circle_factor;
+    // getDOUBLE includes inverting of bit order
+    gps_data.latitude_value     = getDOUBLE(latitude_bytes) * semi_circle_factor;
+    gps_data.longitude_value    = getDOUBLE(longitude_bytes) * semi_circle_factor;
     gps_data.altitude_value     = getDOUBLE(altitude_bytes);
     gps_data.clock_offset       = getDOUBLE(clock_offset_bytes);
     gps_data.frequency_offset   = getDOUBLE(frequency_offset_bytes);
@@ -777,7 +786,7 @@ bool Dgps::extractGPS() {
     /**************************************************/
     /**************************************************/
 
-    // get all long fields (4 bytes)
+    // getting all fields of type LONG (4 bytes)
 
     unsigned char gps_msec_of_week_bytes[4];
 
@@ -787,26 +796,33 @@ bool Dgps::extractGPS() {
 
     }
 
+    // getLONG includes inverting of bit order
     gps_data.gps_msec_of_week = getLONG(gps_msec_of_week_bytes);
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
 
-    // get all char fields (1 byte)
+    // getting all fields of type CHAR (1 byte)
 
-    gps_data.position_flags = incoming_packet.data_bytes[gps_data_structure.position_flags_index];
-    gps_data.number_of_SVs  = incoming_packet.data_bytes[gps_data_structure.number_of_SVs_index];
-    //gps_data.channel_number = incoming_packet.data_bytes[gps_data_structure.channel_number_index];
-    //gps_data.prn            = incoming_packet.data_bytes[gps_data_structure.prn_index];
+    gps_data.position_flags = getCHAR(incoming_packet.data_bytes[gps_data_structure.position_flags_index]);
+    gps_data.number_of_SVs  = getCHAR(incoming_packet.data_bytes[gps_data_structure.number_of_SVs_index]);
+
+    // first getting rid of old values
+    gps_data.channel_numbers.clear();
+    gps_data.prn.clear();
+
+    // gathering new values according to number of satellites
+    for (int i = 0; i < gps_data.number_of_SVs; i++) {
+
+        gps_data.channel_numbers.push_back  (getCHAR(incoming_packet.data_bytes[gps_data_structure.channel_number_index + i*2]));
+        gps_data.prn.push_back              (getCHAR(incoming_packet.data_bytes[gps_data_structure.prn_index            + i*2]));
+
+    }
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
-
-    // extract satellite number
-    // generate arrays of this size for channel_number prn_index
-    // extract value and generate arrays for the fields: channel_number_index and prn_index
 
     #ifndef NDEBUG
 
@@ -830,10 +846,16 @@ bool Dgps::extractGPS() {
 
     #endif // NDEBUG
 
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
+
+    return true;
+
+    // remaining TODO's in withing this function:
     // implement value checking if needed, e.g. value of longitude and latitude between 0 and 180; ...
     // return false if any check fails
 
-    return true;
 }
 
 /**************************************************/
@@ -913,6 +935,10 @@ bool * reversed_64_bit  = new bool[64];
 
             return reversed_64_bit;
 
+        default:
+
+            return NULL;
+
     }
 
 }
@@ -920,6 +946,37 @@ bool * reversed_64_bit  = new bool[64];
 /**************************************************/
 /**************************************************/
 /**************************************************/
+
+char Dgps::getCHAR(unsigned char byte) {
+
+    bool bits[8] = {0};
+
+    for (int i = 0; i < 8; i++) {
+
+        bits[i] = 0 != (byte & (1 << i));
+
+    }
+
+    bool * resulting_bits;
+    resulting_bits = invertBitOrder(bits, CHAR);
+
+    for (int i = 0; i < 8; i++) {
+
+        bits[i] = resulting_bits[i];
+
+    }
+
+    char value = 0;
+
+    for (int i = 0; i < 8; i++) {
+
+        value = value + bits[i] * pow(2, 7 - i);
+
+    }
+
+    return value;
+
+}
 
 // function to extract numbers of data type LONG INTEGER from an 4-byte array;
 // 8 bits per byte; array size is expected to be 4; ==> 32 bit;
