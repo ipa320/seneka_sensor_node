@@ -221,6 +221,9 @@ void Dgps::transmitStatement(DiagnosticFlag flag) {
 
     diagnostic_array.push_back(diagnostic_statement);
 
+    // this expression clears the stringstream instance after each transmit process;
+    // if it doesn't get cleared, every new diagnostic statement will get attached
+    // to the existing ones within the object, so that it grows and grows...;
     msg.str("");
     msg_tagged.str("");
 
@@ -242,9 +245,11 @@ bool Dgps::open(const char * pcPort, int iBaudRate) {
     msg << "Baud rate: " << iBaudRate;
     transmitStatement(INFO);
 
+    // gather parameters;
     m_SerialIO.setBaudRate  (iBaudRate);
     m_SerialIO.setDeviceName(pcPort);
 
+    // establish connection;
     int serial_open = m_SerialIO.open();
 
     if (serial_open == 0) {
@@ -262,6 +267,7 @@ bool Dgps::open(const char * pcPort, int iBaudRate) {
 
         msg << "Establishing connection failed. Device is not available on given port.";
         transmitStatement(ERROR);
+
         return false;
 
     }
@@ -289,7 +295,7 @@ bool Dgps::checkConnection() {
     int     length      = sizeof (message) / sizeof (message[0]);
 
     msg << "Sending test command ENQ (05h)...";
-    transmitStatement(INFO);
+    transmitStatement(DEBUG);
 
     int bytes_sent  = 0;
     bytes_sent      = m_SerialIO.write(message, length);
@@ -297,7 +303,7 @@ bool Dgps::checkConnection() {
     if (bytes_sent > 0) {
 
         msg << "Successfully sent test command. Waiting for response...";
-        transmitStatement(INFO);
+        transmitStatement(DEBUG);
 
     }
 
@@ -316,7 +322,7 @@ bool Dgps::checkConnection() {
     /**************************************************/
 
     msg << "Requesting test response...";
-    transmitStatement(INFO);
+    transmitStatement(DEBUG);
 
     // creating buffer for reply packet
     unsigned char buffer[1024] = {0};
@@ -327,12 +333,12 @@ bool Dgps::checkConnection() {
     if (bytes_received > 0) {
 
         msg << "Received test response.";
-        transmitStatement(INFO);
+        transmitStatement(DEBUG);
 
         if (buffer[0] == 6) {
 
             msg << "Test response packet is \"ACK\" (06h) as expected.";
-            transmitStatement(INFO);
+            transmitStatement(DEBUG);
 
             return true;
 
@@ -340,7 +346,7 @@ bool Dgps::checkConnection() {
 
         else if (buffer[0] == 15) {
 
-            msg << "Test response packet is \"NAK\" (15h). Device is not yet ready.";
+            msg << "Test response packet is \"NAK\" (15h). Device is not ready yet.";
             transmitStatement(WARNING);
 
             return false;
@@ -349,7 +355,7 @@ bool Dgps::checkConnection() {
 
         else {
 
-            msg << "Unknown test reponse packet. Device is not yet ready.";
+            msg << "Unknown test reponse packet. Device is not ready yet.";
             transmitStatement(WARNING);
 
             return false;
@@ -379,16 +385,16 @@ bool Dgps::checkConnection() {
 
 bool Dgps::getDgpsData() {
 
-    msg << "Requesting GPS data...";
+    msg << "Requesting DGPS data...";
     transmitStatement(INFO);
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
 
-    // generation of request command packet (56h);
-    // expects 57h reply packet (basic coding);
-    // see Trimble BD982 GNSS receiver manual, p. 73;
+    // generation of request command packet "GETRAW" (56h);
+    // expects reply packet "RAWDATA" (57h);
+    // see Trimble BD982 GNSS Receiver manual, p. 73/132;
     unsigned char stx_          = 0x02;
     unsigned char status_       = 0x00;
     unsigned char packet_type_  = 0x56;
@@ -401,7 +407,7 @@ bool Dgps::getDgpsData() {
     int length      = sizeof (message) / sizeof (message[0]);
 
     msg << "Sending request command...";
-    transmitStatement(INFO);
+    transmitStatement(DEBUG);
 
     int bytes_sent  = 0;
     bytes_sent      = m_SerialIO.write(message, length);
@@ -409,7 +415,7 @@ bool Dgps::getDgpsData() {
     if (bytes_sent > 0) {
 
         msg << "Successfully sent request command. Waiting for response...";
-        transmitStatement(INFO);
+        transmitStatement(DEBUG);
 
     }
 
@@ -427,7 +433,7 @@ bool Dgps::getDgpsData() {
     if (bytes_received > 0) {
 
         msg << "Received reply packet.";
-        transmitStatement(INFO);
+        transmitStatement(DEBUG);
 
         if (buffer[0] == 15) {
 
@@ -441,7 +447,23 @@ bool Dgps::getDgpsData() {
         else {
 
             // put received data into buffer, extract packets, extract gps data if available
-            return interpretData(buffer, bytes_received);
+            if (interpretData(buffer, bytes_received)) {
+
+                msg << "Successfully gathered DGPS data.";
+                transmitStatement(INFO);
+
+                return true;
+
+            }
+
+            else {
+
+                msg << "Failed to gather DGPS data.";
+                transmitStatement(WARNING);
+
+                return false;
+
+            }
 
         }
 
@@ -467,15 +489,19 @@ bool Dgps::getDgpsData() {
 /**************************************************/
 
 bool Dgps::interpretData(unsigned char *    incoming_data,          // int array from serial.IO
-                         int                incoming_data_length) { // count of received bytes            // function writes to this data address 
+                         int                incoming_data_length) { // count of received bytes
+
+    #ifndef DEBUG
 
     // preparing for output of hex numbers
     msg << showbase         // show the 0x prefix
         << internal         // fill between the prefix and the number
         << setfill('0');    // fill with 0s
 
+    #endif DEBUG
+
     bool                success         = false;
-    Dgps::PacketData    temp_packet;             // = new PacketData;
+    Dgps::PacketData    temp_packet;
 
     /**************************************************/
     /**************************************************/
@@ -484,7 +510,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
     if ((ringbuffer_size - ringbuffer_length) >= incoming_data_length) {
 
         msg << "Putting new data into buffer...";
-        transmitStatement(INFO);
+        transmitStatement(DEBUG);
 
         for (int i = 0; i < incoming_data_length; i++) {
 
@@ -523,7 +549,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
         else {
 
             msg << "Found stx.";
-            transmitStatement(INFO);
+            transmitStatement(DEBUG);
 
             // --- header ---
             temp_packet.stx         = ringbuffer[(ringbuffer_start + y + packet_data_structure.stx_index)         % ringbuffer_size] % 256;
@@ -576,10 +602,15 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 
                 msg << "Checksum mismatch!";
                 transmitStatement(WARNING);
+
+                #ifndef DEBUG
+
                 msg << "Calculated checksum: "  << std::hex << setw(4) << int(checksum);
                 transmitStatement(WARNING);
                 msg << "Received checksum: "    << std::hex << setw(4) << int(temp_packet.checksum);
                 transmitStatement(WARNING);
+
+                #endif DEBUG
 
                 error_occured = true;
 
@@ -589,8 +620,14 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 
                 msg << "Etx was not 0x03!";
                 transmitStatement(WARNING);
+
+                #ifndef DEBUG
+
                 msg << "Received etx: " << std::hex << setw(4) << int(temp_packet.etx);
                 transmitStatement(WARNING);
+
+                #endif DEBUG
+
                 error_occured = true;
 
             }
@@ -616,7 +653,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 
             if (ringbuffer_length > 0) {
 
-                msg << "Ringbuffer was not empty after reading one packet: " << ringbuffer_length << " bytes left! Calling function to receive data again...";
+                msg << "Ringbuffer was not empty after reading one packet! Calling function to receive data again...";
                 transmitStatement(WARNING);
                 
                 if (ringbuffer_old_start != ringbuffer_start)
@@ -634,15 +671,9 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 
                     else {
 
-                        msg << "Stopped interpreting remaining buffer to avoid infinite loop.";
+                        msg << "Stopped interpreting remaining data in buffer to avoid infinite loop.";
                         transmitStatement(WARNING);
                     }
-            }
-
-            else {
-
-                //msg << "Successfully extracted packet.";
-                //transmitStatement(INFO);
             }
 
             return success;

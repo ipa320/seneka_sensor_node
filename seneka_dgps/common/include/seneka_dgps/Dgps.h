@@ -124,9 +124,9 @@ class Dgps {
 
         std::vector<DiagnosticStatement> diagnostic_array;
 
-        /***************************************************/
-        /*************** data frame handling ***************/
-        /***************************************************/
+        /*********************************************/
+        /*************** data handling ***************/
+        /*********************************************/
 
         // POSITION RECORD PACKET;
         // the strucutre below contains all bytes of an UNINTERPRETED position record packet;
@@ -277,9 +277,9 @@ class Dgps {
         // serial input/output instance;
         SerialIO m_SerialIO;
 
-        /***************************************************/
-        /*************** data frame handling ***************/
-        /***************************************************/
+        /*********************************************/
+        /*************** data handling ***************/
+        /*********************************************/
 
         unsigned char   ringbuffer[4096 * 4];   // ! important: change int ringbuffer_size = ... (in constructor) too, when changing number of ringbuffer elements ringbuffer[...]!
         int             ringbuffer_size;        // ! ==> must be euqal to number of elements in ringbuffer array!
