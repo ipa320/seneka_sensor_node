@@ -26,13 +26,13 @@
 *
 * done          - Generation and publishing of error messages
 * done          - Extract all fields of a position record message (especially dynamic length of sat-channel_numbers and prns...)
-* in progresss  - Publish all gps values to ros topic (maybe need a new message if navsatFix cannot take all provided values...)
+* done          - Publish all gps values to ros topic (maybe need a new message if navsatFix cannot take all provided values...)
 * in progresss  - Rewrite function structure of interpretData and connected functions.. (still in dev state... double check for memory leaks etc...!!!)
 * unnecessary   - Extracting multi page messages from buffer...  (not needed for position records)
 *               - Monitor frequency/quality/... of incoming data packets... --> inform ROS about bad settings (publishing rate <-> receiving rate)
-*               - Add more parameter handling (commandline, ...); document parameters and configuration
-* in progress   - Clean up and improve code readability (especially SerialIO files)
-* in progress   - Add/improve Comments
+* unnecessary   - Add more parameter handling (commandline, ...); document parameters and configuration
+* done          - Clean up and improve code readability
+* in progress   - Add/improve comments
 * in progress   - Testing!
 *
 *****************************************************************
@@ -75,7 +75,7 @@
 
 int main(int argc, char** argv) {
 
-    // ROS initialization; applying "DGPS" as node name;
+    // ROS initialization; apply "DGPS" as node name;
     ros::init(argc, argv, "DGPS");
 
     SenekaDgps      cSenekaDgps;
@@ -83,13 +83,19 @@ int main(int argc, char** argv) {
 
     cSenekaDgps.extractDiagnostics(cDgps);
 
-    // establishing serial connection
+    int counter = 0;
 
-    int  counter        = 0;
-    bool port_opened    = false;
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
+
+    // establish serial connection;
+
+    bool port_opened = false;
     
     while (!port_opened && (counter < 10)) {
 
+        // just executed if connection establishment needs a retry;
         if (counter > 0) {
 
             cSenekaDgps.message << "Retrying...";
@@ -105,17 +111,22 @@ int main(int argc, char** argv) {
 
     }
 
+    // return false if connection establishment failed 10 times;
     if (!port_opened) {
 
         return 0;
 
     }
 
-    // testing the communications link by sending protocol request "ENQ" (05h);
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
+
+    // test the communications link by sending protocol request "ENQ" (05h);
     // see BD982 manual, p. 65;
 
     bool    connection_is_ok    = false;    // connection check response
-            counter             = 0;        // resetting counter; count of how many times connection check has been retried;
+            counter             = 0;        // reset counter; count of how many times connection check has been retried;
 
     while (!connection_is_ok && (counter < 10)) {
 
@@ -141,9 +152,10 @@ int main(int argc, char** argv) {
 
     }
 
+    // return false if test of connection link failed 10 times;
     if (!connection_is_ok) {
 
-        cSenekaDgps.message << "Testing the communications link failed. Device is not available!";
+        cSenekaDgps.message << "Testing the communications link failed! Device is not available!";
         cSenekaDgps.publishDiagnostics(SenekaDgps::ERROR);
 
         return 0;
@@ -154,7 +166,7 @@ int main(int argc, char** argv) {
     /*************** main program loop ***************/
     /*************************************************/
 
-    ros::Rate loop_rate(cSenekaDgps.getRate()); // [] = Hz
+    ros::Rate loop_rate(cSenekaDgps.getRate());
 
     cSenekaDgps.message << "Initiating continuous requesting and publishing of DGPS data...";
     cSenekaDgps.publishDiagnostics(SenekaDgps::INFO);
@@ -182,6 +194,7 @@ int main(int argc, char** argv) {
 
         }
 
+        // TESTING/DEBUGGING
         ROS_ERROR("WAIT");
         if (cin.get() == '\n') {}
 

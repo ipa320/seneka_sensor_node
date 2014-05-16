@@ -63,15 +63,15 @@
 /*************** SenekaDgps class implementation ***************/
 /***************************************************************/
 
-// constructor
+// constructor;
 SenekaDgps::SenekaDgps() {
 
-    message << "Booting DGPS node...";
+    message << "Initializing...";
     publishDiagnostics(INFO);
 
-    // initialization of default parameters
+    // initialize default parameters
     message << "Initializing default parameters...";
-    publishDiagnostics(INFO);
+    publishDiagnostics(DEBUG);
     position_topic      = "/position";
     diagnostics_topic   = "/diagnostics";
     serial_port         = "/dev/ttyUSB0";
@@ -80,11 +80,11 @@ SenekaDgps::SenekaDgps() {
 
     nh = ros::NodeHandle("~");
 
-    // gathering all required parameters from the ROS parameter server
-    // if there is no matching parameter on the server, use default value
+    // gather all required parameters from ROS parameter server;
+    // if there is no matching parameter on the server, use default value;
 
     message << "Gathering parameters from parameter server...";
-    publishDiagnostics(INFO);
+    publishDiagnostics(DEBUG);
 
     if (!nh.hasParam("port")) {
         message << "Using default parameter for port: " << getSerialPort();
@@ -97,7 +97,7 @@ SenekaDgps::SenekaDgps() {
         publishDiagnostics(INFO);
 
     }
-        // gathering serial port for connection establishment
+        // gather serial port identifier;
         nh.param("port", port, getSerialPort());
 
     if (!nh.hasParam("baud")) {
@@ -114,7 +114,7 @@ SenekaDgps::SenekaDgps() {
 
     }
         
-        // gathering baud rate of serial connection
+        // gather baud rate of serial connection;
         nh.param("baud", baud, getSerialBaudRate());
 
     if (!nh.hasParam("rate")) {
@@ -131,15 +131,15 @@ SenekaDgps::SenekaDgps() {
 
     }
         
-        // gathering ROS publish rate
+        // gather ROS publish rate;
         nh.param("rate", rate, getPublishRate());
 
 
-    // advertising ROS topics
+    // advertise given ROS topics;
     position_publisher      = nh.advertise<seneka_msg::dgpsPosition>            (position_topic.c_str(), 1);
     diagnostics_publisher   = nh.advertise<diagnostic_msgs::DiagnosticArray>    (diagnostics_topic.c_str(), 1);
 
-    message << "DGPS node is ready. Calling DGPS device driver for action...";
+    message << "Finnished. Calling DGPS device driver for action...";
     publishDiagnostics(INFO);
 
 }
@@ -148,7 +148,7 @@ SenekaDgps::SenekaDgps() {
 /**************************************************/
 /**************************************************/
 
-// destructor
+// destructor;
 SenekaDgps::~SenekaDgps(){}
 
 /**************************************************/
@@ -222,14 +222,10 @@ void SenekaDgps::extractDiagnostics(Dgps &obj) {
 // see ROS diagnostics (http://wiki.ros.org/diagnostics and http://docs.ros.org/api/diagnostic_msgs/html/msg/DiagnosticStatus.html);
 void SenekaDgps::publishDiagnostics(DiagnosticFlag flag) {
 
-    // uncomment this and use message_extended instead of message for attaching further information or formatted output;
-    // std::stringstream message_extended;
-    // example of formatted output: message_extended << "\n" << message.str() << "\n";
-
-    // allocates another element in diagnostics array
+    // allocates another element in diagnostics array;
     diagnostics.status.resize(1);
     
-    // diagnostics.status[0].level assignment below
+    // diagnostics.status[0].level  assignment below;
     diagnostics.header.frame_id     = "dgps_frame_id";
     diagnostics.header.stamp        = ros::Time::now();
     diagnostics.status[0].name      = nh.getNamespace();
@@ -269,6 +265,7 @@ void SenekaDgps::publishDiagnostics(DiagnosticFlag flag) {
 
             ROS_WARN("No matching ROS verbosity level for message: %s", message.str().c_str());
             break;
+
     }
 
     diagnostics_publisher.publish(diagnostics);
@@ -284,49 +281,49 @@ void SenekaDgps::publishDiagnostics(DiagnosticFlag flag) {
 /**************************************************/
 /**************************************************/
 
-// takes position data from DGPS device and publishes it to given ROS topic
+// takes position data from DGPS device and publishes it to given ROS topic;
 void SenekaDgps::publishPosition(Dgps::GpsData gps_data) {
 
     message << "Publishing GPS position...";
     publishDiagnostics(INFO);
 
-    positions.header.frame_id           = "dgps_frame_id";
-    positions.header.stamp              = ros::Time::now();
+    position.header.frame_id           = "dgps_frame_id";
+    position.header.stamp              = ros::Time::now();
 
-    positions.NavSatFix.header.frame_id = "dgps_frame_id";
-    positions.NavSatFix.header.stamp    = ros::Time::now();
-    positions.NavSatFix.latitude        = gps_data.latitude_value;
-    positions.NavSatFix.longitude       = gps_data.longitude_value;
-    positions.NavSatFix.altitude        = gps_data.altitude_value;
+    position.NavSatFix.header.frame_id = "dgps_frame_id";
+    position.NavSatFix.header.stamp    = ros::Time::now();
+    position.NavSatFix.latitude        = gps_data.latitude_value;
+    position.NavSatFix.longitude       = gps_data.longitude_value;
+    position.NavSatFix.altitude        = gps_data.altitude_value;
 
-    positions.clock_offset              = gps_data.clock_offset;
-    positions.frequency_offset          = gps_data.frequency_offset;
-    positions.pdop                      = gps_data.pdop;
-    positions.latitude_rate             = gps_data.latitude_rate;
-    positions.longitude_rate            = gps_data.longitude_rate;
-    positions.altitude_rate             = gps_data.altitude_rate;
-    positions.gps_msec_of_week          = gps_data.gps_msec_of_week;
-    positions.position_flags            = gps_data.position_flags;
-    positions.number_of_SVs             = gps_data.number_of_SVs;
+    position.clock_offset              = gps_data.clock_offset;
+    position.frequency_offset          = gps_data.frequency_offset;
+    position.pdop                      = gps_data.pdop;
+    position.latitude_rate             = gps_data.latitude_rate;
+    position.longitude_rate            = gps_data.longitude_rate;
+    position.altitude_rate             = gps_data.altitude_rate;
+    position.gps_msec_of_week          = gps_data.gps_msec_of_week;
+    position.position_flags            = gps_data.position_flags;
+    position.number_of_SVs             = gps_data.number_of_SVs;
 
-    // first getting rid of old values
-    positions.channel_numbers.clear();
-    positions.prn.clear();
+    // get rid of old values;
+    position.channel_numbers.clear();
+    position.prn.clear();
 
     std::vector<char>::iterator it1 = gps_data.channel_numbers.begin();
     std::vector<char>::iterator it2 = gps_data.prn.begin();
 
-    // gathering new values according to number of satellites
+    // gather new values according to number of satellites;
     for (int i = 0; i< gps_data.number_of_SVs; i++) {
 
-        positions.channel_numbers.push_back(*it1);
-        positions.prn.push_back(*it2);
+        position.channel_numbers.push_back(*it1);
+        position.prn.push_back(*it2);
         it1++;
         it2++;
 
     }
 
-    position_publisher.publish(positions);
+    position_publisher.publish(position);
 
 }
 
