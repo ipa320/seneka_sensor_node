@@ -128,74 +128,55 @@ class Dgps {
         /*************** data frame handling ***************/
         /***************************************************/
 
-        // this structure contains all bytes of an UNINTERPRETED position record packet
-        // position record packet (packet type: 57h, see Trimble BD982 GNSS receiver manual, p. 132/139)
+        // POSITION RECORD PACKET;
+        // the strucutre below contains all bytes of an UNINTERPRETED position record packet;
+        // base unit is 1 char = 1 byte = 8 bit;
+        // position record packet (packet type: 57h, see Trimble BD982 GNSS Receiver manual, p. 139;
         struct PacketData {
 
-            // header (4 bytes packet header, see Trimble BD982 GNSS receiver manual, p. 132)
+            // header;
             char stx;
             char status;
             char packet_type;
             char length;
             
-            // data_part;
-            // including 4 bytes of paging and interpretation data;
+            // data part;
             char record_type;
-            char page_counter;                  // see user guide for bit interpretation!
+            char page_counter;                  // see user guide for bit interpretation!;
             char reply_number;
             char record_interpretation_flags;
 
-            char * data_bytes;                  // maximum of 244 bytes for data; concatenate pages if needed!
+            char * data_bytes;                  // maximum of 244 bytes for data; concatenate pages if needed!;
             
-            // footer
-            char checksum;                      // calculated over: all bytes between stx and checksum
+            // footer;
+            char checksum;                      // calculated over: all bytes between stx and checksum;
             char etx;
         
         };
 
-        // this structure contains all variables to index the positions of position record packet bytes
-        // position record packet (packet type: 57h, see Trimble BD982 GNSS receiver manual, p. 132/139)
+        // POSITION RECORD PACKET;
+        // the variables below represent the starting positions of associated data bytes in a position record packet;
+        // base unit is 1 char = 1 byte = 8 bit;
+        // position record packet (packet type: 57h, see Trimble BD982 GNSS Receiver manual, p. 139);
         struct PacketDataStructure {
 
             int stx_index;                          // index: starting position of data element in incoming data frame
-            int stx_length;                         // length of data field in incoming data frame ([] = byte)
-
             int status_index;
-            int status_length;
-
             int packet_type_index;
-            int packet_type_length;
-
             int length_index;
-            int length_length;
-
             int record_type_index;
-            int record_type_length;
-
             int page_counter_index;                 // split byte in two parts! its <page> of <total>, each 4 bit
-            int page_counter_length;
-
             int reply_number_index;
-            int reply_number_length;
-
             int record_interpretation_flags_index;     
-            int record_interpretation_flags_length;
-
             int data_bytes_index;
-
             // checksum_index see helper function checksum_index()
-            int checksum_length;
-            
             // etx_index see helper function etx_index()
-            int etx_length;
 
         };
 
-        // this structure contains all the INTERPRETED data field bytes of a position record packet
-        // interpretation of data bytes follows:
-        // latitude: 8 char bytes --> Motorola Byte-Order --> IEEE Double Precision Floating Point Format
-        // ...
-        // position record packet (packet type: 57h, see Trimble BD982 GNSS receiver manual, p. 132/139)
+        // POSITION RECORD PACKET - DATA PART;
+        // the structure below contains all the INTERPRETED data bytes of a position record packet data field; 
+        // position record packet (packet type: 57h, see Trimble BD982 GNSS Receiver manual, p. 139);
         struct GpsData {
 
             double  latitude_value;             // in semi-circles
@@ -215,56 +196,25 @@ class Dgps {
         
         };
 
-        // this structure contains all variables to index the positions of position record packet data field bytes
-        // index is relative to begin of data_part, so it is byte #: index+8... of packet-bytes (stx = 0)
-        // position record packet (packet type: 57h, see Trimble BD982 GNSS receiver manual, p. 132/139)
+        // this structure contains all variables to index the positions of position record packet data field bytes;
+        // index is relative to begin of data_part, so it is byte #: index+8... of packet-bytes (stx = 0);
+        // position record packet (packet type: 57h, see Trimble BD982 GNSS receiver manual, p. 132/139);
         struct GpsDataStructure {
 
             int latitude_value_index;
-            int latitude_value_length;
-
             int longitude_value_index;
-            int longitude_value_length;
-
             int altitude_value_index;
-            int altitude_value_length;
-
             int clock_offset_index;
-            int clock_offset_length;
-
             int frequency_offset_index;
-            int frequency_offset_length;
-
             int pdop_index;
-            int pdop_length;
-
             int latitude_rate_index;
-            int latitude_rate_length;
-
             int longitude_rate_index;
-            int longitude_rate_length;
-
             int altitude_rate_index;
-            int altitude_rate_length;
-
             int gps_msec_of_week_index;
-            int gps_msec_of_week_length;
-
             int position_flags_index;
-            int position_flags_length;
-
             int number_of_SVs_index;
-            int number_of_SVs_length;
-
-            // 78 ... 80 ... 82 ... 84 ...
-            //int * channel_number_index;
             int channel_number_index;
-            int channel_number_length;
-
-            // 79 ... 81 ... 83 ... 85 ...
-            //int * prn_index;
             int prn_index;
-            int prn_length;
         
         };
 
@@ -272,12 +222,12 @@ class Dgps {
         /**************************************************/
         /**************************************************/
 
-        // establishes serial connection at given port and baud rate
+        // establishes serial connection;
         bool open(const char* pcPort, int iBaudRate);
 
-        // tests the communications link by sending protocol request ENQ (05h)
-        // sends 0x05h and expects to receive 0x06h
-        // (see Trimble BD982 GNSS receiver manual, p. 65)
+        // tests the communications link by sending protocol request "ENQ" (05h);
+        // expects to receive "ACK" (0x06h);
+        // see Trimble BD982 GNSS receiver manual, p. 65;
         bool checkConnection();
 
         /*  function getDgpsData():
@@ -290,10 +240,10 @@ class Dgps {
         */  
         bool getDgpsData();
 
-        // getters
+        // getters;
         GpsData getPosition() {return gps_data;}
 
-        // helper functions
+        // helper functions;
 
         enum DataType {
 
@@ -305,14 +255,15 @@ class Dgps {
 
         };
 
-        // function to reorder incoming bits
+        // function to reorder incoming bits;
         bool *  invertBitOrder      (bool * bits, DataType data_type, bool invertBitsPerByte = true, bool invertByteOrder = false);
-        // function to extract numbers of data type LONG INTEGER from an 4-byte array
-        long    getLONG             (unsigned char * bytes);
-        // function to extract IEEE double precision number values from an 8-byte array
-        double  getDOUBLE           (unsigned char * bytes, int exponent_bias = 1023);
-        // function to extract numbers of data type CHAR INTEGER from an 1-byte-value
+        // function to extract numbers of data type CHAR;
         char    getCHAR             (unsigned char byte);
+        // function to extract numbers of data type LONG from an 4-byte array;
+        long    getLONG             (unsigned char * bytes);
+        // function to extract IEEE DOUBLE precision number values from an 8-byte array;
+        double  getDOUBLE           (unsigned char * bytes, int exponent_bias = 1023);
+
         int     data_bytes_length   (int length_value);
         int     checksum_index      (int length_value);      
         int     etx_index           (int length_value);
@@ -323,7 +274,7 @@ class Dgps {
 
     private:
 
-        // serial input/output
+        // serial input/output instance;
         SerialIO m_SerialIO;
 
         /***************************************************/
@@ -331,24 +282,25 @@ class Dgps {
         /***************************************************/
 
         unsigned char   ringbuffer[4096 * 4];   // ! important: change int ringbuffer_size = ... (in constructor) too, when changing number of ringbuffer elements ringbuffer[...]!
-        int             ringbuffer_size;        // ! must be euqal to number of elements in ringbuffer array!
+        int             ringbuffer_size;        // ! ==> must be euqal to number of elements in ringbuffer array!
         int             ringbuffer_start;
         int             ringbuffer_length;
 
+        // see comments at corresponding structure definition above;
         PacketDataStructure packet_data_structure;
         PacketData          incoming_packet;
         GpsDataStructure    gps_data_structure;
         GpsData             gps_data;
 
-        // helper variable, used to find meaning of semi-circles in this case... 
-        // (it's just 0-180 normalized to 0.0-1.0)
+        // helper variable, used to find meaning of semi-circles in this case...;
+        // (it's just 0-180 normalized to 0.0-1.0);
         double semi_circle_factor;
 
-        // gets data from serial.IO and serves PacketData
+        // gets data from serial.IO and serves PacketData;
         bool interpretData(unsigned char *  incoming_data,
                            int              incoming_data_length);
 
-        // takes packet data from interpretData(), serves GpsData
+        // takes packet data from interpretData(), serves GpsData;
         bool extractGPS();
 
         /****************************************************/
@@ -357,7 +309,9 @@ class Dgps {
 
         DiagnosticStatement diagnostic_statement;
         
-        std::stringstream   msg;                    // helper variable for temporary storage;
+        // helper variables which store diagnostic messages temporarily;
+        std::stringstream msg;
+        std::stringstream msg_tagged;
 
         void transmitStatement(DiagnosticFlag flag);
 

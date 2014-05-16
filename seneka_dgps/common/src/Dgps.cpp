@@ -69,118 +69,85 @@ Dgps::Dgps() {
     msg << "Initializing...";
     transmitStatement(INFO);
 
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
+
+    // enable/disable console output;
     cout_enabled = false;
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
 
-    ringbuffer_size         = 4096 * 4; // ! must be euqal to number of elements in ringbuffer array!
+    ringbuffer_size         = 4096 * 4; // ! ==> must be equal to number of elements in ringbuffer array (ringbuffer[...], see Dgps.h);
 
     for (int i = 0; i < ringbuffer_size; i++) {
         ringbuffer[i] = 0;
     }
 
     ringbuffer_start        = 0;
-    ringbuffer_length       = 0;   
-
-    // the following variables allow to extract associated packet fields from incoming data frames as described in Trimble BD982 GNSS receiver manual
-    // base unit is 1 char = 8 Bit
-
-    // packet_data_structure initialization
-
-    packet_data_structure.stx_index                             = 0;    // index: starting position of data element in incoming data frame
-    packet_data_structure.stx_length                            = 1;    // length of data field in incoming data frame ([] = byte)
-
-    packet_data_structure.status_index                          = 1;
-    packet_data_structure.status_length                         = 1;
-
-    packet_data_structure.packet_type_index                     = 2;
-    packet_data_structure.packet_type_length                    = 1;
-
-    packet_data_structure.length_index                          = 3;
-    packet_data_structure.length_length                         = 1;
-
-    packet_data_structure.record_type_index                     = 4;
-    packet_data_structure.record_type_length                    = 1;
-
-    packet_data_structure.page_counter_index                    = 5;    // split byte in two parts! its <page> of <total>, each 4 bit
-    packet_data_structure.page_counter_length                   = 1;
-
-    packet_data_structure.reply_number_index                    = 6;
-    packet_data_structure.reply_number_length                   = 1;
-
-    packet_data_structure.record_interpretation_flags_index     = 7;     
-    packet_data_structure.record_interpretation_flags_length    = 1;
-
-    packet_data_structure.data_bytes_index                      = 8;
-
-    // checksum_index see helper function checksum_index()
-    packet_data_structure.checksum_length                       = 1;
-
-    // etx_index see helper function etx_index()
-    packet_data_structure.etx_length                            = 1;
+    ringbuffer_length       = 0;
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
 
-    // gps_data_structure initialization
+    // POSITION RECORD PACKET;
+    // the variables below represent the starting positions of associated data bytes in a position record packet;
+    // base unit is 1 char = 1 byte = 8 bit;
+    // position record packet (packet type: 57h, see Trimble BD982 GNSS Receiver manual, p. 139);
 
-    // variables for index positions of byte indizes for the fields of a position record packet
-    // index is relative to begin of data_part, so it is byte #: index+8... of packet-bytes (stx = 0)
+    // packet_data_structure initialization;
+
+    packet_data_structure.stx_index                         = 0; // index: starting position in incoming data frame;
+    packet_data_structure.status_index                      = 1;
+    packet_data_structure.packet_type_index                 = 2;
+    packet_data_structure.length_index                      = 3;
+    packet_data_structure.record_type_index                 = 4;
+    packet_data_structure.page_counter_index                = 5; // byte splitted in two parts! its <page> of <total>, each 4 bit;
+    packet_data_structure.reply_number_index                = 6;
+    packet_data_structure.record_interpretation_flags_index = 7;     
+    packet_data_structure.data_bytes_index                  = 8;
+
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
+
+    // gps_data_structure initialization;
+
+    // POSITION RECORD PACKET - DATA PART;
+    // the variables below represent the starting positions of associated data bytes in a position record packet data field;
+    // the index is relative to begin of the data part of a position record packet, 
+    // so it is byte # index+8  of position record packet (stx = 0);
+    // position record packet (packet type: 57h, see Trimble BD982 GNSS Receiver manual, p. 139);
 
     gps_data_structure.latitude_value_index     = 0;
-    gps_data_structure.latitude_value_length    = 8;
-
     gps_data_structure.longitude_value_index    = 8;
-    gps_data_structure.longitude_value_length   = 8;
-
     gps_data_structure.altitude_value_index     = 16;
-    gps_data_structure.altitude_value_length    = 8;
-
     gps_data_structure.clock_offset_index       = 24;
-    gps_data_structure.clock_offset_length      = 8;
-
     gps_data_structure.frequency_offset_index   = 32;
-    gps_data_structure.frequency_offset_length  = 8;
-
     gps_data_structure.pdop_index               = 40;
-    gps_data_structure.pdop_length              = 8;
-
     gps_data_structure.latitude_rate_index      = 48;
-    gps_data_structure.latitude_rate_length     = 8;
-
     gps_data_structure.longitude_rate_index     = 56;
-    gps_data_structure.longitude_rate_length    = 8;
-
     gps_data_structure.altitude_rate_index      = 64;
-    gps_data_structure.altitude_rate_length     = 8;
-
     gps_data_structure.gps_msec_of_week_index   = 72;
-    gps_data_structure.gps_msec_of_week_length  = 4;
-
     gps_data_structure.position_flags_index     = 76;
-    gps_data_structure.position_flags_length    = 1;
-
     gps_data_structure.number_of_SVs_index      = 77;
-    gps_data_structure.number_of_SVs_length     = 1;
-
-    // 78 .. 80 .. 82 .. 84 ..
     gps_data_structure.channel_number_index     = 78;
-    //gps_data_structure.channel_number_length    = 1;
-
-    // 79 .. 81 .. 83 .. 85 ..
     gps_data_structure.prn_index                = 79;
-    //gps_data_structure.prn_length               = 1;
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
 
-    // helper variable, used to find meaning of semi-circles in this case...
+    // helper variable; used to find the meaning of semi-circles in this case...
     // (it's just 0-180 normalized to 0.0-1.0)
     semi_circle_factor = 180.0;
+
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
 
     msg << "Ready.";
     transmitStatement(INFO);
@@ -205,8 +172,6 @@ Dgps::~Dgps() {
 // takes diagnostic statements and stores them in diagnostic_array;
 // if diagnostic_array holds more than 100 elements, the oldest stored element will get erased;
 void Dgps::transmitStatement(DiagnosticFlag flag) {
-
-    std::stringstream msg_tagged;
 
     if (cout_enabled) std::cout << "\n";
 
@@ -257,6 +222,7 @@ void Dgps::transmitStatement(DiagnosticFlag flag) {
     diagnostic_array.push_back(diagnostic_statement);
 
     msg.str("");
+    msg_tagged.str("");
 
 }
 

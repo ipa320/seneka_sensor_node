@@ -139,7 +139,7 @@ SenekaDgps::SenekaDgps() {
     position_publisher      = nh.advertise<seneka_msg::dgpsPosition>            (position_topic.c_str(), 1);
     diagnostics_publisher   = nh.advertise<diagnostic_msgs::DiagnosticArray>    (diagnostics_topic.c_str(), 1);
 
-    message << "Finnished. Calling DGPS device driver for action...";
+    message << "Ready. Calling DGPS device driver for action...";
     publishDiagnostics(INFO);
 
 }

@@ -27,12 +27,12 @@
 * done          - Generation and publishing of error messages
 * done          - Extract all fields of a position record message (especially dynamic length of sat-channel_numbers and prns...)
 * done          - Publish all gps values to ros topic (maybe need a new message if navsatFix cannot take all provided values...)
-* in progresss  - Rewrite function structure of interpretData and connected functions.. (still in dev state... double check for memory leaks etc...!!!)
+* done          - Rewrite function structure of interpretData and connected functions.. (still in dev state... double check for memory leaks etc...!!!)
 * unnecessary   - Extracting multi page messages from buffer...  (not needed for position records)
 *               - Monitor frequency/quality/... of incoming data packets... --> inform ROS about bad settings (publishing rate <-> receiving rate)
 * unnecessary   - Add more parameter handling (commandline, ...); document parameters and configuration
 * done          - Clean up and improve code readability
-* in progress   - Add/improve comments
+* done          - Add/improve comments
 * in progress   - Testing!
 *
 *****************************************************************
