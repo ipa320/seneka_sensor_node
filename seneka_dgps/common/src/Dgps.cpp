@@ -312,7 +312,7 @@ bool Dgps::checkConnection() {
         msg << "Could not send test command.";
         transmitStatement(ERROR);
 
-        msg << "Testing the communications link failed!";
+        msg << "Testing the communications link failed! Device is not available!";
         transmitStatement(ERROR);
 
     }
@@ -339,6 +339,9 @@ bool Dgps::checkConnection() {
 
             msg << "Test response packet is \"ACK\" (06h) as expected.";
             transmitStatement(DEBUG);
+
+            msg << "Testing the communications link succeeded. Device is available.";
+            transmitStatement(INFO);
 
             return true;
 
@@ -426,7 +429,7 @@ bool Dgps::getDgpsData() {
     // creating buffer for reply packet
     unsigned char buffer[1024]  = {0};
     
-    // reading response from serial port
+    // reading response from serial port;
     int bytes_received  = 0;
     bytes_received      = m_SerialIO.readNonBlocking((char*) buffer, 1020);
 
@@ -446,10 +449,10 @@ bool Dgps::getDgpsData() {
 
         else {
 
-            // put received data into buffer, extract packets, extract gps data if available
+            // put received data into buffer, extract packets, extract gps data if available;
             if (interpretData(buffer, bytes_received)) {
 
-                msg << "Successfully gathered DGPS data.";
+                msg << "Gathering DGPS data succeeded.";
                 transmitStatement(INFO);
 
                 return true;
@@ -458,7 +461,7 @@ bool Dgps::getDgpsData() {
 
             else {
 
-                msg << "Failed to gather DGPS data.";
+                msg << "Gathering DGPS data failed.";
                 transmitStatement(WARNING);
 
                 return false;
@@ -488,15 +491,15 @@ bool Dgps::getDgpsData() {
 /**************************************************/
 /**************************************************/
 
-bool Dgps::interpretData(unsigned char *    incoming_data,          // int array from serial.IO
-                         int                incoming_data_length) { // count of received bytes
+bool Dgps::interpretData(unsigned char *    incoming_data,          // int array from serial.IO;
+                         int                incoming_data_length) { // count of received bytes;
 
     #ifndef DEBUG
 
-    // preparing for output of hex numbers
-    msg << showbase         // show the 0x prefix
-        << internal         // fill between the prefix and the number
-        << setfill('0');    // fill with 0s
+    // preparing output of hex numbers;
+    msg << showbase         // show the 0x prefix;
+        << internal         // fill between the prefix and the number;
+        << setfill('0');    // fill with 0s;
 
     #endif DEBUG
 
@@ -533,9 +536,9 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
     /**************************************************/
 
     msg << "Interpreting received data...";
-    transmitStatement(INFO);
+    transmitStatement(DEBUG);
 
-    // find stx, try to get length and match checksum + etx
+    // find stx, try to get length and match checksum + etx;
     for (int y = 0; y < ringbuffer_length; y++) {
 
         // find stx: (byte 0 == 0x02)
@@ -545,6 +548,10 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
             transmitStatement(WARNING);
 
         }
+
+        /**************************************************/
+        /**************************************************/
+        /**************************************************/
 
         else {
 
@@ -576,7 +583,11 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
             temp_packet.checksum    = ringbuffer[(ringbuffer_start + y + checksum_index(temp_packet.length))    % ringbuffer_size] % 256;
             temp_packet.etx         = ringbuffer[(ringbuffer_start + y + etx_index(temp_packet.length))         % ringbuffer_size] % 256;
 
-            // verify checksum + etx
+            /**************************************************/
+            /**************************************************/
+            /**************************************************/
+
+            // verify checksum + etx;
             char checksum = 0x00;
             checksum = checksum + (temp_packet.status                       % 256);
             checksum = checksum + (temp_packet.packet_type                  % 256);
@@ -589,15 +600,20 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
             // calculate checksum over data bytes
             for (int z = 0; z < data_bytes_length(temp_packet.length); z++) {
 
-                checksum = (checksum + temp_packet.data_bytes[z]);
+                checksum = checksum + temp_packet.data_bytes[z];
 
             }
 
-            // wrap checksum into 1 byte
+            // wrap checksum into 1 byte;
             checksum = checksum % 256;
+
+            /**************************************************/
+            /**************************************************/
+            /**************************************************/
 
             bool error_occured = false;
 
+            // check for checksum mismatch;
             if (checksum != temp_packet.checksum) {
 
                 msg << "Checksum mismatch!";
@@ -616,6 +632,7 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 
             }
 
+            // check etx byte (end of data frame);
             if (temp_packet.etx != 0x03) {
 
                 msg << "Etx was not 0x03!";
@@ -632,7 +649,11 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
 
             }
 
-            // calculate new ringbuffer pointers
+            /**************************************************/
+            /**************************************************/
+            /**************************************************/
+
+            // calculate new ringbuffer pointers;
             int ringbuffer_old_start = ringbuffer_start;
             
             ringbuffer_start = (ringbuffer_start + y + etx_index(temp_packet.length) + 1) % ringbuffer_size;
@@ -643,45 +664,57 @@ bool Dgps::interpretData(unsigned char *    incoming_data,          // int array
             if (ringbuffer_old_start >= ringbuffer_start)
                 ringbuffer_length = ringbuffer_length - (ringbuffer_start + (ringbuffer_size - ringbuffer_old_start));
 
+            /**************************************************/
+            /**************************************************/
+            /**************************************************/
+
             if (!error_occured) {
 
                 incoming_packet = temp_packet;
 
-                // if data is okay -> success = true, then update ringbuffer pointers and write new packet to parameter... see  few lines below
                 success = extractGPS();
+
             }
+
+            /**************************************************/
+            /**************************************************/
+            /**************************************************/
 
             if (ringbuffer_length > 0) {
 
-                msg << "Ringbuffer was not empty after reading one packet! Calling function to receive data again...";
-                transmitStatement(WARNING);
-                
+                msg << "Ringbuffer was not empty after reading one packet! Requesting data again...";
+
                 if (ringbuffer_old_start != ringbuffer_start)
 
                     if (!success) {
 
                         // call without data to process rest of buffered data
                         success = interpretData(NULL, 0);
+
                     } 
 
                     else {
 
                         interpretData(NULL, 0);
+
                     }
 
                     else {
 
-                        msg << "Stopped interpreting remaining data in buffer to avoid infinite loop.";
-                        transmitStatement(WARNING);
+                    msg << "Stopped interpreting remaining buffer to avoid infinite-loop.";
+
                     }
-            }
+
+            } 
 
             return success;
+
         }
 
     }
 
     return success;
+
 }
 
 /**************************************************/
@@ -696,23 +729,28 @@ bool Dgps::extractGPS() {
         << setfill('0');    // fill with 0s
 
     msg << "Extracting DGPS data...";
-    transmitStatement(INFO);
+    transmitStatement(DEBUG);
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
 
     msg << "Checking types...";
-    transmitStatement(INFO);
+    transmitStatement(DEBUG);
 
     if (incoming_packet.packet_type != 0x57) {
 
         msg << "Received reply packet has wrong type!";
         transmitStatement(WARNING);
-        msg << "Received reply packet of type: " << std::hex << setw(4) << int(incoming_packet.packet_type);
-        transmitStatement(WARNING);
-        msg << "Expected reply packet of type: 0x57";
-        transmitStatement(WARNING);
+
+        #ifndef NDEBUG
+
+        msg << "Received: " << std::hex << setw(4) << int(incoming_packet.packet_type);
+        transmitStatement(DEBUG);
+        msg << "Expected: 0x57";
+        transmitStatement(DEBUG);
+
+        #endif NDEBUG
 
         return false;
 
@@ -722,10 +760,15 @@ bool Dgps::extractGPS() {
 
         msg << "Received reply packet has wrong record type!";
         transmitStatement(WARNING);
+
+        #ifndef NDEBUG
+
         msg << "Received reply packet of record type: " << std::hex << setw(4) << int(incoming_packet.record_type);
-        transmitStatement(WARNING);
+        transmitStatement(DEBUG);
         msg << "Expected reply packet of record type: 0x01";
-        transmitStatement(WARNING);
+        transmitStatement(DEBUG);
+
+        #endif NDEBUG
 
         return false;
 
@@ -734,7 +777,7 @@ bool Dgps::extractGPS() {
     else {
 
         msg << ("Received data packet is ok.");
-        transmitStatement(INFO);
+        transmitStatement(DEBUG);
 
     }
 

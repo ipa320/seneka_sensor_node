@@ -140,13 +140,6 @@ int main(int argc, char** argv) {
 
         }
 
-        else {
-
-            cSenekaDgps.message << "Testing the communications link succeeded. DGPS device is available.";
-            cSenekaDgps.publishDiagnostics(SenekaDgps::INFO);
-
-        }
-
         counter++;
         sleep(1); // delay
 
@@ -155,7 +148,7 @@ int main(int argc, char** argv) {
     // return false if test of connection link failed 10 times;
     if (!connection_is_ok) {
 
-        cSenekaDgps.message << "Testing the communications link failed! Device is not available!";
+        cSenekaDgps.message << "Testing the communications link finally failed! Device is not available!";
         cSenekaDgps.publishDiagnostics(SenekaDgps::ERROR);
 
         return 0;
@@ -194,9 +187,13 @@ int main(int argc, char** argv) {
 
         }
 
+        // #ifndef NDEBUG
+
         // TESTING/DEBUGGING
-        ROS_ERROR("WAIT");
+        ROS_ERROR("Press ENTER to continue.");
         if (cin.get() == '\n') {}
+
+        // #endif NDEBUG
 
         ros::spinOnce();
         loop_rate.sleep();
