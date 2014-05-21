@@ -95,7 +95,7 @@ int main(int argc, char** argv) {
     
     while (!port_opened && (counter < 10)) {
 
-        // just executed if connection establishment needs a retry;
+        // is just getting executed if connection establishment needs a retry;
         if (counter > 0) {
 
             cSenekaDgps.message << "Retrying...";
@@ -107,6 +107,7 @@ int main(int argc, char** argv) {
         cSenekaDgps.extractDiagnostics(cDgps);      
 
         counter++;
+
         sleep(1); // delay
 
     }
@@ -128,19 +129,32 @@ int main(int argc, char** argv) {
     bool    connection_is_ok    = false;    // connection check response
             counter             = 0;        // reset counter; count of how many times connection check has been retried;
 
-    while (!connection_is_ok && (counter < 10)) {
+    int i = 0;
 
-        connection_is_ok = cDgps.checkConnection();
-        cSenekaDgps.extractDiagnostics(cDgps);
+    while (!connection_is_ok && (counter < 10)) {
 
         if (counter > 0) {
 
             cSenekaDgps.message << "Retrying...";
             cSenekaDgps.publishDiagnostics(SenekaDgps::WARN);
 
+            i++;
+            std::stringstream newPort;
+            newPort << "/dev/ttyUSB" << i;
+            cSenekaDgps.setPort(newPort.str().c_str());
+
+            cSenekaDgps.message << "New port is: " << newPort.str().c_str();
+            cSenekaDgps.publishDiagnostics(SenekaDgps::WARN);
+
+            cDgps.open(cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());
+
         }
 
+        connection_is_ok = cDgps.checkConnection();
+        cSenekaDgps.extractDiagnostics(cDgps);
+
         counter++;
+
         sleep(1); // delay
 
     }

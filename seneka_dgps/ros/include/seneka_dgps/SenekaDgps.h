@@ -128,6 +128,7 @@ class SenekaDgps {
         // getters;
         std::string getPositionTopic    (void)  {return position_topic;}
         std::string getDiagnosticsTopic (void)  {return diagnostics_topic;}
+        
         std::string getSerialPort       (void)  {return serial_port;}
         int         getSerialBaudRate   (void)  {return serial_baudrate;}
         int         getPublishRate      (void)  {return publishrate;}
