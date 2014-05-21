@@ -76,7 +76,7 @@ SenekaDgps::SenekaDgps() {
     diagnostics_topic   = "/diagnostics";
     serial_port         = "/dev/ttyUSB0";
     serial_baudrate     = 38400;            // [] = Bd
-    publishrate         = 1;                // [] = Hz
+    publishrate         = 1;                // [] = Hz; must be <= 50 Hz!
 
     nh = ros::NodeHandle("~");
 
@@ -85,6 +85,13 @@ SenekaDgps::SenekaDgps() {
 
     message << "Gathering parameters from parameter server...";
     publishDiagnostics(DEBUG);
+
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
+
+    // gather serial port identifier;
+    nh.param("port", port, getSerialPort());
 
     if (!nh.hasParam("port")) {
         message << "Using default parameter for port: " << getSerialPort();
@@ -97,8 +104,13 @@ SenekaDgps::SenekaDgps() {
         publishDiagnostics(INFO);
 
     }
-        // gather serial port identifier;
-        nh.param("port", port, getSerialPort());
+
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
+
+    // gather baud rate of serial connection;
+    nh.param("baud", baud, getSerialBaudRate());
 
     if (!nh.hasParam("baud")) {
 
@@ -113,14 +125,27 @@ SenekaDgps::SenekaDgps() {
         publishDiagnostics(INFO);
 
     }
-        
-        // gather baud rate of serial connection;
-        nh.param("baud", baud, getSerialBaudRate());
+
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
+
+    // gather ROS publish rate;
+    nh.param("rate", rate, getPublishRate());
 
     if (!nh.hasParam("rate")) {
 
         message << "Using default parameter for publish rate: " << getPublishRate() << " Hz";
         publishDiagnostics(WARN);
+
+    }
+
+    else if ((nh.hasParam("rate")) && (nh.getParam("rate", rate)) > 50) {
+
+        message << "Given frequency is too high (f > 50 Hz)! Using default parameter for publish rate: " << getPublishRate() << " Hz";
+        publishDiagnostics(WARN);
+
+        rate = getPublishRate();
 
     }
 
@@ -131,9 +156,9 @@ SenekaDgps::SenekaDgps() {
 
     }
         
-        // gather ROS publish rate;
-        nh.param("rate", rate, getPublishRate());
-
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
 
     // advertise given ROS topics;
     position_publisher      = nh.advertise<seneka_msg::dgpsPosition>            (position_topic.c_str(), 1);
@@ -163,7 +188,7 @@ SenekaDgps::~SenekaDgps(){}
 void SenekaDgps::extractDiagnostics(Dgps &obj) {
 
     message << "Extracting latest diagnostic statements from DGPS device driver...";
-    publishDiagnostics(INFO);
+    publishDiagnostics(DEBUG);
 
     Dgps::DiagnosticStatement statement;
 
@@ -285,7 +310,7 @@ void SenekaDgps::publishDiagnostics(DiagnosticFlag flag) {
 void SenekaDgps::publishPosition(Dgps::GpsData gps_data) {
 
     message << "Publishing GPS position...";
-    publishDiagnostics(INFO);
+    publishDiagnostics(DEBUG);
 
     position.header.frame_id           = "dgps_frame_id";
     position.header.stamp              = ros::Time::now();

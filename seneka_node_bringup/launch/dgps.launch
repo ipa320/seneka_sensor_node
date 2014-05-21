@@ -1,0 +1,9 @@
+<launch>
+<group ns="seneka">
+  <node name="dgps" pkg="seneka_dgps" type="seneka_dgps_node" output="screen">
+    	<param name="port"	type="string"	value="/dev/ttyUSB0"/>
+	<param name="baud"	type="int"	value="38400"/>
+	<param name="rate"	type="int"	value="1"/>
+  </node>
+</group>
+</launch>

@@ -29,7 +29,7 @@
 * done          - Publish all gps values to ros topic (maybe need a new message if navsatFix cannot take all provided values...)
 * done          - Rewrite function structure of interpretData and connected functions.. (still in dev state... double check for memory leaks etc...!!!)
 * unnecessary   - Extracting multi page messages from buffer...  (not needed for position records)
-*               - Monitor frequency/quality/... of incoming data packets... --> inform ROS about bad settings (publishing rate <-> receiving rate)
+* in progress   - Monitor frequency/quality/... of incoming data packets... --> inform ROS about bad settings (publishing rate <-> receiving rate)
 * unnecessary   - Add more parameter handling (commandline, ...); document parameters and configuration
 * done          - Clean up and improve code readability
 * done          - Add/improve comments
@@ -148,7 +148,7 @@ int main(int argc, char** argv) {
     // return false if test of connection link failed 10 times;
     if (!connection_is_ok) {
 
-        cSenekaDgps.message << "Testing the communications link finally failed! Device is not available!";
+        cSenekaDgps.message << "Testing the communications link finally failed. Device is not available.";
         cSenekaDgps.publishDiagnostics(SenekaDgps::ERROR);
 
         return 0;
@@ -161,7 +161,7 @@ int main(int argc, char** argv) {
 
     ros::Rate loop_rate(cSenekaDgps.getRate());
 
-    cSenekaDgps.message << "Initiating continuous requesting and publishing of DGPS data...";
+    cSenekaDgps.message << "Initiate continuous requesting and publishing of DGPS data...";
     cSenekaDgps.publishDiagnostics(SenekaDgps::INFO);
 
     while (cSenekaDgps.nh.ok()) {
@@ -189,7 +189,7 @@ int main(int argc, char** argv) {
 
         // #ifndef NDEBUG
 
-        // TESTING/DEBUGGING
+        // stop here after one cycle
         ROS_ERROR("Press ENTER to continue.");
         if (cin.get() == '\n') {}
 
