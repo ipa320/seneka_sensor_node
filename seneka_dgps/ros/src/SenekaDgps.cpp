@@ -22,10 +22,6 @@
 *
 * Description:
 *
-* TODO:
-*
-* --> see seneka_dgps_node.cpp --> To-Do
-*
 *****************************************************************
 *
 * Redistribution and use in source and binary forms, with or without
@@ -71,10 +67,10 @@ SenekaDgps::SenekaDgps() {
 
     // initialize default parameters
     message << "Initializing default parameters...";
-    publishDiagnostics(DEBUG);
+    publishDiagnostics(INFO);
     position_topic      = "/position";
     diagnostics_topic   = "/diagnostics";
-    serial_port         = "/dev/ttyUSB0";
+    serial_port         = "/dev/ttyUSB1";
     serial_baudrate     = 38400;            // [] = Bd
     publishrate         = 1;                // [] = Hz; must be <= 50 Hz!
 
@@ -84,7 +80,7 @@ SenekaDgps::SenekaDgps() {
     // if there is no matching parameter on the server, use default value;
 
     message << "Gathering parameters from parameter server...";
-    publishDiagnostics(DEBUG);
+    publishDiagnostics(INFO);
 
     /**************************************************/
     /**************************************************/
@@ -188,7 +184,7 @@ SenekaDgps::~SenekaDgps(){}
 void SenekaDgps::extractDiagnostics(Dgps &obj) {
 
     message << "Extracting latest diagnostic statements from DGPS device driver...";
-    publishDiagnostics(DEBUG);
+    publishDiagnostics(INFO);
 
     Dgps::DiagnosticStatement statement;
 
@@ -310,7 +306,7 @@ void SenekaDgps::publishDiagnostics(DiagnosticFlag flag) {
 void SenekaDgps::publishPosition(Dgps::GpsData gps_data) {
 
     message << "Publishing GPS position...";
-    publishDiagnostics(DEBUG);
+    publishDiagnostics(INFO);
 
     position.header.frame_id           = "dgps_frame_id";
     position.header.stamp              = ros::Time::now();

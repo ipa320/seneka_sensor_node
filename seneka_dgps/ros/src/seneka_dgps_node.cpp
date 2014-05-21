@@ -22,19 +22,6 @@
 *
 * Description:
 *
-* TODO:
-*
-* done          - Generation and publishing of error messages
-* done          - Extract all fields of a position record message (especially dynamic length of sat-channel_numbers and prns...)
-* done          - Publish all gps values to ros topic (maybe need a new message if navsatFix cannot take all provided values...)
-* done          - Rewrite function structure of interpretData and connected functions.. (still in dev state... double check for memory leaks etc...!!!)
-* unnecessary   - Extracting multi page messages from buffer...  (not needed for position records)
-* in progress   - Monitor frequency/quality/... of incoming data packets... --> inform ROS about bad settings (publishing rate <-> receiving rate)
-* unnecessary   - Add more parameter handling (commandline, ...); document parameters and configuration
-* done          - Clean up and improve code readability
-* done          - Add/improve comments
-* in progress   - Testing!
-*
 *****************************************************************
 *
 * Redistribution and use in source and binary forms, with or without
@@ -136,14 +123,6 @@ int main(int argc, char** argv) {
         if (counter > 0) {
 
             cSenekaDgps.message << "Retrying...";
-            cSenekaDgps.publishDiagnostics(SenekaDgps::WARN);
-
-            i++;
-            std::stringstream newPort;
-            newPort << "/dev/ttyUSB" << i;
-            cSenekaDgps.setPort(newPort.str().c_str());
-
-            cSenekaDgps.message << "New port is: " << newPort.str().c_str();
             cSenekaDgps.publishDiagnostics(SenekaDgps::WARN);
 
             cDgps.open(cSenekaDgps.getPort().c_str(), cSenekaDgps.getBaud());

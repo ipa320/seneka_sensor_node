@@ -22,10 +22,6 @@
 *
 * Description:
 *
-* TODO:
-*
-* --> see seneka_dgps_node.cpp To-Do
-*
 *****************************************************************
 *
 * Redistribution and use in source and binary forms, with or without
