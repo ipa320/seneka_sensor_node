@@ -94,10 +94,6 @@ class Dgps {
         // destructor
         ~Dgps();
 
-        // enables/disables console output;
-        // default = false (initialized in constructor);
-        bool cout_enabled;
-
         /****************************************************/
         /*************** diagnostics handling ***************/
         /****************************************************/
@@ -108,6 +104,7 @@ class Dgps {
             INFO,
             WARNING,
             ERROR,
+            FATAL
 
         };
 
@@ -124,10 +121,10 @@ class Dgps {
         /*************** data handling ***************/
         /*********************************************/
 
-        // POSITION RECORD PACKET;
-        // the strucutre below contains all bytes of an UNINTERPRETED position record packet;
+        // RAWDATA (57h) PACKET - POSITION RECORD;
+        // this struct data type represents the structure of a "RAWDATA" (57h) position record packet;
         // base unit is 1 char = 1 byte = 8 bit;
-        // position record packet (packet type: 57h, see Trimble BD982 GNSS Receiver manual, p. 139;
+        // position record (packet type: 57h, see Trimble BD982 GNSS Receiver manual, p. 139;
         struct PacketData {
 
             // header;
@@ -150,29 +147,10 @@ class Dgps {
         
         };
 
-        // POSITION RECORD PACKET;
-        // the variables below represent the starting positions of associated data bytes in a position record packet;
-        // base unit is 1 char = 1 byte = 8 bit;
-        // position record packet (packet type: 57h, see Trimble BD982 GNSS Receiver manual, p. 139);
-        struct PacketDataStructure {
-
-            int stx_index;                          // index: starting position of data element in incoming data frame
-            int status_index;
-            int packet_type_index;
-            int length_index;
-            int record_type_index;
-            int page_counter_index;                 // split byte in two parts! its <page> of <total>, each 4 bit
-            int reply_number_index;
-            int record_interpretation_flags_index;     
-            int data_bytes_index;
-            // checksum_index see helper function checksum_index()
-            // etx_index see helper function etx_index()
-
-        };
-
-        // POSITION RECORD PACKET - DATA PART;
+       
+        // RAWDATA (57h) PACKET - POSITION RECORD - DATA PART;
         // the structure below contains all the INTERPRETED data bytes of a position record packet data field; 
-        // position record packet (packet type: 57h, see Trimble BD982 GNSS Receiver manual, p. 139);
+        // position record (packet type: 57h, see Trimble BD982 GNSS Receiver manual, p. 139);
         struct GpsData {
 
             double  latitude_value;             // in semi-circles
@@ -192,28 +170,6 @@ class Dgps {
         
         };
 
-        // this structure contains all variables to index the positions of position record packet data field bytes;
-        // index is relative to begin of data_part, so it is byte #: index+8... of packet-bytes (stx = 0);
-        // position record packet (packet type: 57h, see Trimble BD982 GNSS receiver manual, p. 132/139);
-        struct GpsDataStructure {
-
-            int latitude_value_index;
-            int longitude_value_index;
-            int altitude_value_index;
-            int clock_offset_index;
-            int frequency_offset_index;
-            int pdop_index;
-            int latitude_rate_index;
-            int longitude_rate_index;
-            int altitude_rate_index;
-            int gps_msec_of_week_index;
-            int position_flags_index;
-            int number_of_SVs_index;
-            int channel_number_index;
-            int prn_index;
-        
-        };
-
         /**************************************************/
         /**************************************************/
         /**************************************************/
@@ -221,19 +177,14 @@ class Dgps {
         // establishes serial connection;
         bool open(const char* pcPort, int iBaudRate);
 
-        // tests the communications link by sending protocol request "ENQ" (05h);
-        // expects to receive "ACK" (0x06h);
+        // tests the communication link by sending protocol request "ENQ" (05h);
+        // expects to receive "ACK" (06h);
         // see Trimble BD982 GNSS receiver manual, p. 65;
         bool checkConnection();
 
-        /*  function getDgpsData():
-        *
-        *   --> requests position record packet from receiver (see Trimble BD982 GNSS receiver manual, p. 132/139)
-        *   --> appends incoming data to ringbuffer
-        *   --> tries to extract valid packets (incl. checksum verification)
-        *   --> tries to read position-record-fields from valid packets
-        *   --> writes position-record-data into GpsData struct
-        */  
+        // requests GPS data from GPS device;
+        // hereby called functions analyze the received packet in-depth, structure it, extract and finnaly serve GPS data;
+        // if everything works fine, GPS data is getting stored in Dgps::GpsData gps_data;
         bool getDgpsData();
 
         // getters;
@@ -260,10 +211,6 @@ class Dgps {
         // function to extract IEEE DOUBLE precision number values from an 8-byte array;
         double  getDOUBLE           (unsigned char * bytes, int exponent_bias = 1023);
 
-        int     data_bytes_length   (int length_value);
-        int     checksum_index      (int length_value);      
-        int     etx_index           (int length_value);
-
         /**************************************************/
         /**************************************************/
         /**************************************************/
@@ -277,27 +224,17 @@ class Dgps {
         /*************** data handling ***************/
         /*********************************************/
 
-        unsigned char   ringbuffer[4096 * 4];   // ! important: change int ringbuffer_size = ... (in constructor) too, when changing number of ringbuffer elements ringbuffer[...]!
-        int             ringbuffer_size;        // ! ==> must be euqal to number of elements in ringbuffer array!
-        int             ringbuffer_start;
-        int             ringbuffer_length;
-
         // see comments at corresponding structure definition above;
-        PacketDataStructure packet_data_structure;
-        PacketData          incoming_packet;
-        GpsDataStructure    gps_data_structure;
+        PacketData          temp_packet;
         GpsData             gps_data;
 
-        // helper variable, used to find meaning of semi-circles in this case...;
-        // (it's just 0-180 normalized to 0.0-1.0);
-        double semi_circle_factor;
+        // analyzes received data packets in-depth, structures it and serves PacketData incoming_packet;
+        bool analyzeData(unsigned char *  incoming_data,
+                         int              incoming_data_length);
 
-        // gets data from serial.IO and serves PacketData;
-        bool interpretData(unsigned char *  incoming_data,
-                           int              incoming_data_length);
-
-        // takes packet data from interpretData(), serves GpsData;
-        bool extractGPS();
+        // takes PacketData incoming_packet from analyzeData(),
+        // extracts and finally serves GpsData gps_data;
+        bool extractGpsData();
 
         /****************************************************/
         /*************** diagnostics handling ***************/

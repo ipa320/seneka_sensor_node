@@ -62,12 +62,7 @@
 // constructor;
 SenekaDgps::SenekaDgps() {
 
-    message << "Initializing...";
-    publishDiagnostics(INFO);
-
     // initialize default parameters
-    message << "Initializing default parameters...";
-    publishDiagnostics(INFO);
     position_topic      = "/position";
     diagnostics_topic   = "/diagnostics";
     serial_port         = "/dev/ttyUSB1";
@@ -78,9 +73,6 @@ SenekaDgps::SenekaDgps() {
 
     // gather all required parameters from ROS parameter server;
     // if there is no matching parameter on the server, use default value;
-
-    message << "Gathering parameters from parameter server...";
-    publishDiagnostics(INFO);
 
     /**************************************************/
     /**************************************************/
@@ -160,9 +152,6 @@ SenekaDgps::SenekaDgps() {
     position_publisher      = nh.advertise<seneka_msg::dgpsPosition>            (position_topic.c_str(), 1);
     diagnostics_publisher   = nh.advertise<diagnostic_msgs::DiagnosticArray>    (diagnostics_topic.c_str(), 1);
 
-    message << "Ready. Calling DGPS device driver for action...";
-    publishDiagnostics(INFO);
-
 }
 
 /**************************************************/
@@ -183,38 +172,33 @@ SenekaDgps::~SenekaDgps(){}
 // see ROS diagnostics (http://wiki.ros.org/diagnostics and http://docs.ros.org/api/diagnostic_msgs/html/msg/DiagnosticStatus.html);
 void SenekaDgps::extractDiagnostics(Dgps &obj) {
 
-    message << "Extracting latest diagnostic statements from DGPS device driver...";
-    publishDiagnostics(INFO);
-
     Dgps::DiagnosticStatement statement;
 
     for (std::vector<Dgps::DiagnosticStatement>::iterator it = obj.diagnostic_array.begin(); it != obj.diagnostic_array.end(); it++) {
 
         statement = * it;
 
+        message << statement.diagnostic_message;
+
         switch (statement.diagnostic_flag) {
 
             case Dgps::DEBUG:
 
-                message << statement.diagnostic_message;
                 publishDiagnostics(DEBUG);
                 break;
 
             case Dgps::INFO:
 
-                message << statement.diagnostic_message;
                 publishDiagnostics(INFO);
                 break;
 
             case Dgps::WARNING:
 
-                message << statement.diagnostic_message;
                 publishDiagnostics(WARN);
                 break;
 
             case Dgps::ERROR:
 
-                message << statement.diagnostic_message;
                 publishDiagnostics(ERROR);
                 break;
 
@@ -223,6 +207,7 @@ void SenekaDgps::extractDiagnostics(Dgps &obj) {
                 message << "No matching ROS verbosity level for message: " << statement.diagnostic_message;
                 publishDiagnostics(WARN);
                 break;
+
         }
 
     }
@@ -304,9 +289,6 @@ void SenekaDgps::publishDiagnostics(DiagnosticFlag flag) {
 
 // takes position data from DGPS device and publishes it to given ROS topic;
 void SenekaDgps::publishPosition(Dgps::GpsData gps_data) {
-
-    message << "Publishing GPS position...";
-    publishDiagnostics(INFO);
 
     position.header.frame_id           = "dgps_frame_id";
     position.header.stamp              = ros::Time::now();
