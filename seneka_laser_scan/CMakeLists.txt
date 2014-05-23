@@ -14,3 +14,5 @@ include_directories(include ${catkin_INCLUDE_DIRS})
 
 add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.cpp)
 target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+
+add_dependencies(${PROJECT_NAME} laser_assembler_gencpp)
