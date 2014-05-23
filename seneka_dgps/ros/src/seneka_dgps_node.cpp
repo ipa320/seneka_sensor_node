@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
         ROS_ERROR("Press ENTER to continue.");
         if (cin.get() == '\n') {}
 
-        #endif NDEBUG
+        #endif
 
         ros::spinOnce();
         loop_rate.sleep();

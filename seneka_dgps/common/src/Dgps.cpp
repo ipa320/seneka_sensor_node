@@ -259,7 +259,7 @@ bool Dgps::getDgpsData() {
     unsigned char packet_type   = 0x56; // this command packet is of type "GETRAW" (56h);
     unsigned char length        = 0x03; // length of data part;
     unsigned char data_type     = 0x01; // raw data type:   position record --> type    = 00000001 (binary);
-    unsigned char flags         = 0x00; // raw data format: concise         --> flags   = 00000001 (binary);
+    unsigned char flags         = 0x01; // raw data format: concise         --> flags   = 00000001 (binary);
     unsigned char reserved      = 0x00; // tail
     unsigned char checksum;
     unsigned char etx           = 0x03;
