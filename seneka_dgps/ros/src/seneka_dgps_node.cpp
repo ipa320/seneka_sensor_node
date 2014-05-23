@@ -180,13 +180,13 @@ int main(int argc, char** argv) {
 
         }
 
-        // #ifndef NDEBUG
+        #ifndef NDEBUG
 
         // stop here after one cycle
         ROS_ERROR("Press ENTER to continue.");
         if (cin.get() == '\n') {}
 
-        // #endif NDEBUG
+        #endif NDEBUG
 
         ros::spinOnce();
         loop_rate.sleep();

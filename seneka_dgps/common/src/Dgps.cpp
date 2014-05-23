@@ -259,7 +259,7 @@ bool Dgps::getDgpsData() {
     unsigned char packet_type   = 0x56; // this command packet is of type "GETRAW" (56h);
     unsigned char length        = 0x03; // length of data part;
     unsigned char data_type     = 0x01; // raw data type:   position record --> type    = 00000001 (binary);
-    unsigned char flags         = 0x01; // raw data format: concise         --> flags   = 00000001 (binary);
+    unsigned char flags         = 0x00; // raw data format: concise         --> flags   = 00000001 (binary);
     unsigned char reserved      = 0x00; // tail
     unsigned char checksum;
     unsigned char etx           = 0x03;
@@ -291,33 +291,69 @@ bool Dgps::getDgpsData() {
     // buffer for expected reply packet;
     // the size of the buffer is equal to the maximum size a "RAWDATA" (57h) reply packet 
     // of type 57h position record can get;
-    // maximum_size = 8 bytes + 78 bytes + 2 * N bytes + 2 bytes = 111  bytes; (where N, the number of used sattelites, is 12);
+    // maximum_size = 8 bytes + 78 bytes + 2 * N bytes + 2 bytes = 112  bytes; (where N, the number of used sattelites, is 12);
     // minimum_size = 8 bytes + 78 bytes + 2 * N bytes + 2 bytes = 88   bytes; (where N, the number of used sattelites, is 0);
     // see Trimble BD982 GNSS Receiver Manual, p. 139;
-    unsigned char buffer[111] = {0};
+    unsigned char buffer[112+16] = {0};
     
     // reading possible response from serial port;
     int bytes_received  = 0;
-    bytes_received      = m_SerialIO.readNonBlocking((char*) buffer, 111); // function returns number of bytes which have been received;
+    bytes_received      = m_SerialIO.readNonBlocking((char*) buffer, (112+16)); // function returns number of bytes which have been received;
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
 
-    // #ifndef NDEBUG
+    int debug_bytes_received = bytes_received - 16;
 
-    std::cout << endl << "#########################" << endl;
+    unsigned char debug_buffer[112] = {0};
 
-    std::cout << "bytes_received: " << bytes_received;
+    int j = 16;
 
-    for (int i = 0; i < 111; i++) {
-        std::cout << "\nByte " << i << ":   ";
-        printf("%x", buffer[i]);
+    for (int i = 0; i < 112; i++) {
+
+        debug_buffer[i] = buffer[j];
+
+        j++;
+
     }
 
-    std::cout << endl << "#########################" << endl;
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
 
-    // #endif
+    #ifndef NDEBUG
+
+    std::cout << endl << endl << "\t\t\t------------------------------" << endl << endl;
+
+    std::cout << "bytes_received:\t\t" << bytes_received << endl;
+    std::cout << "debug_bytes_received:\t" << debug_bytes_received << endl;
+
+
+    int k = 16;
+
+    for (int i = 0; i < (112+16); i++) {
+
+        std::cout << "\nbuffer[" << i << "]:\t";
+        printf("%x", buffer[i]);
+
+        if (!(i >= 112)) {
+
+            std::cout << "\tbuffer[" << k << "]:\t";
+            printf("%x", buffer[k]);
+
+            std::cout << "\tdebug_buffer[" << i <<"]:\t";
+            printf("%x", debug_buffer[i]);
+
+        }
+
+        k++;
+        
+    }
+
+    std::cout << endl << endl << "\t\t\t------------------------------" << endl << endl;
+
+    #endif
 
     /**************************************************/
     /**************************************************/
@@ -326,7 +362,7 @@ bool Dgps::getDgpsData() {
     // raw analysis of received data;
 
     // checking if there has been a response at all;
-    if (!(bytes_received > 0)) {
+    if (!(debug_bytes_received > 0)) {
 
         msg << "Device does not respond.";
         transmitStatement(ERROR);
@@ -336,7 +372,7 @@ bool Dgps::getDgpsData() {
     }
 
     // checking for possible "NAK" (15h) reply packet;
-    else if (!(buffer[0] != 15)) {
+    else if (!(debug_buffer[0] != 15)) {
 
         msg << "Response packet is \"NAK\" (15h). Device cannot fullfill request.";
         transmitStatement(WARNING);
@@ -346,7 +382,7 @@ bool Dgps::getDgpsData() {
     }
 
     // checking for legal packet size;
-    else if (!(88 >= bytes_received <= 111)) {
+    else if (!(88 >= debug_bytes_received <= 112)) {
 
         msg << "Received packet has wrong size.";
         transmitStatement(WARNING);
@@ -356,7 +392,7 @@ bool Dgps::getDgpsData() {
     }
 
     // checking for packet head (stx);
-    else if (buffer[0] != 0x02) {
+    else if (debug_buffer[0] != 0x02) {
 
         msg << "First byte of received packet is not stx (0x02).";
         transmitStatement(WARNING);
@@ -366,7 +402,7 @@ bool Dgps::getDgpsData() {
     }
 
     // checking for packet tail (etx)
-    else if (buffer[bytes_received-1] != 0x03) {
+    else if (debug_buffer[debug_bytes_received-1] != 0x03) {
 
         msg << "Last byte of received packet is not etx (0x03).";
         transmitStatement(WARNING);
@@ -377,7 +413,7 @@ bool Dgps::getDgpsData() {
 
     // checking for packet type;
     // must be "RAWDATA" (57h);
-    else if (buffer[2] != 0x57) {
+    else if (debug_buffer[2] != 0x57) {
 
         msg << "Received packet has wrong type.";
         transmitStatement(WARNING);
@@ -388,7 +424,7 @@ bool Dgps::getDgpsData() {
 
     // checking for record type;
     // must be "Position Data" (01h);
-    else if (buffer[4] != 0x01) {
+    else if (debug_buffer[4] != 0x01) {
 
         msg << "Received packet has wrong record type.";
         transmitStatement(WARNING);
@@ -400,7 +436,7 @@ bool Dgps::getDgpsData() {
     // checking pager counter;
     // must be 11h for position records;
     // 11 hex = 00010001 binary --> means page 01 of 01;
-    else if (buffer[5] != 0x11) {
+    else if (debug_buffer[5] != 0x11) {
 
         msg << "Received packet has wrong page counter value.";
         transmitStatement(WARNING);
@@ -419,7 +455,7 @@ bool Dgps::getDgpsData() {
 
         // hereby called functions analyze the received packet in-depth, structure it, extract and finnaly serve GPS data;
         // if everything works fine, GPS data is getting stored in Dgps::GpsData gps_data;
-        if (!analyzeData(buffer, bytes_received)) {
+        if (!analyzeData(debug_buffer, debug_bytes_received)) {
 
             msg << "Failed to gather GPS data.";
             transmitStatement(WARNING);
@@ -429,9 +465,6 @@ bool Dgps::getDgpsData() {
         }
 
         else {
-
-            msg << "Updated GPS data.";
-            transmitStatement(INFO);
 
             return true;
 
@@ -627,7 +660,16 @@ bool Dgps::extractGpsData() {
     /**************************************************/
     /**************************************************/
 
-    // some checking may be added here...;
+    if (!(gps_data.number_of_SVs > 0)) {
+
+        msg << "Currently no tracked sattelites.";
+        transmitStatement(WARNING);
+
+        return true; // return true, because this is a possible state and not an error!;
+
+    }
+
+    // some further checking may be added here...;
     // do not forget to return false in case of errors!;
 
     return true;

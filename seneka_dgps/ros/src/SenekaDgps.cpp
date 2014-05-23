@@ -65,7 +65,7 @@ SenekaDgps::SenekaDgps() {
     // initialize default parameters
     position_topic      = "/position";
     diagnostics_topic   = "/diagnostics";
-    serial_port         = "/dev/ttyUSB1";
+    serial_port         = "/dev/ttyUSB0";
     serial_baudrate     = 38400;            // [] = Bd
     publishrate         = 1;                // [] = Hz; must be <= 50 Hz!
 
