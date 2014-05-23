@@ -11,6 +11,7 @@ find_package(catkin REQUIRED
   roscpp
   sensor_msgs
   diagnostic_msgs
+  seneka_msg
 )
 
 ###################################
@@ -23,12 +24,14 @@ find_package(catkin REQUIRED
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
-  INCLUDE_DIRS 
+  INCLUDE_DIRS
+    ros/include
     common/include
   CATKIN_DEPENDS
     roscpp
     sensor_msgs
     diagnostic_msgs
+    seneka_msg
 )
 
 ###########
@@ -38,15 +41,18 @@ catkin_package(
 ## Specify additional locations of header files
 ## Your package locations should be listed before other locations
 include_directories(
+  ros/include
   common/include
   ${catkin_INCLUDE_DIRS}
 )
 
 ## Declare a cpp executable
-add_executable(seneka_dgps ros/src/seneka_dgps.cpp common/src/Dgps.cpp common/src/SerialIO.cpp)
+add_executable(seneka_dgps_node ros/src/seneka_dgps_node.cpp ros/src/SenekaDgps.cpp common/src/Dgps.cpp common/src/SerialIO.cpp)
+
+add_dependencies(seneka_dgps_node seneka_msg_gencpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(seneka_dgps
+target_link_libraries(seneka_dgps_node
   ${catkin_LIBRARIES}
 )
 
@@ -57,9 +63,8 @@ target_link_libraries(seneka_dgps
 # all install targets should use catkin DESTINATION variables
 # See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
 ## Mark executables and/or libraries for installation
-install(TARGETS seneka_dgps
+install(TARGETS seneka_dgps_node
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   RUNTIME DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
-

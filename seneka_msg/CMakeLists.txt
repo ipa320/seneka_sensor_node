@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(seneka_srv)
+project(seneka_msg)
 
 # set build type
 set(CMAKE_BUILD_TYPE Release)
@@ -9,6 +9,8 @@ set(CMAKE_BUILD_TYPE Release)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  std_msgs
+  sensor_msgs
   message_generation
 )
 
@@ -16,31 +18,19 @@ find_package(catkin REQUIRED COMPONENTS
 ## Declare ROS messages and services ##
 #######################################
 
-## Generate services in the 'srv' folder
-add_service_files(
+## Generate services in the 'msg' folder
+add_message_files(
   DIRECTORY
-    srv
+    msg
   FILES
-    backLightCompensation.srv
-    debugScreen.srv
-    focusAuto.srv
-    focusNearLimit.srv
-    focus.srv
-    infraredCutFilterAuto.srv
-    infraredCutFilter.srv
-    noiseReduction.srv
-    pictureEffect.srv
-    statusDisplay.srv
-    streaming.srv
-    titleDisplay.srv
-    titleText.srv
-    videoMode.srv
-    zoom.srv
+    dgpsPosition.msg
 )
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
-#  DEPENDENCIES
+  DEPENDENCIES
+  std_msgs
+  sensor_msgs
 )
 
 ###################################
