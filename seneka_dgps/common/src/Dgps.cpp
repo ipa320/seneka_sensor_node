@@ -20,7 +20,10 @@
 * Modified 03/2014: David Bertram, E-Mail: davidbertram@gmx.de
 * Modified 04/2014: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 *
-* Description:
+* Description: The seneka_dgps package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* It implements a GNU/Linux driver for the Trimble BD982 GNSS Receiver Module as well as a ROS publisher node "DGPS", which acts as a wrapper for the driver.
+* The ROS node "DGPS" publishes GPS data gathered by the DGPS device driver.
+* This package might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.
 *
 *****************************************************************
 *
@@ -289,34 +292,19 @@ bool Dgps::getDgpsData() {
     /**************************************************/
 
     // buffer for expected reply packet;
-    // the size of the buffer is equal to the maximum size a "RAWDATA" (57h) reply packet 
-    // of type 57h position record can get;
+    // the size of the buffer is equal to the maximum size a "RAWDATA" (57h) reply packet of type 57h position record can get;
     // maximum_size = 8 bytes + 78 bytes + 2 * N bytes + 2 bytes = 112  bytes; (where N, the number of used sattelites, is 12);
     // minimum_size = 8 bytes + 78 bytes + 2 * N bytes + 2 bytes = 88   bytes; (where N, the number of used sattelites, is 0);
     // see Trimble BD982 GNSS Receiver Manual, p. 139;
-    unsigned char buffer[112+16] = {0};
+    unsigned char buffer[112+16] = {0}; // why 112+16? --> see debugBuffer() function comment;
     
-    // reading possible response from serial port;
+    // reading response from serial port;
     int bytes_received  = 0;
     bytes_received      = m_SerialIO.readNonBlocking((char*) buffer, (112+16)); // function returns number of bytes which have been received;
 
-    /**************************************************/
-    /**************************************************/
-    /**************************************************/
-
-    int debug_bytes_received = bytes_received - 16;
-
-    unsigned char debug_buffer[112] = {0};
-
-    int j = 16;
-
-    for (int i = 0; i < 112; i++) {
-
-        debug_buffer[i] = buffer[j];
-
-        j++;
-
-    }
+    // see comment at debugBuffer() function;
+    int bytes_received_debugged = bytes_received - 16;
+    unsigned char * debugged_buffer = debugBuffer(buffer);
 
     /**************************************************/
     /**************************************************/
@@ -324,10 +312,16 @@ bool Dgps::getDgpsData() {
 
     #ifndef NDEBUG
 
+    // this debug output lists reply packet from receiver module after requesting a position record with "GETRAW" (56h) command;
+    // there are three columns:
+    // first column:    originally received data frame buffer[] from begin to end,
+    // second column:   originally received data frame buffer[] omitting the first 16 bytes,
+    // third column:    resulting debugged data frame debugged_buffer[] (must be the same as buffer[] in column 2);
+
     std::cout << endl << endl << "\t\t\t------------------------------" << endl << endl;
 
     std::cout << "bytes_received:\t\t" << bytes_received << endl;
-    std::cout << "debug_bytes_received:\t" << debug_bytes_received << endl;
+    std::cout << "bytes_received_debugged:\t" << bytes_received_debugged << endl;
 
 
     int k = 16;
@@ -342,8 +336,8 @@ bool Dgps::getDgpsData() {
             std::cout << "\tbuffer[" << k << "]:\t";
             printf("%x", buffer[k]);
 
-            std::cout << "\tdebug_buffer[" << i <<"]:\t";
-            printf("%x", debug_buffer[i]);
+            std::cout << "\tdebugged_buffer[" << i <<"]:\t";
+            printf("%x", debugged_buffer[i]);
 
         }
 
@@ -362,7 +356,7 @@ bool Dgps::getDgpsData() {
     // raw analysis of received data;
 
     // checking if there has been a response at all;
-    if (!(debug_bytes_received > 0)) {
+    if (!(bytes_received_debugged > 0)) {
 
         msg << "Device does not respond.";
         transmitStatement(ERROR);
@@ -372,7 +366,7 @@ bool Dgps::getDgpsData() {
     }
 
     // checking for possible "NAK" (15h) reply packet;
-    else if (!(debug_buffer[0] != 15)) {
+    else if (!(debugged_buffer[0] != 15)) {
 
         msg << "Response packet is \"NAK\" (15h). Device cannot fullfill request.";
         transmitStatement(WARNING);
@@ -382,7 +376,7 @@ bool Dgps::getDgpsData() {
     }
 
     // checking for legal packet size;
-    else if (!(88 >= debug_bytes_received <= 112)) {
+    else if (!(88 >= bytes_received_debugged <= 112)) {
 
         msg << "Received packet has wrong size.";
         transmitStatement(WARNING);
@@ -392,7 +386,7 @@ bool Dgps::getDgpsData() {
     }
 
     // checking for packet head (stx);
-    else if (debug_buffer[0] != 0x02) {
+    else if (debugged_buffer[0] != 0x02) {
 
         msg << "First byte of received packet is not stx (0x02).";
         transmitStatement(WARNING);
@@ -402,7 +396,7 @@ bool Dgps::getDgpsData() {
     }
 
     // checking for packet tail (etx)
-    else if (debug_buffer[debug_bytes_received-1] != 0x03) {
+    else if (debugged_buffer[bytes_received_debugged-1] != 0x03) {
 
         msg << "Last byte of received packet is not etx (0x03).";
         transmitStatement(WARNING);
@@ -413,7 +407,7 @@ bool Dgps::getDgpsData() {
 
     // checking for packet type;
     // must be "RAWDATA" (57h);
-    else if (debug_buffer[2] != 0x57) {
+    else if (debugged_buffer[2] != 0x57) {
 
         msg << "Received packet has wrong type.";
         transmitStatement(WARNING);
@@ -424,7 +418,7 @@ bool Dgps::getDgpsData() {
 
     // checking for record type;
     // must be "Position Data" (01h);
-    else if (debug_buffer[4] != 0x01) {
+    else if (debugged_buffer[4] != 0x01) {
 
         msg << "Received packet has wrong record type.";
         transmitStatement(WARNING);
@@ -436,7 +430,7 @@ bool Dgps::getDgpsData() {
     // checking pager counter;
     // must be 11h for position records;
     // 11 hex = 00010001 binary --> means page 01 of 01;
-    else if (debug_buffer[5] != 0x11) {
+    else if (debugged_buffer[5] != 0x11) {
 
         msg << "Received packet has wrong page counter value.";
         transmitStatement(WARNING);
@@ -455,7 +449,7 @@ bool Dgps::getDgpsData() {
 
         // hereby called functions analyze the received packet in-depth, structure it, extract and finnaly serve GPS data;
         // if everything works fine, GPS data is getting stored in Dgps::GpsData gps_data;
-        if (!analyzeData(debug_buffer, debug_bytes_received)) {
+        if (!analyzeData(debugged_buffer, bytes_received_debugged)) {
 
             msg << "Failed to gather GPS data.";
             transmitStatement(WARNING);
@@ -511,7 +505,7 @@ bool Dgps::analyzeData(unsigned char *  buffer,         // points to received pa
 
     }
 
-    // --- footer ---
+    // --- tail ---
     temp_packet.checksum    = buffer[temp_packet.length + 4]        % 256;
     temp_packet.etx         = buffer[temp_packet.length + 4 + 1]    % 256;
 
@@ -673,6 +667,35 @@ bool Dgps::extractGpsData() {
     // do not forget to return false in case of errors!;
 
     return true;
+
+}
+
+/**************************************************/
+/**************************************************/
+/**************************************************/
+
+// for some reason, instead of just responding the requested "RAWDATA" (57h) position record packet, 
+// the receiver module applys additional 16 bytes of data on top of the reply packet;
+// these 16 bytes of data form another separate packet, including header, data part and tail;
+// for now, I couldn't figure out why;
+// to avoid this kind of mistake, the following workaround is necessary;
+unsigned char * Dgps::debugBuffer(unsigned char * buffer) {
+
+    unsigned char * debugged_buffer = new unsigned char [112];
+
+    int j = 16;
+
+    // this assigns debugged_buffer[] with the byte values of the original received bytes in buffer[],
+    // omitting the first 16 bytes;
+    for (int i = 0; i < 112; i++) {
+
+        debugged_buffer[i] = buffer[j];
+
+        j++;
+
+    }
+
+    return debugged_buffer;
 
 }
 

@@ -20,7 +20,10 @@
 * Modified 03/2014: David Bertram, E-Mail: davidbertram@gmx.de
 * Modified 04/2014: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 *
-* Description:
+* Description: The seneka_dgps package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* It implements a GNU/Linux driver for the Trimble BD982 GNSS Receiver Module as well as a ROS publisher node "DGPS", which acts as a wrapper for the driver.
+* The ROS node "DGPS" publishes GPS data gathered by the DGPS device driver.
+* This package might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.
 *
 *****************************************************************
 *
@@ -68,6 +71,7 @@ int main(int argc, char** argv) {
     SenekaDgps      cSenekaDgps;
     Dgps            cDgps;
 
+    // gather latest diagnostic messages;
     cSenekaDgps.extractDiagnostics(cDgps);
 
     int counter = 0;
@@ -95,7 +99,7 @@ int main(int argc, char** argv) {
 
         counter++;
 
-        sleep(1); // delay
+        sleep(1); // delay;
 
     }
 
@@ -113,8 +117,8 @@ int main(int argc, char** argv) {
     /**************************************************/
     /**************************************************/
 
-    // test the communications link by sending protocol request "ENQ" (05h);
-    // see BD982 manual, p. 65;
+    // test the communication link by sending protocol request "ENQ" (05h);
+    // see Trimble BD982 GNSS Receiver manual, p. 65;
 
     bool    connection_is_ok    = false;    // connection check response;
             counter             = 0;        // reset counter; count of how many times connection check has been retried;
@@ -137,7 +141,7 @@ int main(int argc, char** argv) {
 
         counter++;
 
-        sleep(1); // delay
+        sleep(1); // delay;
 
     }
 
@@ -162,14 +166,14 @@ int main(int argc, char** argv) {
 
     while (cSenekaDgps.nh.ok()) {
 
-        // requests GPS data from GPS device;
+        // request GPS data from GPS device;
         // hereby called functions analyze the received packet in-depth, structure it, extract and finnaly serve GPS data;
         // if everything works fine, GPS data is getting stored in Dgps::GpsData gps_data;
         if(cDgps.getDgpsData()) {
 
             cSenekaDgps.extractDiagnostics(cDgps);
 
-            // gathering data from DGPS instance and publishing it to given ROS topic
+            // gathering data from DGPS instance and publishing it to given ROS topic;
             cSenekaDgps.publishPosition(cDgps.getPosition());
 
         }
@@ -182,14 +186,14 @@ int main(int argc, char** argv) {
 
         #ifndef NDEBUG
 
-        // stop here after one cycle
+        // stop here after one cycle;
         ROS_ERROR("Press ENTER to continue.");
         if (cin.get() == '\n') {}
 
         #endif
 
         ros::spinOnce();
-        loop_rate.sleep();
+        loop_rate.sleep(); // delay;
 
     }
 

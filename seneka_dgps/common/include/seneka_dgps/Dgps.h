@@ -20,7 +20,10 @@
 * Modified 03/2014: David Bertram, E-Mail: davidbertram@gmx.de
 * Modified 04/2014: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 *
-* Description:
+* Description: The seneka_dgps package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* It implements a GNU/Linux driver for the Trimble BD982 GNSS Receiver Module as well as a ROS publisher node "DGPS", which acts as a wrapper for the driver.
+* The ROS node "DGPS" publishes GPS data gathered by the DGPS device driver.
+* This package might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.
 *
 *****************************************************************
 *
@@ -191,6 +194,13 @@ class Dgps {
         GpsData getPosition() {return gps_data;}
 
         // helper functions;
+
+        // for some reason, instead of just responding the requested "RAWDATA" (57h) position record packet, 
+        // the receiver module applys additional 16 bytes of data on top of the reply packet;
+        // these 16 bytes of data form another separate packet, including header, data part and tail;
+        // for now, I couldn't figure out why;
+        // to avoid this kind of mistake, the following workaround is necessary;
+        unsigned char * debugBuffer(unsigned char * buffer);
 
         enum DataType {
 
