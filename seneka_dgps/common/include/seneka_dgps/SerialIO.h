@@ -18,7 +18,10 @@
 *
 * Date of creation: Jan 2013
 *
-* Description:
+* Description: The seneka_dgps package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* It implements a GNU/Linux driver for the Trimble BD982 GNSS Receiver Module as well as a ROS publisher node "DGPS", which acts as a wrapper for the driver.
+* The ROS node "DGPS" publishes GPS data gathered by the DGPS device driver.
+* This package might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.
 *
 *****************************************************************
 *
