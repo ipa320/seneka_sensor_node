@@ -298,7 +298,26 @@ bool Dgps::getDgpsData() {
     
     // reading possible response from serial port;
     int bytes_received  = 0;
-    bytes_received      = m_SerialIO.readNonBlocking((char*) buffer, 1020); // function returns number of bytes which have been received;
+    bytes_received      = m_SerialIO.readNonBlocking((char*) buffer, 111); // function returns number of bytes which have been received;
+
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
+
+    // #ifndef NDEBUG
+
+    std::cout << endl << "#########################" << endl;
+
+    std::cout << "bytes_received: " << bytes_received;
+
+    for (int i = 0; i < 111; i++) {
+        std::cout << "\nByte " << i << ":   ";
+        printf("%x", buffer[i]);
+    }
+
+    std::cout << endl << "#########################" << endl;
+
+    // #endif
 
     /**************************************************/
     /**************************************************/
@@ -400,9 +419,21 @@ bool Dgps::getDgpsData() {
 
         // hereby called functions analyze the received packet in-depth, structure it, extract and finnaly serve GPS data;
         // if everything works fine, GPS data is getting stored in Dgps::GpsData gps_data;
-        if (analyzeData(buffer, bytes_received)) {
+        if (!analyzeData(buffer, bytes_received)) {
 
-        return true;
+            msg << "Failed to gather GPS data.";
+            transmitStatement(WARNING);
+
+            return false;
+
+        }
+
+        else {
+
+            msg << "Updated GPS data.";
+            transmitStatement(INFO);
+
+            return true;
 
         }
 
@@ -431,13 +462,13 @@ bool Dgps::analyzeData(unsigned char *  buffer,         // points to received pa
     temp_packet.packet_type = buffer[2] % 256;
     temp_packet.length      = buffer[3] % 256;
 
-    // --- data part: header ---
+    // --- data part header ---
     temp_packet.record_type                 = buffer[4] % 256;
     temp_packet.page_counter                = buffer[5] % 256;
     temp_packet.reply_number                = buffer[6] % 256;
     temp_packet.record_interpretation_flags = buffer[7] % 256;
 
-    // --- data part: data ---
+    // --- data part ---
 
     temp_packet.data_bytes = new char[temp_packet.length];
 
