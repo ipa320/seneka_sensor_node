@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<package>
+  <name>seneka_can</name>
+  <version>0.0.0</version>
+  <description>The seneka_can package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA. It implements a ROS wrapper for the PEAK System PCAn-Basic API in form of a ROS service node "CAN". The ROS node advertises services to communicate with CAN devices. This package might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.</description>
+
+  <maintainer email="Matthias.Gruhler@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
+
+  <license>LGPL</license>
+
+
+  <author email="Ciby.Mathew@ipa.fraunhofer.de">Thorsten Kannacher</author>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+  <build_depend>roscpp</build_depend>
+  <build_depend>sensor_msgs</build_depend>
+  <build_depend>diagnostic_msgs</build_depend>
+  <build_depend>seneka_msg</build_depend>
+  
+  <run_depend>roscpp</run_depend>
+  <run_depend>sensor_msgs</run_depend>     
+  <run_depend>diagnostic_msgs</run_depend>
+  <run_depend>seneka_msg</run_depend>
+
+</package>
