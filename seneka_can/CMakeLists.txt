@@ -12,7 +12,6 @@ find_package(
 catkin_package(
   INCLUDE_DIRS
     ros/include
-    common/include
   CATKIN_DEPENDS
     roscpp
     seneka_srv
