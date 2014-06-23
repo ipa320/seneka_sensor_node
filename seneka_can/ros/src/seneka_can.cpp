@@ -17,14 +17,11 @@
 * Supervised by: Matthias Gruhler, E-Mail: Matthias.Gruhler@ipa.fraunhofer.de
 *
 * Date of creation: Jun 2014
-*
-* Modified xx/20xx:
+* Modified xx/20xx: 
 *
 * Description:
-* The seneka_can package is part of the seneka_sensor_node metapackage, 
-* developed for the SeNeKa project at Fraunhofer IPA. 
-* It implements a ROS wrapper for the PEAK System PCAn-Basic API in form of a ROS service node "CAN".
-* The ROS node advertises services to communicate with CAN devices.
+* The seneka_can package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* By implementing a simple ROS wrapper node for SocketCAN, it offers several services to communicate with CAN devices.
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
 *
@@ -59,172 +56,135 @@
 *
 ****************************************************************/
 
-/**************************************************/
-/**************************************************/
-/**************************************************/
-
-//  source code sections
-//
-//      -> pcanwrite
-//      -> pcanread
-//      -> pcaneventread
-//
-//  copied from PEAK System PCAN-Basic CAN-Software-API (Linux, C++)
-
-//  see http://www.peak-system.com/PCAN-Basic.239.0.html (20.06.2014)
-//  and consider the following lines
-//
-//  ------------------------------------------------------------------
-//  Author : Thomas Haber (thomas@toem.de)
-//  Last change: 18.06.2010
-//
-//  Language: C++
-//  ------------------------------------------------------------------
-//
-//  Copyright (C) 1999-2010  PEAK-System Technik GmbH, Darmstadt
-//  more Info at http://www.peak-system.com
-//  ------------------------------------------------------------------
-//
-// linux@peak-system.com
-// www.peak-system.com
-//
-//  ------------------------------------------------------------------
-//  History:
-//  07-11-2013 Stephane Grosjean
-//  - Move DWORD definition from "unsigned long" to "__u32" to run on 64-bits
-//    Kernel
-//  - Change initital bitrate from 250K to 500K (default pcan driver bitrate)
-//
-// This program is free software; you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation; either version 2 of the License, or
-// (at your option) any later version.
-//
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-//
-// You should have received a copy of the GNU General Public License
-// along with this program; if not, write to the Free Software
-// Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+#include <seneka_can/SenekaCan.h>
 
 /**************************************************/
 /**************************************************/
 /**************************************************/
 
-#include <ros/ros.h>
+// constructor
+SenekaCan::SenekaCan() {
 
-#include <stdio.h>
-#include <unistd.h>
-#include <asm/types.h>
+  nh = ros::NodeHandle("~");
 
-#define DWORD  __u32
-#define WORD   unsigned short
-#define BYTE   unsigned char
-#define LPSTR  char*
-#include <pcanbasic/PCANBasic.h>
+  // initialize default parameters;
+  transmission_srv_ident  = "/can_send";
+  receiving_srv_ident     = "/can_read";
 
-#include <pthread.h> 
+  transmission_srv  = nh.advertiseService(transmission_srv_ident, &SenekaCan::SendMsg, this);
+  receiving_srv     = nh.advertiseService(receiving_srv_ident, &SenekaCan::ReadMsg, this);
 
-/***********************************************************/
-/*************** main program seneka_can.cpp ***************/
-/***********************************************************/
+  /*****************************************/
+  /*************** SocketCAN ***************/
+  /*****************************************/
+
+  // create the socket;
+  skt = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+ 
+  // locate the interface you wish to use;
+  strcpy(ifr.ifr_name, "can0");
+  // ifr.ifr_ifindex gets filled with that device's index;
+  ioctl(skt, SIOCGIFINDEX, &ifr);
+ 
+  // select that CAN interface, and bind the socket to it;
+  addr.can_family = AF_CAN;
+  addr.can_ifindex = ifr.ifr_ifindex;
+  bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
+
+  /*****************************************/
+  /*****************************************/
+  /*****************************************/
+
+}
+
+// destructor
+SenekaCan::~SenekaCan(){}
+
+/**************************************************/
+/**************************************************/
+/**************************************************/
+
+// function to send a message to the CAN bus;
+bool SenekaCan::SendMsg(seneka_srv::canSendMsg::Request  &req,
+                        seneka_srv::canSendMsg::Response &res) {
+
+  struct can_frame frame;
+
+  frame.can_id  = req.can_id;
+  frame.can_dlc = req.can_dlc;
+
+  for (int i = 0; i < 8; i++) {
+
+    frame.data[i] = req.data[i];
+
+  }
+
+  res.bytes_sent  = write(skt, &frame, sizeof(frame));
+
+  if (res.bytes_sent != 0) {
+
+    return true;
+
+  }
+
+}
+
+/**************************************************/
+/**************************************************/
+/**************************************************/
+
+// function to read a message from the CAN bus;
+bool SenekaCan::ReadMsg(seneka_srv::canReadMsg::Request  &req,
+                        seneka_srv::canReadMsg::Response &res) {
+
+  struct can_frame frame;
+
+  res.bytes_read = read(skt, &frame, sizeof(frame));
+
+  if (res.bytes_read != 0) {
+
+    res.can_id  = frame.can_id;
+    res.can_dlc = frame.can_dlc;
+
+    for (int i = 0; i < 8; i++) {
+
+      res.data[i] = frame.data[i];
+
+    }
+
+    return true;
+
+  }
+
+  else {
+
+    return false;
+
+  }
+
+}
+
+/*********************************************/
+/*************** main function ***************/
+/*********************************************/
 
 int main(int argc, char** argv) {
 
-    // ROS initialization; apply "CAN" as node name;
-    ros::init(argc, argv, "CAN");
+  // ROS initialization; apply "seneka_can" as node name;
+  ros::init(argc, argv, "seneka_can");
 
-    TPCANMsg Message;
-    TPCANStatus Status;
-    unsigned long ulIndex = 0;
-    fd_set Fds;
+  SenekaCan cSenekaCan;
 
-    Status = CAN_Initialize(PCAN_USBBUS1, PCAN_BAUD_500K, 0, 0, 0);
-    printf("Initialize CAN: %i\n",(int)Status);
+  while(cSenekaCan.nh.ok()) {
 
-    /**************************************************/
-    /**************************************************/
-    /**************************************************/
-/* 
-    // pcanwrite
+    ros::spin();
 
-    Message.ID = 0x77;
-    Message.LEN = 8;
-    Message.MSGTYPE = PCAN_MESSAGE_EXTENDED;
-    Message.DATA[0]=0;
+  }
 
-    while(1)
-        while ((Status=CAN_Write(PCAN_USBBUS1,&Message)) == PCAN_ERROR_OK) {
-            Message.DATA[0]++;
-            ulIndex++;
-            if ((ulIndex % 1000) == 0)
-                printf("  - T Message %i\n", (int)ulIndex);
-        }
+  return 0;
 
-    printf("STATUS %i\n", (int)Status);
-*/
-    /**************************************************/
-    /**************************************************/
-    /**************************************************/
-/*
-    // pcanread
+}
 
-    while (1) {
-        while ((Status=CAN_Read(PCAN_USBBUS1,&Message,NULL)) == PCAN_ERROR_QRCVEMPTY)
-            usleep(1000);
-        if (Status != PCAN_ERROR_OK) {
-            printf("Error 0x%x\n",(int)Status);
-            break;
-        }
-
-        printf("  - R ID:%4x LEN:%1x DATA:%02x %02x %02x %02x %02x %02x %02x %02x\n",
-            (int)Message.ID, (int)Message.LEN,
-            (int)Message.DATA[0], (int)Message.DATA[1],
-            (int)Message.DATA[2], (int)Message.DATA[3],
-            (int)Message.DATA[4], (int)Message.DATA[5],
-            (int)Message.DATA[6], (int)Message.DATA[7]);
-    }
-*/
-    /**************************************************/
-    /**************************************************/
-    /**************************************************/
-/*
-    // pcaneventread
-
-    int fd;
-    CAN_GetValue(PCAN_USBBUS1, PCAN_RECEIVE_EVENT, &fd,sizeof(int));
-
-    // Watch stdin (fd 0) to see when it has input.
-    FD_ZERO(&Fds);
-    FD_SET(fd, &Fds);
-
-    while (select(fd+1, &Fds, NULL, NULL, NULL) > 0) {
-        Status = CAN_Read(PCAN_USBBUS1, &Message, NULL);
-        if (Status != PCAN_ERROR_OK) {
-            printf("Error 0x%x\n", (int) Status);
-            break;
-        }
-
-        printf("  - R ID:%4x LEN:%1x DATA:%02x %02x %02x %02x %02x %02x %02x %02x\n",
-                (int) Message.ID, (int) Message.LEN, (int) Message.DATA[0],
-                (int) Message.DATA[1], (int) Message.DATA[2],
-                (int) Message.DATA[3], (int) Message.DATA[4],
-                (int) Message.DATA[5], (int) Message.DATA[6],
-                (int) Message.DATA[7]);
-    }
-*/
-    /**************************************************/
-    /**************************************************/
-    /**************************************************/
-
-        ros::spinOnce();
-
-        return 0;
-
-    }
-
-    /**************************************************/
-    /**************************************************/
-    /**************************************************/
+/********************************************/
+/********************************************/
+/********************************************/
