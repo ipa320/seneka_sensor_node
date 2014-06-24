@@ -1,6 +1,6 @@
 /*!
 *****************************************************************
-* SenekaCan.h
+* SocketCan.h
 *
 * Copyright (c) 2013
 * Fraunhofer Institute for Manufacturing Engineering
@@ -10,7 +10,7 @@
 *
 * Repository name: seneka_sensor_node
 *
-* ROS package name: seneka_can
+* ROS package name: seneka_motor_control
 *
 * Author: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 * 
@@ -56,17 +56,12 @@
 *
 ****************************************************************/
 
-#ifndef SENEKA_CAN_H_
-#define SENEKA_CAN_H_
+#ifndef SENEKA_SOCKETCAN_H_
+#define SENEKA_SOCKETCAN_H_
 
 /****************************************/
 /*************** includes ***************/
 /****************************************/
-
-#include <ros/ros.h>
-
-#include <seneka_srv/canSendMsg.h>
-#include <seneka_srv/canReadMsg.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -87,15 +82,12 @@
 #endif
 
 /*****************************************/
-/*************** SenekaCan ***************/
+/*************** SocketCan ***************/
 /*****************************************/
 
-class SenekaCan {
+class SocketCan {
 
     private:
-
-        std::string transmission_srv_ident;
-        std::string receiving_srv_ident;
 
         int     skt;
         struct  ifreq ifr;
@@ -104,26 +96,112 @@ class SenekaCan {
     public:
 
         // constructor;
-        SenekaCan();
+        SocketCan();
 
         // destructor;
-        ~SenekaCan();
+        ~SocketCan();
 
-        // ROS instances (need to be public);
-        ros::NodeHandle nh;
+        // ...
+        bool SendMsg(void);
 
-        // ROS services;
-        ros::ServiceServer  transmission_srv,
-                            receiving_srv;
-
-        // service callback function
-        bool SendMsg(seneka_srv::canSendMsg::Request  &req,
-                     seneka_srv::canSendMsg::Response &res);
-
-        // service callback function
-        bool ReadMsg(seneka_srv::canReadMsg::Request  &req,
-                     seneka_srv::canReadMsg::Response &res);
+        // ...
+        bool ReadMsg(void);
 
 };
 
-#endif // SENEKA_CAN_H_
+// constructor
+SocketCan::SocketCan() {
+
+    // initialize default parameters;
+    // ...
+
+  /*****************************************/
+  /*************** SocketCAN ***************/
+  /*****************************************/
+
+  // create the socket;
+  skt = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+ 
+  // locate the interface you wish to use;
+  strcpy(ifr.ifr_name, "can0");
+  // ifr.ifr_ifindex gets filled with that device's index;
+  ioctl(skt, SIOCGIFINDEX, &ifr);
+ 
+  // select that CAN interface, and bind the socket to it;
+  addr.can_family = AF_CAN;
+  addr.can_ifindex = ifr.ifr_ifindex;
+  bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
+
+  /*****************************************/
+  /*****************************************/
+  /*****************************************/
+
+}
+
+// destructor
+SocketCan::~SocketCan(){}
+
+// function to send a message to the CAN bus;
+bool SocketCan::SendMsg(void) {
+
+  struct can_frame frame;
+/*
+  frame.can_id  = req.can_id;
+  frame.can_dlc = req.can_dlc;
+
+  for (int i = 0; i < frame.can_dlc; i++) {
+
+    frame.data[i] = req.data[i];
+
+  }
+
+  res.bytes_sent  = write(skt, &frame, sizeof(frame));
+
+  if (res.bytes_sent != 0) {
+
+    return true;
+
+  }
+*/
+
+  return true;
+
+}
+
+// function to read a message from the CAN bus;
+bool SocketCan::ReadMsg(void) {
+
+  struct can_frame frame;
+/*
+  res.bytes_read = read(skt, &frame, sizeof(frame));
+
+  if (res.bytes_read != 0) {
+
+    res.can_id  = frame.can_id;
+    res.can_dlc = frame.can_dlc;
+
+    res.data.clear();
+
+    for (int i = 0; i < frame.can_dlc; i++) {
+
+      res.data.push_back(frame.data[i]);
+
+    }
+
+    return true;
+
+  }
+
+  else {
+
+    return false;
+
+  }
+
+*/
+
+  return true;
+
+}
+
+#endif // SENEKA_SOCKETCAN_H_

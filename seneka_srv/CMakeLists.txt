@@ -23,8 +23,6 @@ add_service_files(
     srv
   FILES
     backLightCompensation.srv
-    canReadMsg.srv
-    canSendMsg.srv
     debugScreen.srv
     focusAuto.srv
     focusNearLimit.srv

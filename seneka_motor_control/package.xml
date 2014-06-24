@@ -2,15 +2,14 @@
 
 <package>
 
-  <name>seneka_can</name>
+  <name>seneka_motor_control</name>
   <version>0.0.0</version>
   <license>LGPL</license>
 
   <url>https://github.com/ipa320/seneka_sensor_node</url>
 
   <description>
-  The seneka_can package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
-  By implementing a simple ROS wrapper node for SocketCAN, it offers several services to communicate with CAN devices.
+  The seneka_motor_control package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
   This package might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.
   </description>
 
@@ -22,9 +21,7 @@
   <buildtool_depend>catkin</buildtool_depend>
   
   <build_depend>roscpp</build_depend>
-  <build_depend>seneka_srv</build_depend>
   
   <run_depend>roscpp</run_depend>
-  <run_depend>seneka_srv</run_depend>
 
 </package>

@@ -1,6 +1,6 @@
 /*!
 *****************************************************************
-* seneka_can.cpp
+* SocketCan.h
 *
 * Copyright (c) 2013
 * Fraunhofer Institute for Manufacturing Engineering
@@ -10,7 +10,7 @@
 *
 * Repository name: seneka_sensor_node
 *
-* ROS package name: seneka_can
+* ROS package name: seneka_motor_control
 *
 * Author: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 * 
@@ -21,7 +21,6 @@
 *
 * Description:
 * The seneka_can package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
-* By implementing a simple ROS wrapper node for SocketCAN, it offers several services to communicate with CAN devices.
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
 *
@@ -56,37 +55,67 @@
 *
 ****************************************************************/
 
-#include <seneka_can/SenekaCan.h>
+#ifndef SENEKA_SOCKETCAN_H_
+#define SENEKA_SOCKETCAN_H_
 
-/**************************************************/
-/**************************************************/
-/**************************************************/
+/****************************************/
+/*************** includes ***************/
+/****************************************/
 
-// constructor
-SenekaCan::SenekaCan() {
+#include <sys/types.h>
+#include <sys/socket.h>
+#include <sys/ioctl.h>
+#include <net/if.h>
+ 
+#include <linux/can.h>
+#include <linux/can/raw.h>
+#include <string.h>
+ 
+// at time of writing, these constants are not defined in the headers;
+#ifndef PF_CAN
+#define PF_CAN 29
+#endif
+ 
+#ifndef AF_CAN
+#define AF_CAN PF_CAN
+#endif
 
-  nh = ros::NodeHandle("~");
+/***********************************************/
+/*************** SocketCan class ***************/
+/***********************************************/
+
+
+
+        int     skt;
+        struct  ifreq ifr;
+        struct  sockaddr_can addr;
+
+
+
+        // function to send a message to the CAN bus;
+        bool SendMsg(void);
+
+        // function to read a message from the CAN bus;
+        bool ReadMsg(void);
+
+
+/********************************************************/
+/*************** SocketCan implementation ***************/
+/********************************************************/
+
 
   // initialize default parameters;
-  transmission_srv_ident  = "/can_send";
-  receiving_srv_ident     = "/can_read";
-
-  transmission_srv  = nh.advertiseService(transmission_srv_ident, &SenekaCan::SendMsg, this);
-  receiving_srv     = nh.advertiseService(receiving_srv_ident, &SenekaCan::ReadMsg, this);
-
-  /*****************************************/
-  /*************** SocketCAN ***************/
-  /*****************************************/
+  // ...
 
   // create the socket;
   skt = socket(PF_CAN, SOCK_RAW, CAN_RAW);
  
-  // locate the interface you wish to use;
+  // locate the interface;
   strcpy(ifr.ifr_name, "can0");
   // ifr.ifr_ifindex gets filled with that device's index;
   ioctl(skt, SIOCGIFINDEX, &ifr);
  
-  // select that CAN interface, and bind the socket to it;
+  // select that CAN interface and bind the socket to it;
   addr.can_family = AF_CAN;
   addr.can_ifindex = ifr.ifr_ifindex;
   bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
@@ -95,21 +124,13 @@ SenekaCan::SenekaCan() {
   /*****************************************/
   /*****************************************/
 
-}
 
-// destructor
-SenekaCan::~SenekaCan(){}
-
-/**************************************************/
-/**************************************************/
-/**************************************************/
 
 // function to send a message to the CAN bus;
-bool SenekaCan::SendMsg(seneka_srv::canSendMsg::Request  &req,
-                        seneka_srv::canSendMsg::Response &res) {
+bool SendMsg(void) {
 
   struct can_frame frame;
-
+/*
   frame.can_id  = req.can_id;
   frame.can_dlc = req.can_dlc;
 
@@ -126,19 +147,17 @@ bool SenekaCan::SendMsg(seneka_srv::canSendMsg::Request  &req,
     return true;
 
   }
+*/
+
+  return true;
 
 }
 
-/**************************************************/
-/**************************************************/
-/**************************************************/
-
 // function to read a message from the CAN bus;
-bool SenekaCan::ReadMsg(seneka_srv::canReadMsg::Request  &req,
-                        seneka_srv::canReadMsg::Response &res) {
+bool ReadMsg(void) {
 
   struct can_frame frame;
-
+/*
   res.bytes_read = read(skt, &frame, sizeof(frame));
 
   if (res.bytes_read != 0) {
@@ -164,29 +183,10 @@ bool SenekaCan::ReadMsg(seneka_srv::canReadMsg::Request  &req,
 
   }
 
-}
+*/
 
-/*********************************************/
-/*************** main function ***************/
-/*********************************************/
-
-int main(int argc, char** argv) {
-
-  // ROS initialization; apply "seneka_can" as node name;
-  ros::init(argc, argv, "seneka_can");
-
-  SenekaCan cSenekaCan;
-
-  while(cSenekaCan.nh.ok()) {
-
-    ros::spin();
-
-  }
-
-  return 0;
+  return true;
 
 }
 
-/********************************************/
-/********************************************/
-/********************************************/
+#endif // SENEKA_SOCKETCAN_H_
