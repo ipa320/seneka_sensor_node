@@ -113,7 +113,7 @@ bool SenekaCan::SendMsg(seneka_srv::canSendMsg::Request  &req,
   frame.can_id  = req.can_id;
   frame.can_dlc = req.can_dlc;
 
-  for (int i = 0; i < 8; i++) {
+  for (int i = 0; i < frame.can_dlc; i++) {
 
     frame.data[i] = req.data[i];
 
@@ -146,9 +146,11 @@ bool SenekaCan::ReadMsg(seneka_srv::canReadMsg::Request  &req,
     res.can_id  = frame.can_id;
     res.can_dlc = frame.can_dlc;
 
-    for (int i = 0; i < 8; i++) {
+    res.data.clear();
 
-      res.data[i] = frame.data[i];
+    for (int i = 0; i < frame.can_dlc; i++) {
+
+      res.data.push_back(frame.data[i]);
 
     }
 

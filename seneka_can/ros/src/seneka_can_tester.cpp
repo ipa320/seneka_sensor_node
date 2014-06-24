@@ -14,31 +14,21 @@ int main(int argc, char **argv) {
 	seneka_srv::canSendMsg transmission;
 	seneka_srv::canReadMsg receiving;
 
-	transmission.request.can_id = 0x55;
-	transmission.request.can_dlc = 0x01;
-	transmission.request.data[0] = 0x33;
+	transmission.request.can_id = 0x123;
+	transmission.request.can_dlc = 2;
 
-	if (transmission_client.call(transmission)) {
+	transmission.request.data.clear();
+	transmission.request.data.push_back(0x11);
+	transmission.request.data.push_back(0x22);
 
-		ROS_INFO("Bytes sent: ", transmission.response.bytes_sent);
+	ros::Rate rate(1); // [] = Hz;
 
-	}
+	while(nh.ok()) {
 
-	else {
+		transmission_client.call(transmission);
 
-		ROS_ERROR("Something went wrong.");
-
-	}
-
-	if (receiving_client.call(receiving)) {
-
-		ROS_INFO("Bytes received: ", receiving.response.bytes_read);
-
-	}
-
-	else {
-
-		ROS_ERROR("Something went wrong.");
+		ros::spinOnce();
+		rate.sleep();
 
 	}
 
