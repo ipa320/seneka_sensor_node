@@ -1,6 +1,6 @@
 /*!
 *****************************************************************
-* SocketCan.h
+* SocketCAN.h
 *
 * Copyright (c) 2013
 * Fraunhofer Institute for Manufacturing Engineering
@@ -21,7 +21,6 @@
 *
 * Description:
 * The seneka_can package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
-* By implementing a simple ROS wrapper node for SocketCAN, it offers several services to communicate with CAN devices.
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
 *
@@ -56,8 +55,8 @@
 *
 ****************************************************************/
 
-#ifndef SENEKA_SOCKETCAN_H_
-#define SENEKA_SOCKETCAN_H_
+#ifndef SOCKETCAN_H_
+#define SOCKETCAN_H_
 
 /****************************************/
 /*************** includes ***************/
@@ -67,12 +66,16 @@
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
- 
+
+// SocketCAN
 #include <linux/can.h>
 #include <linux/can/raw.h>
-#include <string.h>
- 
-/* At time of writing, these constants are not defined in the headers */
+
+// standart c++ library
+#include <string>
+
+/*
+// at time of writing, these constants are not defined in the headers;
 #ifndef PF_CAN
 #define PF_CAN 29
 #endif
@@ -80,128 +83,101 @@
 #ifndef AF_CAN
 #define AF_CAN PF_CAN
 #endif
+*/
 
-/*****************************************/
-/*************** SocketCan ***************/
-/*****************************************/
+class SocketCAN {
 
-class SocketCan {
+  public:
 
-    private:
+    // constructor;
+    SocketCAN();
 
-        int     skt;
-        struct  ifreq ifr;
-        struct  sockaddr_can addr;
+    // destructor;
+    ~SocketCAN();
 
-    public:
+    // getters;
+    std::string getInterface(void) {return this->interface;}
 
-        // constructor;
-        SocketCan();
+    // setters;
+    void setInterface(std::string interface) {this->interface = interface;}
 
-        // destructor;
-        ~SocketCan();
+    // member functions;
+    struct can_frame * readFrame(void);
+    void writeFrame(struct can_frame *pFrame);
 
-        // ...
-        bool SendMsg(void);
+    // test functions;
+    void writeTest(void);
+    void readTest(void);
 
-        // ...
-        bool ReadMsg(void);
+  private:
+
+    int         skt;
+    struct      sockaddr_can addr;
+    struct      ifreq ifr;
+    std::string interface;
 
 };
 
-// constructor
-SocketCan::SocketCan() {
+// constructor;
+SocketCAN::SocketCAN() {
 
-    // initialize default parameters;
-    // ...
+  // initialize default parameters;
+  interface = "can0";
 
-  /*****************************************/
-  /*************** SocketCAN ***************/
-  /*****************************************/
-
-  // create the socket;
   skt = socket(PF_CAN, SOCK_RAW, CAN_RAW);
- 
-  // locate the interface you wish to use;
-  strcpy(ifr.ifr_name, "can0");
-  // ifr.ifr_ifindex gets filled with that device's index;
+
+  strcpy(ifr.ifr_name, getInterface().c_str());
   ioctl(skt, SIOCGIFINDEX, &ifr);
- 
-  // select that CAN interface, and bind the socket to it;
+
   addr.can_family = AF_CAN;
   addr.can_ifindex = ifr.ifr_ifindex;
-  bind( skt, (struct sockaddr*)&addr, sizeof(addr) );
 
-  /*****************************************/
-  /*****************************************/
-  /*****************************************/
+  bind(skt, (struct sockaddr*)&addr, sizeof(addr));
+
+};
+
+// destructor;
+SocketCAN::~SocketCAN() {};
+
+struct can_frame * SocketCAN::readFrame(void) {
+
+  struct can_frame *pFrame = new can_frame;
+
+  int bytes_read = read(this->skt, pFrame, sizeof(struct can_frame));
+
+  return pFrame;
 
 }
 
-// destructor
-SocketCan::~SocketCan(){}
+void SocketCAN::writeFrame(can_frame *pFrame) {
 
-// function to send a message to the CAN bus;
-bool SocketCan::SendMsg(void) {
+  int bytes_sent = write(this->skt, pFrame, sizeof(struct can_frame));
+
+}
+
+
+// function to verify if CAN device driver and SocketCAN work properly;
+// use SocketCAN command line tool "candump" to see if CAN frame was sent successfully;
+// see https://gitorious.org/linux-can/can-utils/source/18f8416a40cf76e86afded174a52e99e854b7f2d:
+void SocketCAN::writeTest(void) {
 
   struct can_frame frame;
-/*
-  frame.can_id  = req.can_id;
-  frame.can_dlc = req.can_dlc;
 
-  for (int i = 0; i < frame.can_dlc; i++) {
+  frame.can_id = 0x123;
+  frame.can_dlc = 1;
+  frame.data[0] = 0x11;
 
-    frame.data[i] = req.data[i];
+  writeFrame(&frame);
 
-  }
+};
 
-  res.bytes_sent  = write(skt, &frame, sizeof(frame));
+// function to verify if CAN device driver and SocketCAN work properly;
+// use SocketCAN command line tool "cangen" to see if CAN frame was sent successfully;
+// see https://gitorious.org/linux-can/can-utils/source/18f8416a40cf76e86afded174a52e99e854b7f2d:
+void SocketCAN::readTest(void) {
 
-  if (res.bytes_sent != 0) {
-
-    return true;
-
-  }
-*/
-
-  return true;
+  struct can_frame frame = *readFrame();
 
 }
 
-// function to read a message from the CAN bus;
-bool SocketCan::ReadMsg(void) {
-
-  struct can_frame frame;
-/*
-  res.bytes_read = read(skt, &frame, sizeof(frame));
-
-  if (res.bytes_read != 0) {
-
-    res.can_id  = frame.can_id;
-    res.can_dlc = frame.can_dlc;
-
-    res.data.clear();
-
-    for (int i = 0; i < frame.can_dlc; i++) {
-
-      res.data.push_back(frame.data[i]);
-
-    }
-
-    return true;
-
-  }
-
-  else {
-
-    return false;
-
-  }
-
-*/
-
-  return true;
-
-}
-
-#endif // SENEKA_SOCKETCAN_H_
+#endif // SOCKETCAN_H_

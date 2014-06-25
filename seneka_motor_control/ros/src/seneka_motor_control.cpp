@@ -56,7 +56,7 @@
 ****************************************************************/
 
 #include <ros/ros.h>
-#include <SocketCan.h>
+#include <SocketCAN.h>
 
 /*********************************************/
 /*************** main function ***************/
@@ -69,7 +69,10 @@ int main(int argc, char** argv) {
 
   ros::NodeHandle nh;
 
-  SocketCan cSocketCan;
+  SocketCAN cSocketCAN;
+
+  cSocketCAN.writeTest();
+  cSocketCAN.readTest();
 
   while(nh.ok()) {
 
