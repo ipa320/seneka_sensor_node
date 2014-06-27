@@ -58,25 +58,38 @@
 #include <ros/ros.h>
 #include <SocketCAN.h>
 
+#include <string.h>
+
 /*********************************************/
 /*************** main function ***************/
 /*********************************************/
 
-int main(int argc, char** argv) {
+int main(int argc, char *argv[]) {
 
   // ROS initialization; apply "seneka_motor_control" as node name;
   ros::init(argc, argv, "seneka_motor_control");
 
   ros::NodeHandle nh;
 
-  SocketCAN cSocketCAN;
+  SocketCAN cSocketCAN(argv[2]);
 
-  cSocketCAN.writeTest();
-  cSocketCAN.readTest();
+  ros::Rate loop_rate(1); // [] = Hz;
 
   while(nh.ok()) {
 
-    ros::spin();
+    if (strcmp(argv[1], "write") == 0)
+      cSocketCAN.writeTest();
+    else if (strcmp(argv[1], "read") == 0)
+      cSocketCAN.readTest();
+    else
+      return 0;
+
+    // stop here after one cycle;
+    ROS_WARN("Press ENTER to repeat.");
+    if (std::cin.get() == '\n') {}
+
+    ros::spinOnce();
+    loop_rate.sleep();
 
   }
 

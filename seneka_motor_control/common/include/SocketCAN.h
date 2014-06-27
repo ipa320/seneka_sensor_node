@@ -91,6 +91,7 @@ class SocketCAN {
 
     // constructor;
     SocketCAN();
+    SocketCAN(std::string interface);
 
     // destructor;
     ~SocketCAN();
@@ -119,10 +120,10 @@ class SocketCAN {
 };
 
 // constructor;
-SocketCAN::SocketCAN() {
+SocketCAN::SocketCAN(std::string interface) {
 
   // initialize default parameters;
-  interface = "can0";
+  this->interface = interface;
 
   skt = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 
@@ -164,8 +165,10 @@ void SocketCAN::writeTest(void) {
   struct can_frame frame;
 
   frame.can_id = 0x123;
-  frame.can_dlc = 1;
+  frame.can_dlc = 3;
   frame.data[0] = 0x11;
+  frame.data[1] = 0x22;
+  frame.data[2] = 0x33;
 
   writeFrame(&frame);
 
@@ -177,6 +180,17 @@ void SocketCAN::writeTest(void) {
 void SocketCAN::readTest(void) {
 
   struct can_frame frame = *readFrame();
+
+  printf("\ncan_id: %x", frame.can_id);
+  printf("\ncan_dlc: %i", frame.can_dlc);
+
+  for (int i; i < frame.can_dlc; i++) {
+
+    printf("\ndata[%i]: %x", i, frame.data[i]);
+
+  }
+
+  printf("\n\n");
 
 }
 
