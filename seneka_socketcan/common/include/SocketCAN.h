@@ -10,10 +10,10 @@
 *
 * Repository name: seneka_sensor_node
 *
-* ROS package name: seneka_motor_control
+* ROS package name: seneka_socketcan
 *
 * Author: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
-* 
+*
 * Supervised by: Matthias Gruhler, E-Mail: Matthias.Gruhler@ipa.fraunhofer.de
 *
 * Date of creation: Jun 2014
@@ -90,7 +90,6 @@ class SocketCAN {
   public:
 
     // constructor;
-    SocketCAN();
     SocketCAN(std::string interface);
 
     // destructor;
@@ -98,6 +97,7 @@ class SocketCAN {
 
     // getters;
     std::string getInterface(void) {return this->interface;}
+    int getSocket(void) {return this->skt;};
 
     // setters;
     void setInterface(std::string interface) {this->interface = interface;}

@@ -2,14 +2,14 @@
 
 <package>
 
-  <name>seneka_motor_control</name>
+  <name>seneka_socketcan</name>
   <version>0.0.0</version>
   <license>LGPL</license>
 
   <url>https://github.com/ipa320/seneka_sensor_node</url>
 
   <description>
-  The seneka_motor_control package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+  The seneka_socketcan package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
   This package might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.
   </description>
 

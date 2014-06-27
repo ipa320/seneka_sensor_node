@@ -1,6 +1,6 @@
 /*!
 *****************************************************************
-* seneka_motor_control.cpp
+* seneka_control_interface.cpp
 *
 * Copyright (c) 2013
 * Fraunhofer Institute for Manufacturing Engineering
@@ -58,8 +58,6 @@
 #include <ros/ros.h>
 #include <SocketCAN.h>
 
-#include <string.h>
-
 /*********************************************/
 /*************** main function ***************/
 /*********************************************/
@@ -67,29 +65,17 @@
 int main(int argc, char *argv[]) {
 
   // ROS initialization; apply "seneka_motor_control" as node name;
-  ros::init(argc, argv, "seneka_motor_control");
+  ros::init(argc, argv, "seneka_socketcan");
 
   ros::NodeHandle nh;
 
-  SocketCAN cSocketCAN(argv[2]);
+  SocketCAN cSocketCAN(argv[1]);
 
-  ros::Rate loop_rate(1); // [] = Hz;
+  nh.setParam("skt", cSocketCAN.getSocket());
 
   while(nh.ok()) {
 
-    if (strcmp(argv[1], "write") == 0)
-      cSocketCAN.writeTest();
-    else if (strcmp(argv[1], "read") == 0)
-      cSocketCAN.readTest();
-    else
-      return 0;
-
-    // stop here after one cycle;
-    ROS_WARN("Press ENTER to repeat.");
-    if (std::cin.get() == '\n') {}
-
-    ros::spinOnce();
-    loop_rate.sleep();
+    ros::spin();
 
   }
 
