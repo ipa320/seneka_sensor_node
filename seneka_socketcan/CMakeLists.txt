@@ -13,7 +13,6 @@ find_package(
 
 catkin_package(
   INCLUDE_DIRS
-  ros/src
   common/include
   CATKIN_DEPENDS
     roscpp
@@ -21,12 +20,6 @@ catkin_package(
 
 
 include_directories(
-  ros/src
   common/include
   ${catkin_INCLUDE_DIRS}
-)
-
-add_executable(${PROJECT_NAME} ros/src/socketCAN.cpp)
-target_link_libraries(${PROJECT_NAME}
-  ${catkin_LIBRARIES}
 )

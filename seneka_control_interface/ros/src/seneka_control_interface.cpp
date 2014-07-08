@@ -56,7 +56,7 @@
 ****************************************************************/
 
 #include <ros/ros.h>
-#include <SocketCAN.h>
+#include <seneka_socketcan/SocketCAN.h>
 
 #include <string.h>
 
@@ -67,7 +67,7 @@
 int main(int argc, char *argv[]) {
 
   // ROS initialization; apply "seneka_motor_control" as node name;
-  ros::init(argc, argv, "seneka_control_interface");
+  ros::init(argc, argv, "seneka_coclntrol_interface");
 
   ros::NodeHandle nh;
 

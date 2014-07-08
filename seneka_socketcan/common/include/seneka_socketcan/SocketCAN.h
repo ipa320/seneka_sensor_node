@@ -71,7 +71,7 @@
 #include <linux/can.h>
 #include <linux/can/raw.h>
 
-// standart c++ library
+// standard c++ library
 #include <string>
 
 /*
@@ -89,18 +89,13 @@ class SocketCAN {
 
   public:
 
-    // constructor;
+    // constructors;
+    SocketCAN();
     SocketCAN(std::string interface);
+    
 
     // destructor;
     ~SocketCAN();
-
-    // getters;
-    std::string getInterface(void) {return this->interface;}
-    int getSocket(void) {return this->skt;};
-
-    // setters;
-    void setInterface(std::string interface) {this->interface = interface;}
 
     // member functions;
     struct can_frame * readFrame(void);
@@ -120,6 +115,13 @@ class SocketCAN {
 };
 
 // constructor;
+SocketCAN::SocketCAN() {
+
+  this->interface = "can0";
+
+}
+
+// constructor;
 SocketCAN::SocketCAN(std::string interface) {
 
   // initialize default parameters;
@@ -127,7 +129,7 @@ SocketCAN::SocketCAN(std::string interface) {
 
   skt = socket(PF_CAN, SOCK_RAW, CAN_RAW);
 
-  strcpy(ifr.ifr_name, getInterface().c_str());
+  strcpy(ifr.ifr_name, this->interface.c_str());
   ioctl(skt, SIOCGIFINDEX, &ifr);
 
   addr.can_family = AF_CAN;
