@@ -86,17 +86,19 @@ int main(int argc, char *argv[]) {
     getline (cin, command);
 
     if (command == "trunk turn negative")
-      cout << "geil";
+      seneka_trunk.turnNegative();
 
     if (command == "trunk turn positive")
-      cout << "geil";
+      seneka_trunk.turnPositive();
 
     if (command == "trunk stop")
-      cout << "geil";
+      seneka_trunk.stop();
 
+    /*
     // stop here after one cycle;
     ROS_WARN("Press ENTER to repeat.");
     if (cin.get() == '\n') {}
+    */
 
     ros::spinOnce();
     loop_rate.sleep();
