@@ -74,26 +74,21 @@
 // standard c++ library
 #include <string>
 
-/*
-// at time of writing, these constants are not defined in the headers;
-#ifndef PF_CAN
-#define PF_CAN 29
-#endif
- 
-#ifndef AF_CAN
-#define AF_CAN PF_CAN
-#endif
-*/
+using namespace std;
+
+/*****************************************/
+/*************** SocketCAN ***************/
+/*****************************************/
 
 class SocketCAN {
 
   public:
 
-    // constructors;
+    // default constructor;
     SocketCAN();
+    // constructor;
     SocketCAN(std::string interface);
     
-
     // destructor;
     ~SocketCAN();
 
@@ -101,9 +96,9 @@ class SocketCAN {
     struct can_frame * readFrame(void);
     void writeFrame(struct can_frame *pFrame);
 
-    // test functions;
-    void writeTest(void);
-    void readTest(void);
+    // function to test CAN communication;
+    // shows also how to use SocketCAN for simple read/write purposes;
+    void testCommunication(void);
 
   private:
 
@@ -114,17 +109,36 @@ class SocketCAN {
 
 };
 
-// constructor;
+/*****************************************/
+/*****************************************/
+/*****************************************/
+
+// default constructor;
 SocketCAN::SocketCAN() {
 
+  // initialize default CAN interface;
   this->interface = "can0";
 
+  skt = socket(PF_CAN, SOCK_RAW, CAN_RAW);
+
+  strcpy(ifr.ifr_name, this->interface.c_str());
+  ioctl(skt, SIOCGIFINDEX, &ifr);
+
+  addr.can_family = AF_CAN;
+  addr.can_ifindex = ifr.ifr_ifindex;
+
+  bind(skt, (struct sockaddr*)&addr, sizeof(addr));
+
 }
+
+/*****************************************/
+/*****************************************/
+/*****************************************/
 
 // constructor;
 SocketCAN::SocketCAN(std::string interface) {
 
-  // initialize default parameters;
+  // initialize CAN interface;
   this->interface = interface;
 
   skt = socket(PF_CAN, SOCK_RAW, CAN_RAW);
@@ -137,11 +151,20 @@ SocketCAN::SocketCAN(std::string interface) {
 
   bind(skt, (struct sockaddr*)&addr, sizeof(addr));
 
-};
+}
+
+/*****************************************/
+/*****************************************/
+/*****************************************/
 
 // destructor;
-SocketCAN::~SocketCAN() {};
+SocketCAN::~SocketCAN() {}
 
+/*****************************************/
+/*****************************************/
+/*****************************************/
+
+// function reads a CAN frame from the CAN device;
 struct can_frame * SocketCAN::readFrame(void) {
 
   struct can_frame *pFrame = new can_frame;
@@ -152,36 +175,41 @@ struct can_frame * SocketCAN::readFrame(void) {
 
 }
 
+/*****************************************/
+/*****************************************/
+/*****************************************/
+
+// function writes a CAN frame to the CAN device;
 void SocketCAN::writeFrame(can_frame *pFrame) {
 
   int bytes_sent = write(this->skt, pFrame, sizeof(struct can_frame));
 
 }
 
+/*****************************************/
+/*****************************************/
+/*****************************************/
 
 // function to verify if CAN device driver and SocketCAN work properly;
+// shows also how to use SocketCAN;
 // use SocketCAN command line tool "candump" to see if CAN frame was sent successfully;
 // see https://gitorious.org/linux-can/can-utils/source/18f8416a40cf76e86afded174a52e99e854b7f2d:
-void SocketCAN::writeTest(void) {
+void SocketCAN::testCommunication(void) {
 
   struct can_frame frame;
 
-  frame.can_id = 0x123;
-  frame.can_dlc = 3;
-  frame.data[0] = 0x11;
-  frame.data[1] = 0x22;
-  frame.data[2] = 0x33;
+  frame.can_id = 0x111;
+  frame.can_dlc = 8;
+
+  for (int i; i < frame.can_dlc; i++) {
+
+    frame.data[i] = i;
+
+  }
 
   writeFrame(&frame);
 
-};
-
-// function to verify if CAN device driver and SocketCAN work properly;
-// use SocketCAN command line tool "cangen" to see if CAN frame was sent successfully;
-// see https://gitorious.org/linux-can/can-utils/source/18f8416a40cf76e86afded174a52e99e854b7f2d:
-void SocketCAN::readTest(void) {
-
-  struct can_frame frame = *readFrame();
+  frame = *readFrame();
 
   printf("\ncan_id: %x", frame.can_id);
   printf("\ncan_dlc: %i", frame.can_dlc);
@@ -195,5 +223,9 @@ void SocketCAN::readTest(void) {
   printf("\n\n");
 
 }
+
+/*****************************************/
+/*****************************************/
+/*****************************************/
 
 #endif // SOCKETCAN_H_

@@ -1,6 +1,6 @@
 /*!
 *****************************************************************
-* seneka_control_interface.cpp
+* SenekaTrunk.h
 *
 * Copyright (c) 2013
 * Fraunhofer Institute for Manufacturing Engineering
@@ -48,65 +48,110 @@
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
 * GNU Lesser General Public License LGPL for more details.
-*
+*   
 * You should have received a copy of the GNU Lesser General Public
 * License LGPL along with this program.
 * If not, see <http://www.gnu.org/licenses/>.
 *
 ****************************************************************/
 
-#include <ros/ros.h>
-#include <seneka_trunk_control/SenekaTrunk.h>
+#ifndef SENEKA_TRUNK_H_
+#define SENEKA_TRUNK_H_
 
-#include <iostream>
-#include <string>
+/****************************************/
+/*************** includes ***************/
+/****************************************/
 
-using namespace std;
+#include <seneka_socketcan/SocketCAN.h>
 
 /*********************************************/
-/*************** main function ***************/
+/*************** SenekaTrunk *****************/
 /*********************************************/
 
-int main(int argc, char *argv[]) {
+class SenekaTrunk {
 
-  // ROS initialization; apply "seneka_control_interface" as node name;
-  ros::init(argc, argv, "seneka_control_interface");
+  public:
 
-  ros::NodeHandle nh;
+    // constructor;
+    SenekaTrunk();
 
-  SenekaTrunk seneka_trunk;
+    // destructor;
+    ~SenekaTrunk();
 
-  ros::Rate loop_rate(1); // [] = Hz;
+    // member functions;
+    void turnNegative(void);
+    void turnPositive(void);
+    void stop();
 
-  while(nh.ok()) {
+  private:
 
-    string command;
+    SocketCAN cSocketCAN;
 
-    cout << "Enter command: ";
-    getline (cin, command);
+};
 
-    if (command == "trunk turn negative")
-      cout << "geil";
+SenekaTrunk::SenekaTrunk() {};
 
-    if (command == "trunk turn positive")
-      cout << "geil";
+SenekaTrunk::~SenekaTrunk() {};
 
-    if (command == "trunk stop")
-      cout << "geil";
+void SenekaTrunk::turnNegative(void) {
 
-    // stop here after one cycle;
-    ROS_WARN("Press ENTER to repeat.");
-    if (cin.get() == '\n') {}
+  struct can_frame frame;
 
-    ros::spinOnce();
-    loop_rate.sleep();
+  frame.can_id = 0x196;
+  frame.can_dlc = 8;
+
+  for (int i; i < frame.can_dlc; i++) {
+
+    frame.data[i] = 0;
 
   }
 
-  return 0;
+  frame.data[0] = 1;
+
+  cSocketCAN.writeFrame(&frame);
+
+}
+
+void SenekaTrunk::turnPositive(void) {
+
+  struct can_frame frame;
+
+  frame.can_id = 0x196;
+  frame.can_dlc = 8;
+
+  for (int i; i < frame.can_dlc; i++) {
+
+    frame.data[i] = 0;
+
+  }
+
+  frame.data[0] = 0;
+
+  cSocketCAN.writeFrame(&frame);
+
+}
+
+void SenekaTrunk::stop(void) {
+
+  struct can_frame frame;
+
+  frame.can_id = 0x196;
+  frame.can_dlc = 8;
+
+  for (int i; i < frame.can_dlc; i++) {
+
+    frame.data[i] = 0;
+
+  }
+
+  frame.data[0] = 2;
+
+  cSocketCAN.writeFrame(&frame);
 
 }
 
 /********************************************/
 /********************************************/
 /********************************************/
+
+#endif // SENEKA_TRUNK_H_

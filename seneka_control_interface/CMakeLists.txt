@@ -6,6 +6,7 @@ set(CMAKE_BUILD_TYPE Release)
 find_package(catkin REQUIRED
   roscpp
   seneka_socketcan
+  seneka_trunk_control
 )
 
 catkin_package(
@@ -13,11 +14,8 @@ catkin_package(
   CATKIN_DEPENDS
     roscpp
     seneka_socketcan
+    seneka_trunk_control
 )
-
-###########
-## Build ##
-###########
 
 include_directories(
   ${catkin_INCLUDE_DIRS}
@@ -28,13 +26,6 @@ target_link_libraries(${PROJECT_NAME}
   ${catkin_LIBRARIES}
 )
 
-#############
-## Install ##
-#############
-
-# all install targets should use catkin DESTINATION variables
-# See http://ros.org/doc/api/catkin/html/adv_user_guide/variables.html
-## Mark executables and/or libraries for installation
 install(TARGETS seneka_control_interface
   ARCHIVE DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
   LIBRARY DESTINATION ${CATKIN_PACKAGE_LIB_DESTINATION}
