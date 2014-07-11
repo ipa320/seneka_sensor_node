@@ -96,10 +96,6 @@ class SocketCAN {
     struct can_frame * readFrame(void);
     void writeFrame(struct can_frame *pFrame);
 
-    // function to test CAN communication;
-    // shows also how to use SocketCAN for simple read/write purposes;
-    void testCommunication(void);
-
   private:
 
     int         skt;
@@ -183,44 +179,6 @@ struct can_frame * SocketCAN::readFrame(void) {
 void SocketCAN::writeFrame(can_frame *pFrame) {
 
   int bytes_sent = write(this->skt, pFrame, sizeof(struct can_frame));
-
-}
-
-/*****************************************/
-/*****************************************/
-/*****************************************/
-
-// function to verify if CAN device driver and SocketCAN work properly;
-// shows also how to use SocketCAN;
-// use SocketCAN command line tool "candump" to see if CAN frame was sent successfully;
-// see https://gitorious.org/linux-can/can-utils/source/18f8416a40cf76e86afded174a52e99e854b7f2d:
-void SocketCAN::testCommunication(void) {
-
-  struct can_frame frame;
-
-  frame.can_id = 0x111;
-  frame.can_dlc = 8;
-
-  for (int i; i < frame.can_dlc; i++) {
-
-    frame.data[i] = i;
-
-  }
-
-  writeFrame(&frame);
-
-  frame = *readFrame();
-
-  printf("\ncan_id: %x", frame.can_id);
-  printf("\ncan_dlc: %i", frame.can_dlc);
-
-  for (int i; i < frame.can_dlc; i++) {
-
-    printf("\ndata[%i]: %x", i, frame.data[i]);
-
-  }
-
-  printf("\n\n");
 
 }
 

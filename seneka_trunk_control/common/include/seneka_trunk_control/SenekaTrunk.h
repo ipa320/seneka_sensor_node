@@ -97,16 +97,9 @@ void SenekaTrunk::turnNegative(void) {
 
   struct can_frame frame;
 
-  frame.can_id = 0x196;
-  frame.can_dlc = 8;
-
-  for (int i; i < frame.can_dlc; i++) {
-
-    frame.data[i] = 0;
-
-  }
-
-  frame.data[0] = 1;
+  frame.can_id  = 0x196;
+  frame.can_dlc = 1;
+  frame.data[0] = 0x00;
 
   cSocketCAN.writeFrame(&frame);
 
@@ -116,16 +109,9 @@ void SenekaTrunk::turnPositive(void) {
 
   struct can_frame frame;
 
-  frame.can_id = 0x196;
-  frame.can_dlc = 8;
-
-  for (int i; i < frame.can_dlc; i++) {
-
-    frame.data[i] = 0;
-
-  }
-
-  frame.data[0] = 0;
+  frame.can_id  = 0x196;
+  frame.can_dlc = 1;
+  frame.data[0] = 0x01;
 
   cSocketCAN.writeFrame(&frame);
 
@@ -135,16 +121,9 @@ void SenekaTrunk::stop(void) {
 
   struct can_frame frame;
 
-  frame.can_id = 0x196;
-  frame.can_dlc = 8;
-
-  for (int i; i < frame.can_dlc; i++) {
-
-    frame.data[i] = 0;
-
-  }
-
-  frame.data[0] = 2;
+  frame.can_id  = 0x196;
+  frame.can_dlc = 1;
+  frame.data[0] = 0x02;
 
   cSocketCAN.writeFrame(&frame);
 

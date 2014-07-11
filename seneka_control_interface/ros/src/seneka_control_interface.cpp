@@ -85,14 +85,21 @@ int main(int argc, char *argv[]) {
     cout << "Enter command: ";
     getline (cin, command);
 
-    if (command == "trunk turn negative")
+    if (command == "trunk turn negative") {
       seneka_trunk.turnNegative();
+    }
 
-    if (command == "trunk turn positive")
+    else if (command == "trunk turn positive") {
       seneka_trunk.turnPositive();
+    }
 
-    if (command == "trunk stop")
+    else if (command == "trunk stop") {
       seneka_trunk.stop();
+    }
+
+    else {
+      continue;
+    }
 
     /*
     // stop here after one cycle;
