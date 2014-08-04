@@ -10,7 +10,7 @@
 *
 * Repository name: seneka_sensor_node
 *
-* ROS package name: seneka_motor_control
+* ROS package name: seneka_trunk_control
 *
 * Author: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 * 
@@ -64,73 +64,171 @@
 
 #include <seneka_socketcan/SocketCAN.h>
 
-/*********************************************/
-/*************** SenekaTrunk *****************/
-/*********************************************/
+/***************************************************/
+/*************** SenekaTrunk Class *****************/
+/***************************************************/
 
 class SenekaTrunk {
 
   public:
 
-    // constructor;
+    // default constructor;
     SenekaTrunk();
 
     // destructor;
     ~SenekaTrunk();
 
+    // data types;
+
+    enum TrunkMode {
+
+      ENDLESS = 0,
+      CUSTOM  = 1,
+      ONCE    = 2,
+
+    };
+
+    enum TrunkDirection {
+
+      NEGATIVE = 0,
+      POSITIVE = 1,
+
+    };
+
     // member functions;
+    void run(void);
+    void stop(void);
     void turnNegative(void);
     void turnPositive(void);
-    void stop();
+
+    // getters;
+    unsigned char   getCurrentPosition(void)  {return this->current_position;}
+    unsigned char   getTargetPosition(void)   {return this->target_position;}
+    unsigned char   getCurrentVelocity(void)  {return this->current_velocity;}
+    unsigned char   getTargetVelocity(void)   {return this->target_velocity;}
+    unsigned char   getSensitivity(void)      {return this->sensitivity;}
+    TrunkDirection  getDirection(void)        {return this->direction;}
+    TrunkMode       getMode(void)             {return this->mode;}
+
+    // setters;
+    void setTargetPosition(unsigned char position) {
+      this->target_position = position;
+    }
+
+    void setTargetVelocity(unsigned char velocity) {
+      this->target_velocity = velocity;
+    }
+
+    void setSensitivity(unsigned char sensitivity) {
+      this->sensitivity = sensitivity;
+    }
+
+    void setDirection(TrunkDirection direction) {
+      this->direction = direction;
+    }
+
+    void setMode(TrunkMode mode) {
+      this-> mode = mode;
+    }
 
   private:
 
-    SocketCAN cSocketCAN;
+    SocketCAN socketCAN;
+
+    unsigned char   current_position;
+    unsigned char   target_position;
+    unsigned char   current_velocity;
+    unsigned char   target_velocity;
+    unsigned char   sensitivity;
+    TrunkDirection  direction;
+    TrunkMode       mode;
+
 
 };
 
-SenekaTrunk::SenekaTrunk() {};
+/******************************************************************/
+/*************** SenekaTrunk Class Implementation *****************/
+/******************************************************************/
 
+// default constructor;
+SenekaTrunk::SenekaTrunk() {
+
+  setTargetPosition(0);
+  setTargetVelocity(25);
+  setSensitivity(5);
+  setDirection(NEGATIVE);
+  setMode(CUSTOM);
+
+};
+
+// destructor;
 SenekaTrunk::~SenekaTrunk() {};
 
-void SenekaTrunk::turnNegative(void) {
+void SenekaTrunk::run(void) {
 
   struct can_frame frame;
 
-  frame.can_id  = 0x196;
-  frame.can_dlc = 1;
-  frame.data[0] = 0x00;
+  frame.can_id  = 0x196;  // trunk CAN-ID; also priority of CAN message;
+  frame.can_dlc = 8;      // count of data bytes;
 
-  cSocketCAN.writeFrame(&frame);
+  if (getMode() != ONCE) {
+
+    frame.data[0] = getMode();            // mode;
+    frame.data[1] = getDirection();       // direction;
+    frame.data[2] = getTargetPosition();  // target position; [] = °; 0° - 360°; increment = 1°;
+    frame.data[3] = getTargetVelocity();  // target velocity; [] = %; 0% - 100%; increment = 1%;
+    frame.data[4] = 0x00;                 // void;
+    frame.data[5] = 0x00;                 // void;
+    frame.data[6] = 0x00;                 // void;
+    frame.data[7] = 0x00;                 // void;
+
+    socketCAN.writeFrame(&frame);
+
+  }
+
+  else {
+
+    return;
+
+  }
 
 }
 
-void SenekaTrunk::turnPositive(void) {
-
-  struct can_frame frame;
-
-  frame.can_id  = 0x196;
-  frame.can_dlc = 1;
-  frame.data[0] = 0x01;
-
-  cSocketCAN.writeFrame(&frame);
-
-}
-
+// interrupt trunk rotation;
 void SenekaTrunk::stop(void) {
 
   struct can_frame frame;
 
-  frame.can_id  = 0x196;
-  frame.can_dlc = 1;
+  frame.can_id  = 0x196;  // trunk CAN-ID; also priority of CAN message;
+  frame.can_dlc = 8;      // count of data bytes;
   frame.data[0] = 0x02;
 
-  cSocketCAN.writeFrame(&frame);
+  for (int i = 0+1; i < frame.can_dlc; i++) {
+
+    frame.data[i] = 0x00; // void;
+
+  }
+
+  socketCAN.writeFrame(&frame);
 
 }
 
-/********************************************/
-/********************************************/
-/********************************************/
+// trunk rotates in negative direction, depending on given sensitivity;
+void SenekaTrunk::turnNegative(void) {
+
+  setMode(CUSTOM);
+  setTargetPosition(getCurrentPosition() - getSensitivity());
+  run();
+
+}
+
+// trunk rotates in positive direction, depending on given sensitivity;
+void SenekaTrunk::turnPositive(void) {
+
+  setMode(CUSTOM);
+  setTargetPosition(getCurrentPosition() + getSensitivity());
+  run();
+
+}
 
 #endif // SENEKA_TRUNK_H_

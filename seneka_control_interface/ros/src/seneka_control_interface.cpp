@@ -10,7 +10,7 @@
 *
 * Repository name: seneka_sensor_node
 *
-* ROS package name: seneka_motor_control
+* ROS package name: seneka_control_interface
 *
 * Author: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 * 
@@ -57,6 +57,8 @@
 
 #include <ros/ros.h>
 #include <seneka_trunk_control/SenekaTrunk.h>
+#include <seneka_leg_control/SenekaLeg.h>
+#include <seneka_tilt_control/SenekaTilt.h>
 
 #include <iostream>
 #include <string>
@@ -74,38 +76,128 @@ int main(int argc, char *argv[]) {
 
   ros::NodeHandle nh;
 
-  SenekaTrunk seneka_trunk;
+  SenekaTrunk trunk;
+  SenekaTilt  tilt;
+  SenekaLeg   leg1;
+  SenekaLeg   leg2;
+  SenekaLeg   leg3;
 
   ros::Rate loop_rate(1); // [] = Hz;
+
+  cout << "blabla: "; 
+  unsigned char deimuada;
+  cin >> deimuada;
+
+  cout << "dei muada: ";
+  cout << int(deimuada);
 
   while(nh.ok()) {
 
     string command;
+    string answer;
 
-    cout << "Enter command: ";
-    getline (cin, command);
+    cout << "\nEnter command: ";
+    getline(cin, command);
 
-    if (command == "trunk turn negative") {
-      seneka_trunk.turnNegative();
-    }
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
 
-    else if (command == "trunk turn positive") {
-      seneka_trunk.turnPositive();
+    if (command == "trunk run") {
+      trunk.run();
     }
 
     else if (command == "trunk stop") {
-      seneka_trunk.stop();
+      trunk.stop();
     }
+
+    else if (command == "trunk turn negative") {
+      trunk.turnNegative();
+    }
+
+    else if (command == "trunk turn positive") {
+      trunk.turnPositive();
+    }
+
+    else if (command == "trunk set mode") {
+      cout << "\nEnter trunk mode: ";
+      getline(cin, answer);
+      if (answer == "endless") {
+        trunk.setMode(SenekaTrunk::ENDLESS);
+      }
+      else if (answer == "custom") {
+        trunk.setMode(SenekaTrunk::CUSTOM);
+      }
+      else if (answer == "once") {
+        trunk.setMode(SenekaTrunk::ONCE);
+      }
+      else {
+        cout << "\nUnknown command";
+      }
+    }
+
+    else if (command == "trunk set direction") {
+      cout << "\nEnter trunk direction: ";
+      getline(cin, answer);
+      if (answer == "negative") {
+        trunk.setDirection(SenekaTrunk::NEGATIVE);
+      }
+      else if (answer == "positive") {
+        trunk.setDirection(SenekaTrunk::POSITIVE);
+      }
+      else {
+        cout << "\nUnknown command";
+      }
+    }
+
+    else if (command == "trunk set target position") {
+      cout << "\nEnter trunk target position: ";
+      unsigned char target_position;
+      cin >> target_position;
+      trunk.setTargetPosition(target_position);
+    }
+
+    else if (command == "trunk set target velocity") {
+      cout << "\nEnter trunk target velocity: ";
+      unsigned char target_velocity;
+      cin >> target_velocity;
+      trunk.setTargetVelocity(target_velocity);
+    }
+
+    else if (command == "trunk set sensitivity") {
+      cout << "\nEnter trunk sensitivity: ";
+      unsigned char sensitivity;
+      cin >> sensitivity;
+      trunk.setSensitivity(sensitivity);
+    }
+
+    else if (command == "trunk get current position") {
+      cout << "\nCurrent trunk position: " << trunk.getCurrentPosition();
+    }
+
+    else if (command == "trunk get target position") {
+      cout << "\nTarget trunk position: " << trunk.getTargetPosition();
+    }
+
+    else if (command == "trunk get current velocity") {
+      cout << "\nCurrent trunk velocity: " << trunk.getCurrentVelocity();
+    }
+
+    else if (command == "trunk get target velocity") {
+      cout << "\nTarget trunk velocity: " << trunk.getTargetVelocity();
+    }
+
+    else if (command == "trunk get sensitivity") {
+      cout << "\nCurrent trunk sensitivity: " << trunk.getSensitivity();
+    }
+
+    /**************************************************/
+    /**************************************************/
+    /**************************************************/
 
     else {
-      continue;
+      cout << "\nUnknown command";
     }
-
-    /*
-    // stop here after one cycle;
-    ROS_WARN("Press ENTER to repeat.");
-    if (cin.get() == '\n') {}
-    */
 
     ros::spinOnce();
     loop_rate.sleep();
