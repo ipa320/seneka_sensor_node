@@ -84,13 +84,6 @@ int main(int argc, char *argv[]) {
 
   ros::Rate loop_rate(1); // [] = Hz;
 
-  cout << "blabla: "; 
-  unsigned char deimuada;
-  cin >> deimuada;
-
-  cout << "dei muada: ";
-  cout << int(deimuada);
-
   while(nh.ok()) {
 
     string command;

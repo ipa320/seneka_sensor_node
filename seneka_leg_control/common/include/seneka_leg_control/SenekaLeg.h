@@ -101,7 +101,7 @@ void SenekaLeg::turnNegative(void) {
   frame.can_dlc = 1;
   frame.data[0] = 0x00;
 
-  socketCAN.writeFrame(&frame);
+  socketCAN.writeRAW(&frame);
 
 }
 
@@ -113,7 +113,7 @@ void SenekaLeg::turnPositive(void) {
   frame.can_dlc = 1;
   frame.data[0] = 0x01;
 
-  socketCAN.writeFrame(&frame);
+  socketCAN.writeRAW(&frame);
 
 }
 
@@ -125,7 +125,7 @@ void SenekaLeg::stop(void) {
   frame.can_dlc = 1;
   frame.data[0] = 0x02;
 
-  socketCAN.writeFrame(&frame);
+  socketCAN.writeRAW(&frame);
 
 }
 

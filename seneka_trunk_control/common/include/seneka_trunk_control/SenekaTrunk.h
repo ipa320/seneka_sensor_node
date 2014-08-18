@@ -78,7 +78,7 @@ class SenekaTrunk {
     // destructor;
     ~SenekaTrunk();
 
-    // data types;
+    // enum data types;
 
     enum TrunkMode {
 
@@ -128,7 +128,7 @@ class SenekaTrunk {
     }
 
     void setMode(TrunkMode mode) {
-      this-> mode = mode;
+      this->mode = mode;
     }
 
   private:
@@ -143,7 +143,6 @@ class SenekaTrunk {
     TrunkDirection  direction;
     TrunkMode       mode;
 
-
 };
 
 /******************************************************************/
@@ -155,7 +154,7 @@ SenekaTrunk::SenekaTrunk() {
 
   setTargetPosition(0);
   setTargetVelocity(25);
-  setSensitivity(5);
+  setSensitivity(15);
   setDirection(NEGATIVE);
   setMode(CUSTOM);
 
@@ -168,21 +167,21 @@ void SenekaTrunk::run(void) {
 
   struct can_frame frame;
 
-  frame.can_id  = 0x196;  // trunk CAN-ID; also priority of CAN message;
+  frame.can_id  = 0x196;  // trunk CAN-ID; also priority of CAN message (bus arbitration);
   frame.can_dlc = 8;      // count of data bytes;
 
   if (getMode() != ONCE) {
 
     frame.data[0] = getMode();            // mode;
     frame.data[1] = getDirection();       // direction;
-    frame.data[2] = getTargetPosition();  // target position; [] = °; 0° - 360°; increment = 1°;
-    frame.data[3] = getTargetVelocity();  // target velocity; [] = %; 0% - 100%; increment = 1%;
+    frame.data[3] = getTargetVelocity();  // target velocity; [] = %; [0%; 100%]; increment = 1%;
+    frame.data[2] = getTargetPosition();  // target position; [] = °; [0°; 360°]; increment = 1°;
     frame.data[4] = 0x00;                 // void;
     frame.data[5] = 0x00;                 // void;
     frame.data[6] = 0x00;                 // void;
     frame.data[7] = 0x00;                 // void;
 
-    socketCAN.writeFrame(&frame);
+    socketCAN.writeRAW(&frame);
 
   }
 
@@ -209,7 +208,7 @@ void SenekaTrunk::stop(void) {
 
   }
 
-  socketCAN.writeFrame(&frame);
+  socketCAN.writeRAW(&frame);
 
 }
 
