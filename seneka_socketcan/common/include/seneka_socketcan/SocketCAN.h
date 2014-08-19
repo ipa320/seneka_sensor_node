@@ -24,6 +24,9 @@
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
 *
+* To-do:
+* - Read/write functions covering BCM protocol;
+*
 *****************************************************************
 *
 * Redistribution and use in source and binary forms, with or without
@@ -58,219 +61,128 @@
 #ifndef SOCKETCAN_H_
 #define SOCKETCAN_H_
 
-/****************************************/
-/*************** includes ***************/
-/****************************************/
+/*****************************************/
+/*************** SocketCAN ***************/
+/*****************************************/
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
 #include <net/if.h>
 
-// SocketCAN
 #include <linux/can.h>
 #include <linux/can/raw.h>
+#include <linux/can/bcm.h>
 
-// standard c++ library
-#include <string>
+#include <stdio.h>
 
 using namespace std;
 
-/*****************************************/
-/*************** SocketCAN ***************/
-/*****************************************/
+namespace SocketCAN {
 
-class SocketCAN {
+  /*****************************************/
+  /*****************************************/
+  /*****************************************/
 
-  public:
+  // RAW protocol;
+  bool openRAW(int &skt, const char * can_interface) {
 
-    // used in constructor to decide whether to open only one CAN socket of a specific type or both;
-    enum SocketType {
+    // open socket;
+    if((skt = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
+      perror("Failed to open socket.");
+      return false;
+    }
 
-      RAW   = 0,
-      BCM   = 1,
-      BOTH  = 2,
+    struct ifreq ifr;
+    strcpy(ifr.ifr_name, can_interface);
+    ioctl(skt, SIOCGIFINDEX, &ifr);
 
-    };
+    struct sockaddr_can addr;
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
 
-    // constructor;
-    SocketCAN(std::string interface, SocketCAN::SocketType type);
-    
-    // destructor;
-    ~SocketCAN();
+    // bind socket;
+    if((bind(skt, (struct sockaddr *)&addr, sizeof(addr))) < 0) {
+      perror("Failed to bind socket.");
+      return false;
+    }
 
-    /*****************************************/
-    /*****************************************/
-    /*****************************************/
-
-    void newIdea(void);
-
-    void createSocket(SocketCAN::SocketType type);
-
-    // functions covering the SocketCAN RAW protocol;
-
-    void createRAWSocket(void);
-    struct can_frame * readRAW(void);
-    void writeRAW(struct can_frame *pFrame);
-
-    /*****************************************/
-    /*****************************************/
-    /*****************************************/
-
-    // functions covering the SocketCAN BCM protocol; BCM = "Broadcast Manager";
-
-    void createBCMSocket(void);
-    void readBCM(void);
-    void writeBCM(void);
-
-  private:
-
-    std::string interface;  // CAN interface; e.g. "can0", "can1", "vcan0", ...;
-
-    int         RAW_socket; // SocketCAN RAW socket;
-    int         BCM_socket; // SocketCAN BCM socket;
-    struct      sockaddr_can addr;
-    struct      ifreq ifr;
-
-};
-
-/*****************************************/
-/*****************************************/
-/*****************************************/
-
-// constructor;
-SocketCAN::SocketCAN(std::string interface = "can0", SocketCAN::SocketType type = BOTH) {
-
-  // initialize default CAN interface; then start up;
-  this->interface = interface;
-
-  if (type == RAW)
-    createRAWSocket();
-
-  else if (type == BCM)
-    createBCMSocket();
-
-  else {
-
-    createRAWSocket();
-    createBCMSocket();
-
-  }
-  
-
-}
-
-/*****************************************/
-/*****************************************/
-/*****************************************/
-
-// destructor;
-SocketCAN::~SocketCAN() {}
-
-/*****************************************/
-/*****************************************/
-/*****************************************/
-
-int * newIdea(std::string interface) {
-
-  int * pSocket = new int;
-
-  * pSocket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-
-
- 
-   /* Locate the interface you wish to use */
-   struct ifreq ifr;
-   strcpy(ifr.ifr_name, interface.c_str());
-   ioctl(*pSocket, SIOCGIFINDEX, &ifr); /* ifr.ifr_ifindex gets filled 
-                                  * with that device's index */
- 
-   /* Select that CAN interface, and bind the socket to it. */
-   struct sockaddr_can addr;
-   addr.can_family = AF_CAN;
-   addr.can_ifindex = ifr.ifr_ifindex;
-   bind( *pSocket, (struct sockaddr*)&addr, sizeof(addr) );
-
-   return pSocket;
-
-}
-
-/*****************************************/
-/*****************************************/
-/*****************************************/
-
-void SocketCAN::createSocket(SocketCAN::SocketType type) {
-
-  strcpy(ifr.ifr_name, interface.c_str());
-
-  addr.can_family = AF_CAN;
-  addr.can_ifindex = ifr.ifr_ifindex;
-
-  if (type == RAW) {
-
-    RAW_socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-    ioctl(RAW_socket, SIOCGIFINDEX, &ifr);
-    bind(RAW_socket, (struct sockaddr*)&addr, sizeof(addr));
+    return true;
 
   }
 
-  else if (type == BCM) {
+  /*****************************************/
+  /*****************************************/
+  /*****************************************/
 
-    BCM_socket = socket(PF_CAN, SOCK_DGRAM, CAN_BCM);
-    ioctl(BCM_socket, SIOCGIFINDEX, &ifr);
-    connect(BCM_socket, (struct sockaddr *)&addr, sizeof(addr));
+  // BCM protocol;
+  bool openBCM(int &skt, const char * can_interface) {
+
+    // open socket;
+    if((skt = socket(PF_CAN, SOCK_DGRAM, CAN_BCM)) < 0) {
+      perror("Failed to open socket.");
+      return false;
+    }
+
+    struct ifreq ifr;
+    strcpy(ifr.ifr_name, can_interface);
+    ioctl(skt, SIOCGIFINDEX, &ifr);
+
+    struct sockaddr_can addr;
+    addr.can_family = AF_CAN;
+    addr.can_ifindex = ifr.ifr_ifindex;
+
+    // connect socket;
+    if((connect(skt, (struct sockaddr *)&addr, sizeof(addr))) < 0) {
+      perror("Failed to connect socket.");
+      return false;
+    }
+
+    return true;
 
   }
 
-  else {
+  /*****************************************/
+  /*****************************************/
+  /*****************************************/
 
-    RAW_socket = socket(PF_CAN, SOCK_RAW, CAN_RAW);
-    ioctl(RAW_socket, SIOCGIFINDEX, &ifr);
-    bind(RAW_socket, (struct sockaddr*)&addr, sizeof(addr));
+  // reads a single CAN frame from a bound CAN_RAW socket;
+  bool readRAW(const int &skt, struct can_frame &frame) {
 
-    BCM_socket = socket(PF_CAN, SOCK_DGRAM, CAN_BCM);
-    ioctl(BCM_socket, SIOCGIFINDEX, &ifr);
-    connect(BCM_socket, (struct sockaddr *)&addr, sizeof(addr));
+    int nbytes;
+
+    if((nbytes = read(skt, &frame, sizeof(struct can_frame))) < sizeof(struct can_frame)) {
+      perror("Failed to read CAN frame.");
+      return false;
+    }
+
+    else
+      return true;
 
   }
 
-}
+  /*****************************************/
+  /*****************************************/
+  /*****************************************/
 
-void SocketCAN::createRAWSocket(void) {
+  // writes a single CAN frame to a bound CAN_RAW socket;
+  bool writeRAW(const int &skt, const struct can_frame &frame) {
 
+    int nbytes;
 
+    if((nbytes = write(skt, &frame, sizeof(struct can_frame))) < sizeof(struct can_frame)) {
+      perror("Failed to write CAN frame.");
+      return false;
+    }
 
-}
+    else
+      return true;
 
-void SocketCAN::createBCMSocket(void) {
+  }
 
-
-
-}
-
-/*****************************************/
-/*****************************************/
-/*****************************************/
-
-// function reads a single RAW SocketCAN frame from the given CAN device interface;
-struct can_frame * SocketCAN::readRAW(void) {
-
-  struct can_frame *pFrame = new can_frame;
-
-  int bytes_read = read(RAW_socket, pFrame, sizeof(struct can_frame));
-
-  return pFrame;
-
-}
-
-/*****************************************/
-/*****************************************/
-/*****************************************/
-
-// function writes a single RAW SocketCAN frame to the given CAN device interface;
-void SocketCAN::writeRAW(can_frame *pFrame) {
-
-  int bytes_sent = write(RAW_socket, pFrame, sizeof(struct can_frame));
+  /*****************************************/
+  /*****************************************/
+  /*****************************************/
 
 }
 
