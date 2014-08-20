@@ -20,7 +20,7 @@
 * Modified xx/20xx: 
 *
 * Description:
-* The seneka_can package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* The seneka_trunk_control package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
 *
@@ -58,6 +58,17 @@
 #ifndef SENEKA_TRUNK_H_
 #define SENEKA_TRUNK_H_
 
+#define TX_MOTION_ID        0x196   // "execute motion"-command CAN-ID; also priority of CAN message (bus arbitration);
+#define TX_MODE_BYTENR      0       // position of data byte in CAN frame;
+#define TX_DIRECTION_BYTENR 1       // position of data byte in CAN frame;
+#define TX_VELOCITY_BYTENR  2       // position of data byte in CAN frame;
+#define TX_TARGETPOS_BYTENR 3       // position of data byte in CAN frame;
+
+#define TX_INTERRUPT_ID     0x196   // "interrupt motion"-command CAN-ID; also priority of CAN message (bus arbitration);
+
+#define RX_POSITION_ID      0x35E   // CAN-ID of CAN frame containing current trunk position; also priority of CAN message (bus arbitration);
+#define RX_POSITION_BYTENR  7       // position of data byte in CAN frame;
+
 /*********************************************/
 /*************** SenekaTrunk *****************/
 /*********************************************/
@@ -68,66 +79,29 @@ class SenekaTrunk {
 
   public:
 
-    SenekaTrunk();
+    SenekaTrunk(char * can_interface);
     ~SenekaTrunk();
 
-    // available modes of trunk rotation movement;
+    // available modes of trunk rotation;
+    // each mode respects optionally given parameters (cf. execution function parameters);
     enum Mode {
-      ENDLESS = 0,
-      CUSTOM  = 1,
-      ONCE    = 2,
+      ENDLESS = 0,  // endless trunk rotation;
+      CUSTOM  = 1,  // rotation to given target position;
+      ONCE    = 2,  // single entire rotation;
     };
 
+    // mathematical directions of rotation (counter-clockwise);
     enum Direction {
       NEGATIVE = 0,
       POSITIVE = 1,
     };
 
-    // prototypes;
-    void execute(void);
-    void interrupt(void);
-    void turnNegative(void);
-    void turnPositive(void);
-
-    unsigned char   getCurrentPosition(void)  {return current_position;}
-    unsigned char   getTargetPosition(void)   {return target_position;}
-    unsigned char   getCurrentVelocity(void)  {return current_velocity;}
-    unsigned char   getTargetVelocity(void)   {return target_velocity;}
-    unsigned char   getSensitivity(void)      {return sensitivity;}
-    Direction       getDirection(void)        {return direction;}
-    Mode            getMode(void)             {return mode;}
-
-    void setTargetPosition(unsigned char position) {
-      this->target_position = position;
-    }
-
-    void setTargetVelocity(unsigned char velocity) {
-      this->target_velocity = velocity;
-    }
-
-    void setSensitivity(unsigned char sensitivity) {
-      this->sensitivity = sensitivity;
-    }
-
-    void setDirection(Direction direction) {
-      this->direction = direction;
-    }
-
-    void setMode(Mode mode) {
-      this->mode = mode;
-    }
-
-  private:
-
-    int socket; // socket for CAN communication;
-
-    unsigned char   current_position;
-    unsigned char   target_position;
-    unsigned char   current_velocity;
-    unsigned char   target_velocity;
-    unsigned char   sensitivity;
-    Direction       direction;
-    Mode            mode;
+    // executes rotation movement in respect of <mode> according to optionally given parameters;
+    void executeMotion(Mode mode, Direction direction, unsigned char target_velocity, unsigned char target_position);
+    // interrupts rotation movement; no emergency stop;
+    void interruptMotion(void);
+    // returns updated position value;
+    unsigned char getPosition(void);
 
 };
 
@@ -136,78 +110,68 @@ class SenekaTrunk {
 /*****************************************/
 
 // constructor;
-SenekaTrunk::SenekaTrunk(char * can_interface) {
+SenekaTrunk::SenekaTrunk(char * can_interface = "can0") {
 
-  socket = SocketCAN::openRAW(can_interface = "can0");
+  // open socket for CAN communication; respect optionally given differing CAN interface;
+  socket = SocketCAN::openRAW(can_interface);
 
-  setTargetPosition(0);
-  setTargetVelocity(25);
-  setSensitivity(15);
-  setDirection(NEGATIVE);
-  setMode(CUSTOM);
+  // create receive filter; only need to receive CAN frames of CAN_ID <RX_POSITION_ID>;
+  struct can_filter filter[1];
+  filter[1].can_id = RX_POSITION_ID;
+  filter[1].can_mask = CAN_SFF_MASK;
+
+  // set receive filter;
+  setFilter(socket, &filter)
 
 };
 
 // destructor;
 SenekaTrunk::~SenekaTrunk() {};
 
-// executes rotation movement according to given parameters;
-void SenekaTrunk::execute(void) {
+// executes rotation movement in respect of <mode> according to optionally given parameters;
+void SenekaTrunk::executeMotion(Mode &mode, Direction &direction = NEGATIVE, unsigned char &target_velocity = 25, unsigned char &target_position = 0.00) {
 
   struct can_frame frame;
 
-  frame.can_id  = 0x196;  // trunk CAN-ID; also priority of CAN message (bus arbitration);
-  frame.can_dlc = 8;      // count of data bytes;
+  frame.can_id  = TX_MOTION_ID;
+  frame.can_dlc = 8; // count of data bytes;
 
-  frame.data[0] = getMode();            // mode;
-  frame.data[1] = getDirection();       // direction;
-  frame.data[3] = getTargetVelocity();  // target velocity; [] = %; [0%; 100%]; increment = 1%;
-  frame.data[2] = getTargetPosition();  // target position; [] = °; [0°; 360°]; increment = 1°;
-  frame.data[4] = 0x00;                 // void;
-  frame.data[5] = 0x00;                 // void;
-  frame.data[6] = 0x00;                 // void;
-  frame.data[7] = 0x00;                 // void;
+  for (int i = 0; i < frame.can_dlc; i++) {
+    frame.data[i] = 0x00;
+  }
+
+  frame.data[TX_MODE_BYTENR]      = mode;             // mode;
+  frame.data[TX_DIRECTION_BYTENR] = direction;        // direction;
+  frame.data[TX_VELOCITY_BYTENR]  = target_velocity;  // target velocity; [] = %; [0%; 100%]; increment = 1%;
+  frame.data[TX_TARGETPOS_BYTENR] = target_position;  // target position; [] = °; [0°; 360°]; increment = 1°;
 
   SocketCAN::writeRAW(socket, frame);
 
 }
 
-// interrupts rotation movement;
-void SenekaTrunk::interrupt(void) {
+// interrupts rotation movement; no emergency stop;
+void SenekaTrunk::interruptMotion(void) {
 
   struct can_frame frame;
 
-  frame.can_id  = 0x196;  // trunk CAN-ID; also priority of CAN message;
-  frame.can_dlc = 8;      // count of data bytes;
-  frame.data[0] = 0x02;
+  frame.can_id  = TX_INTERRUPT_ID;
+  frame.can_dlc = 8; // count of data bytes;
 
-  for (int i = 0+1; i < frame.can_dlc; i++) {
-
-    frame.data[i] = 0x00; // void;
-
+  for (int i = 0; i < frame.can_dlc; i++) {
+    frame.data[i] = 0x00;
   }
 
   SocketCAN::writeRAW(socket, frame);
 
 }
 
-// executes trunk rotation movement in negative direction according to given sensitivity and parameters;
-void SenekaTrunk::turnNegative(void) {
+// returns updated position value;
+unsigned char SenekaTrunk::getPosition(void) {
 
-  setMode(CUSTOM);
-  setDirection(NEGATIVE);
-  setTargetPosition(getCurrentPosition() - getSensitivity());
-  execute();
+  struct can_frame frame;
+  SocketCAN::readRaw(socket, frame);
 
-}
-
-// executes trunk rotation movement in positive direction according to given sensitivity and parameters;
-void SenekaTrunk::turnPositive(void) {
-
-  setMode(CUSTOM);
-  setDirection(POSITIVE);
-  setTargetPosition(getCurrentPosition() + getSensitivity());
-  execute();
+  return frame.data[RX_POSITION_BYTENR];
 
 }
 
