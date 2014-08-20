@@ -89,7 +89,7 @@ namespace SocketCAN {
 
     // open socket;
     if((skt = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
-      perror("Failed to open socket.");
+      perror("Failed to open CAN_RAW socket.");
       return false;
     }
 
@@ -103,11 +103,12 @@ namespace SocketCAN {
 
     // bind socket;
     if((bind(skt, (struct sockaddr *)&addr, sizeof(addr))) < 0) {
-      perror("Failed to bind socket.");
+      perror("Failed to bind CAN_RAW socket.");
       return false;
     }
 
-    return true;
+    else
+      return true;
 
   }
 
@@ -120,7 +121,7 @@ namespace SocketCAN {
 
     // open socket;
     if((skt = socket(PF_CAN, SOCK_DGRAM, CAN_BCM)) < 0) {
-      perror("Failed to open socket.");
+      perror("Failed to open CAN_BCM socket.");
       return false;
     }
 
@@ -134,11 +135,12 @@ namespace SocketCAN {
 
     // connect socket;
     if((connect(skt, (struct sockaddr *)&addr, sizeof(addr))) < 0) {
-      perror("Failed to connect socket.");
+      perror("Failed to connect CAN_BCM socket.");
       return false;
     }
 
-    return true;
+    else
+      return true;
 
   }
 
