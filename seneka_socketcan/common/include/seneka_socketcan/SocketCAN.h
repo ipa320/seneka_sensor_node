@@ -20,7 +20,7 @@
 * Modified xx/20xx: 
 *
 * Description:
-* The seneka_can package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* The seneka_socketcan package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
 *
@@ -75,6 +75,7 @@
 #include <linux/can/bcm.h>
 
 #include <stdio.h>
+#include <string>
 
 using namespace std;
 
@@ -84,8 +85,8 @@ namespace SocketCAN {
   /*****************************************/
   /*****************************************/
 
-  // RAW protocol;
-  bool openRAW(int &skt, const char * can_interface) {
+  // open socket covering the RAW protocol;
+  bool openRAW(int &skt, const string can_interface) {
 
     // open socket;
     if((skt = socket(PF_CAN, SOCK_RAW, CAN_RAW)) < 0) {
@@ -94,7 +95,7 @@ namespace SocketCAN {
     }
 
     struct ifreq ifr;
-    strcpy(ifr.ifr_name, can_interface);
+    strcpy(ifr.ifr_name, can_interface.c_str());
     ioctl(skt, SIOCGIFINDEX, &ifr);
 
     struct sockaddr_can addr;
@@ -116,8 +117,19 @@ namespace SocketCAN {
   /*****************************************/
   /*****************************************/
 
-  // BCM protocol;
-  bool openBCM(int &skt, const char * can_interface) {
+  // set filter covering the RAW protocol;
+  void setFilter(const int &skt, const struct can_filter * filter) {
+
+    setsockopt(skt, SOL_CAN_RAW, CAN_RAW_FILTER, &filter, sizeof(filter));
+
+  }
+
+  /*****************************************/
+  /*****************************************/
+  /*****************************************/
+
+  // open socket covering the BCM protocol;
+  bool openBCM(int &skt, const string can_interface) {
 
     // open socket;
     if((skt = socket(PF_CAN, SOCK_DGRAM, CAN_BCM)) < 0) {
@@ -126,7 +138,7 @@ namespace SocketCAN {
     }
 
     struct ifreq ifr;
-    strcpy(ifr.ifr_name, can_interface);
+    strcpy(ifr.ifr_name, can_interface.c_str());
     ioctl(skt, SIOCGIFINDEX, &ifr);
 
     struct sockaddr_can addr;
@@ -179,16 +191,6 @@ namespace SocketCAN {
 
     else
       return true;
-
-  }
-
-  /*****************************************/
-  /*****************************************/
-  /*****************************************/
-
-  void setFilter(const int &skt, const struct can_filter * filter) {
-
-    setsockopt(skt, SOL_CAN_RAW, CAN_RAW_FILTER, &filter, sizeof(filter));
 
   }
 

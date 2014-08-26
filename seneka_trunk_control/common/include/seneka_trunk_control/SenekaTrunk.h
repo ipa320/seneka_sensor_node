@@ -58,36 +58,39 @@
 #ifndef SENEKA_TRUNK_H_
 #define SENEKA_TRUNK_H_
 
-#define TX_MOTION_ID        0x196   // "execute motion"-command CAN-ID; also priority of CAN message (bus arbitration);
-#define TX_MODE_BYTENR      0       // position of data byte in CAN frame;
-#define TX_DIRECTION_BYTENR 1       // position of data byte in CAN frame;
-#define TX_VELOCITY_BYTENR  2       // position of data byte in CAN frame;
-#define TX_TARGETPOS_BYTENR 3       // position of data byte in CAN frame;
-
-#define TX_INTERRUPT_ID     0x196   // "interrupt motion"-command CAN-ID; also priority of CAN message (bus arbitration);
-
-#define RX_POSITION_ID      0x35E   // CAN-ID of CAN frame containing current trunk position; also priority of CAN message (bus arbitration);
-#define RX_POSITION_BYTENR  7       // position of data byte in CAN frame;
-
 /*********************************************/
 /*************** SenekaTrunk *****************/
 /*********************************************/
 
+#define TRUNK_TX_ROTATE_ID          0x196   // "execute rotation"-command CAN-ID; also priority of CAN message (bus arbitration);
+#define TRUNK_TX_MODE_BYTE_NR       0       // position of data byte in CAN frame;
+#define TRUNK_TX_DIRECTION_BYTE_NR  1       // position of data byte in CAN frame;
+#define TRUNK_TX_VELOCITY_BYTE_NR   2       // position of data byte in CAN frame;
+#define TRUNK_TX_TARGETPOS_BYTE_NR  3       // position of data byte in CAN frame;
+
+#define TRUNK_TX_INTERRUPT_ID       0x196   // "interrupt rotation"-command CAN-ID; also priority of CAN message (bus arbitration);
+
+#define TRUNK_RX_POSITION_ID        0x35E   // CAN-ID of CAN frame containing current trunk position; also priority of CAN message (bus arbitration);
+#define TRUNK_RX_POSITION_BYTE_NR   7       // position of data byte in CAN frame;
+
 #include <seneka_socketcan/SocketCAN.h>
+#include <string>
+
+using namespace std;
 
 class SenekaTrunk {
 
   public:
 
-    SenekaTrunk(char * can_interface);
+    SenekaTrunk(string can_interface);
     ~SenekaTrunk();
 
     // available modes of trunk rotation;
-    // each mode respects optionally given parameters (cf. execution function parameters);
+    // each mode respects optionally given parameters (cf. executeRotation() parameters);
     enum Mode {
       ENDLESS = 0,  // endless trunk rotation;
       CUSTOM  = 1,  // rotation to given target position;
-      ONCE    = 2,  // single entire rotation;
+      SINGLE  = 2,  // single entire rotation;
     };
 
     // mathematical directions of rotation (counter-clockwise);
@@ -96,12 +99,16 @@ class SenekaTrunk {
       POSITIVE = 1,
     };
 
-    // executes rotation movement in respect of <mode> according to optionally given parameters;
-    void executeMotion(Mode mode, Direction direction, unsigned char target_velocity, unsigned char target_position);
-    // interrupts rotation movement; no emergency stop;
-    void interruptMotion(void);
+    // executes rotation in respect of <mode> according to optionally given parameters;
+    bool rotate(Mode &mode, Direction direction, unsigned char target_velocity, unsigned char target_position);
+    // interrupts rotation; no emergency stop;
+    bool interrupt(void);
     // returns updated position value;
     unsigned char getPosition(void);
+
+  private:
+
+    int socket; // socket for CAN communication;
 
 };
 
@@ -110,58 +117,58 @@ class SenekaTrunk {
 /*****************************************/
 
 // constructor;
-SenekaTrunk::SenekaTrunk(char * can_interface = "can0") {
+SenekaTrunk::SenekaTrunk(string can_interface = "can0") {
 
   // open socket for CAN communication; respect optionally given differing CAN interface;
-  socket = SocketCAN::openRAW(can_interface);
+  SocketCAN::openRAW(socket, can_interface);
 
-  // create receive filter; only need to receive CAN frames of CAN_ID <RX_POSITION_ID>;
+  // create receive filter; only need to receive CAN frames of CAN_ID <TRUNK_RX_POSITION_ID>;
   struct can_filter filter[1];
-  filter[1].can_id = RX_POSITION_ID;
+  filter[1].can_id = TRUNK_RX_POSITION_ID;
   filter[1].can_mask = CAN_SFF_MASK;
 
   // set receive filter;
-  setFilter(socket, &filter)
+  SocketCAN::setFilter(socket, filter);
 
-};
+}
 
 // destructor;
 SenekaTrunk::~SenekaTrunk() {};
 
-// executes rotation movement in respect of <mode> according to optionally given parameters;
-void SenekaTrunk::executeMotion(Mode &mode, Direction &direction = NEGATIVE, unsigned char &target_velocity = 25, unsigned char &target_position = 0.00) {
+// executes rotation in respect of <mode> according to optionally given parameters;
+bool SenekaTrunk::rotate(Mode &mode, Direction direction = NEGATIVE, unsigned char target_velocity = 25, unsigned char target_position = 0) {
 
   struct can_frame frame;
 
-  frame.can_id  = TX_MOTION_ID;
+  frame.can_id  = TRUNK_TX_ROTATE_ID;
   frame.can_dlc = 8; // count of data bytes;
 
   for (int i = 0; i < frame.can_dlc; i++) {
     frame.data[i] = 0x00;
   }
 
-  frame.data[TX_MODE_BYTENR]      = mode;             // mode;
-  frame.data[TX_DIRECTION_BYTENR] = direction;        // direction;
-  frame.data[TX_VELOCITY_BYTENR]  = target_velocity;  // target velocity; [] = %; [0%; 100%]; increment = 1%;
-  frame.data[TX_TARGETPOS_BYTENR] = target_position;  // target position; [] = °; [0°; 360°]; increment = 1°;
+  frame.data[TRUNK_TX_MODE_BYTE_NR]      = mode;             // mode;
+  frame.data[TRUNK_TX_DIRECTION_BYTE_NR] = direction;        // direction;
+  frame.data[TRUNK_TX_VELOCITY_BYTE_NR]  = target_velocity;  // target velocity; [] = %; [0%; 100%]; increment = 1%;
+  frame.data[TRUNK_TX_TARGETPOS_BYTE_NR] = target_position;  // target position; [] = °; [0°; 360°]; increment = 1°;
 
-  SocketCAN::writeRAW(socket, frame);
+  return SocketCAN::writeRAW(socket, frame);
 
 }
 
-// interrupts rotation movement; no emergency stop;
-void SenekaTrunk::interruptMotion(void) {
+// interrupts rotation; no emergency stop;
+bool SenekaTrunk::interrupt(void) {
 
   struct can_frame frame;
 
-  frame.can_id  = TX_INTERRUPT_ID;
+  frame.can_id  = TRUNK_TX_INTERRUPT_ID;
   frame.can_dlc = 8; // count of data bytes;
 
   for (int i = 0; i < frame.can_dlc; i++) {
     frame.data[i] = 0x00;
   }
 
-  SocketCAN::writeRAW(socket, frame);
+  return SocketCAN::writeRAW(socket, frame);
 
 }
 
@@ -169,9 +176,9 @@ void SenekaTrunk::interruptMotion(void) {
 unsigned char SenekaTrunk::getPosition(void) {
 
   struct can_frame frame;
-  SocketCAN::readRaw(socket, frame);
+  SocketCAN::readRAW(socket, frame);
 
-  return frame.data[RX_POSITION_BYTENR];
+  return frame.data[TRUNK_RX_POSITION_BYTE_NR];
 
 }
 

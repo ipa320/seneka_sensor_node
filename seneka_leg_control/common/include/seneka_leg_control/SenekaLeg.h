@@ -20,7 +20,7 @@
 * Modified xx/20xx: 
 *
 * Description:
-* The seneka_can package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* The seneka_leg_control package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
 *
@@ -58,74 +58,96 @@
 #ifndef SENEKA_LEG_H_
 #define SENEKA_LEG_H_
 
-/****************************************/
-/*************** includes ***************/
-/****************************************/
-
-#include <seneka_socketcan/SocketCAN.h>
-
 /*******************************************/
 /*************** SenekaLeg *****************/
 /*******************************************/
+
+#define LEG_TX_COMMAND_ID         0x196 // "extend/retract"-command CAN-ID; also priority of CAN message (bus arbitration);
+#define LEG_TX_LEG_BYTE_NR        0     // position of data byte in CAN frame;
+#define LEG_TX_CMD_TYPE_BYTE_NR   1
+
+#define LEG_TX_INTERRUPT_ID       0x196   // "interrupt"-command CAN-ID; also priority of CAN message (bus arbitration);
+
+#define LEG_RX_POSITION_ID        0x35E   // CAN-ID of CAN frame containing current leg position; also priority of CAN message (bus arbitration);
+#define LEG_RX_POSITION_BYTE_NR   7       // position of data byte in CAN frame;
+#define LEG_RX_LEG_BYTE_NR        0       // position of data byte in CAN frame;
+
+#include <seneka_socketcan/SocketCAN.h>
+#include <string>
+
+using namespace std;
 
 class SenekaLeg {
 
   public:
 
-    // constructor;
-    SenekaLeg();
-
-    // destructor;
+    SenekaLeg(unsigned char leg_nr, string can_interface);
     ~SenekaLeg();
 
-    // member functions;
-    void turnNegative(void);
-    void turnPositive(void);
-    void stop();
+    // available commands;
+    enum Command {
+      EXTEND = 0,
+      RETRACT = 1,
+    };
+
+    bool executeCommand(Command command, unsigned char leg_nr);
+    bool interrupt(unsigned char leg_nr);
 
   private:
 
-    SocketCAN socketCAN;
+    int socket; // socket for CAN communication;
 
 };
 
-SenekaLeg::SenekaLeg() {};
+SenekaLeg::SenekaLeg(unsigned char leg_nr, string can_interface = "can0") {
+
+  // open socket for CAN communication; respect optionally given differing CAN interface;
+  SocketCAN::openRAW(socket, can_interface);
+
+  // create receive filter; only need to receive CAN frames of CAN_ID <LEG_RX_POSITION_ID>;
+  struct can_filter filter[1];
+  filter[1].can_id = TILT_RX_POSITION_ID;
+  filter[1].can_mask = CAN_SFF_MASK;
+
+  // set receive filter;
+  SocketCAN::setFilter(socket, filter);
+
+};
 
 SenekaLeg::~SenekaLeg() {};
 
-void SenekaLeg::turnNegative(void) {
+bool SenekaLeg::executeCommand(Command command, unsigned char leg_nr) {
 
   struct can_frame frame;
 
-  frame.can_id  = 0x196;
-  frame.can_dlc = 1;
-  frame.data[0] = 0x00;
+  frame.can_id  = LEG_TX_COMMAND_ID;
+  frame.can_dlc = 8; // count of data bytes;
 
-  socketCAN.writeRAW(&frame);
+  for (int i = 0; i < frame.can_dlc; i++) {
+    frame.data[i] = 0x00;
+  }
+
+  frame.data[LEG_TX_LEG_BYTE_NR] = leg_nr;        // leg number;
+  frame.data[LEG_TX_CMD_TYPE_BYTE_NR] = command;  // command type (extend/retract);
+
+  return SocketCAN::writeRAW(socket, frame);
 
 }
 
-void SenekaLeg::turnPositive(void) {
+bool SenekaLeg::interrupt(unsigned char leg_nr) {
 
   struct can_frame frame;
 
-  frame.can_id  = 0x196;
-  frame.can_dlc = 1;
-  frame.data[0] = 0x01;
+  frame.can_id  = LEG_TX_INTERRUPT_ID;
+  frame.can_dlc = 8; // count of data bytes;
 
-  socketCAN.writeRAW(&frame);
+  for (int i = 0; i < frame.can_dlc; i++) {
+    frame.data[i] = 0x00;
+  }
 
-}
+  frame.data[LEG_TX_LEG_BYTE_NR] = leg_nr; // leg number;
 
-void SenekaLeg::stop(void) {
-
-  struct can_frame frame;
-
-  frame.can_id  = 0x196;
-  frame.can_dlc = 1;
-  frame.data[0] = 0x02;
-
-  socketCAN.writeRAW(&frame);
+  return SocketCAN::writeRAW(socket, frame);
 
 }
 

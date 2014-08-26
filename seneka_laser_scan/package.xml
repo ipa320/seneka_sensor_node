@@ -10,12 +10,12 @@
 
   <description>
   The seneka_laser_scan package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
-  It implements a ROS service node which triggers a (Hokuyo) laser scanner, rotated by an electric actuator, to take a 360 degrees 3D scan of its environment. 
   This package might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.
   </description>
 
   <maintainer email="Matthias.Gruhler@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
-  <author email="Thorsten.Andreas.Kannacher@ipa.fraunhofer.de">Thorsten Andreas Kannacher</author>
+
+  <author email="Thorsten.Andreas.Kannacher@ipa.fraunhofer.de">Thorsten Kannacher</author>
 
   <buildtool_depend>catkin</buildtool_depend>
 

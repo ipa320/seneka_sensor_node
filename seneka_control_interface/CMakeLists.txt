@@ -6,6 +6,7 @@ set(CMAKE_BUILD_TYPE Release)
 find_package(catkin REQUIRED
   roscpp
   seneka_socketcan
+  seneka_laser_scan
   seneka_trunk_control
   seneka_leg_control
   seneka_tilt_control
@@ -16,6 +17,7 @@ catkin_package(
   CATKIN_DEPENDS
     roscpp
     seneka_socketcan
+    seneka_laser_scan
     seneka_trunk_control
     seneka_leg_control
     seneka_tilt_control

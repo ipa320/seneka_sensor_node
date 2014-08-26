@@ -20,7 +20,7 @@
 * Modified xx/20xx: 
 *
 * Description:
-* The seneka_can package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* The seneka_tilt_control package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
 *
@@ -58,74 +58,91 @@
 #ifndef SENEKA_TILT_H_
 #define SENEKA_TILT_H_
 
-/****************************************/
-/*************** includes ***************/
-/****************************************/
-
-#include <seneka_socketcan/SocketCAN.h>
-
 /********************************************/
 /*************** SenekaTilt *****************/
 /********************************************/
+
+#define TILT_TX_TURN_ID             0x196   // "execute rotation"-command CAN-ID; also priority of CAN message (bus arbitration);
+#define TILT_TX_DIRECTION_BYTE_NR   0       // position of data byte in CAN frame;
+#define TILT_TX_SENSITIVITY_BYTE_NR 2       // position of data byte in CAN frame;
+
+#define TILT_RX_POSITION_ID         0x35E   // CAN-ID of CAN frame containing current tilt unit position; also priority of CAN message (bus arbitration);
+#define TILT_RX_POSITION_BYTE_NR    7       // position of data byte in CAN frame;
+
+#define TILT_ANGLE_MAX              +45;    // maximum angle of tilt unit;
+#define TILT_ANGLE_MIN              -45;    // minimum angle of tilt unit;
+
+#include <seneka_socketcan/SocketCAN.h>
+#include <string>
+
+using namespace std;
 
 class SenekaTilt {
 
   public:
 
-    // constructor;
-    SenekaTilt();
-
-    // destructor;
+    SenekaTilt(string can_interface);
     ~SenekaTilt();
 
-    // member functions;
-    void turnNegative(void);
-    void turnPositive(void);
-    void stop();
+    // available directions;
+    enum Direction {
+      DOWN = 0,
+      UP   = 1,
+    };
+
+    bool turn(Direction direction, unsigned char sensitivity);
+    unsigned char getPosition(void);
 
   private:
 
-    SocketCAN socketCAN;
+    int socket; // socket for CAN communication;
 
 };
 
-SenekaTilt::SenekaTilt() {};
+// constructor;
+SenekaTilt::SenekaTilt(string can_interface = "can0") {
+
+  // open socket for CAN communication; respect optionally given differing CAN interface;
+  SocketCAN::openRAW(socket, can_interface);
+
+  // create receive filter; only need to receive CAN frames of CAN_ID <TILT_RX_POSITION_ID>;
+  struct can_filter filter[1];
+  filter[1].can_id = TILT_RX_POSITION_ID;
+  filter[1].can_mask = CAN_SFF_MASK;
+
+  // set receive filter;
+  SocketCAN::setFilter(socket, filter);
+
+};
 
 SenekaTilt::~SenekaTilt() {};
 
-void SenekaTilt::turnNegative(void) {
+// executes rotation in respect of <mode> according to optionally given parameters;
+bool SenekaTilt::turn(Direction direction, unsigned char sensitivity = 15) {
 
   struct can_frame frame;
 
-  frame.can_id  = 0x196;
-  frame.can_dlc = 1;
-  frame.data[0] = 0x00;
+  frame.can_id  = TILT_TX_TURN_ID;
+  frame.can_dlc = 8; // count of data bytes;
 
-  socketCAN.writeRAW(&frame);
+  for (int i = 0; i < frame.can_dlc; i++) {
+    frame.data[i] = 0x00;
+  }
+
+  frame.data[TILT_TX_DIRECTION_BYTE_NR]   = direction;   // direction;
+  frame.data[TILT_TX_SENSITIVITY_BYTE_NR] = sensitivity; // sensitivity; [] = %; [0%; 100%]; increment = 1%;
+
+  return SocketCAN::writeRAW(socket, frame);
 
 }
 
-void SenekaTilt::turnPositive(void) {
+// returns updated position value;
+unsigned char SenekaTilt::getPosition(void) {
 
   struct can_frame frame;
+  SocketCAN::readRAW(socket, frame);
 
-  frame.can_id  = 0x196;
-  frame.can_dlc = 1;
-  frame.data[0] = 0x01;
-
-  socketCAN.writeRAW(&frame);
-
-}
-
-void SenekaTilt::stop(void) {
-
-  struct can_frame frame;
-
-  frame.can_id  = 0x196;
-  frame.can_dlc = 1;
-  frame.data[0] = 0x02;
-
-  socketCAN.writeRAW(&frame);
+  return frame.data[TILT_RX_POSITION_BYTE_NR];
 
 }
 

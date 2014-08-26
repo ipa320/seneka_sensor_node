@@ -1,6 +1,6 @@
 /*!
 *****************************************************************
-* seneka_control_interface.cpp
+* SenekaLaserScan.h
 *
 * Copyright (c) 2013
 * Fraunhofer Institute for Manufacturing Engineering
@@ -10,19 +10,22 @@
 *
 * Repository name: seneka_sensor_node
 *
-* ROS package name: seneka_control_interface
+* ROS package name: seneka_socketcan
 *
 * Author: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
-* 
+*
 * Supervised by: Matthias Gruhler, E-Mail: Matthias.Gruhler@ipa.fraunhofer.de
 *
 * Date of creation: Jun 2014
 * Modified xx/20xx: 
 *
 * Description:
-* The seneka_control_interface package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* The seneka_laser_scan package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
+*
+* To-do:
+* - Read/write functions covering BCM protocol;
 *
 *****************************************************************
 *
@@ -55,51 +58,52 @@
 *
 ****************************************************************/
 
-#include <ros/ros.h>
-#include <seneka_socketcan/SocketCAN.h>
-#include <seneka_laser_scan/SenekaLaserScan.h>
-#include <seneka_trunk_control/SenekaTrunk.h>
-#include <seneka_tilt_control/SenekaTilt.h>
-#include <seneka_leg_control/SenekaLeg.h>
+#ifndef SENEKA_LASERSCAN_H_
+#define SENEKA_LASERSCAN_H_
 
-#include <iostream>
+/***********************************************/
+/*************** SenekaLaserScan ***************/
+/***********************************************/
+
+#include <ros/ros.h>
+#include <laser_assembler/AssembleScans.h>
 
 using namespace std;
 
-/*********************************************/
-/*************** main function ***************/
-/*********************************************/
+class SenekaLaserScan {
 
-int main(int argc, char *argv[]) {
+	public:
 
-  // ROS initialization; apply "seneka_control_interface" as node name;
-  ros::init(argc, argv, "seneka_control_interface");
-  ros::NodeHandle nh;
+		SenekaLaserScan();
+		~SenekaLaserScan();
 
-  SenekaLaserScan laser_scan;
-  SenekaTrunk     trunk;
-  SenekaTilt      tilt;
-  SenekaLeg       leg1(1);
-  SenekaLeg       leg2(2);
-  SenekaLeg       leg3(3);
-  
-  ros::Rate loop_rate(1); // [] = Hz;
+		ros::NodeHandle nh;
+		ros::ServiceClient service_client;
 
-  while(nh.ok()) {
+		bool scan(ros::Time &time_flag_begin, ros::Time &time_flag_end);
 
-    // stop here after one cycle;
-    ROS_ERROR("Press ENTER to continue.");
-    if (cin.get() == '\n') {}
+};
 
-    ros::spinOnce();
-    loop_rate.sleep();
+SenekaLaserScan::SenekaLaserScan() {
 
-  }
-
-  return 0;
+	nh = ros::NodeHandle("~");
+	service_client = nh.serviceClient<laser_assembler::AssembleScans>("assemble_scans");
 
 }
 
-/********************************************/
-/********************************************/
-/********************************************/
+SenekaLaserScan::~SenekaLaserScan() {}
+
+bool SenekaLaserScan::scan(ros::Time &time_flag_begin, ros::Time &time_flag_end) {
+
+	laser_assembler::AssembleScans service;
+	service.request.begin = time_flag_begin;
+	service.request.end = time_flag_end;
+
+	if (service_client.call(service))
+		return true;
+	else
+		return false;
+
+}
+
+#endif // SENEKA_LASERSCAN_H_
