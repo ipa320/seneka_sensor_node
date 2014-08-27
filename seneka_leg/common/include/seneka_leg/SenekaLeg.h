@@ -10,7 +10,7 @@
 *
 * Repository name: seneka_sensor_node
 *
-* ROS package name: seneka_leg_control
+* ROS package name: seneka_leg
 *
 * Author: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 * 
@@ -20,7 +20,7 @@
 * Modified xx/20xx: 
 *
 * Description:
-* The seneka_leg_control package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* The seneka_leg package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
 *

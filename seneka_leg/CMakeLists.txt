@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(seneka_tilt_control)
+project(seneka_leg)
 
 
 set(CMAKE_BUILD_TYPE Release)

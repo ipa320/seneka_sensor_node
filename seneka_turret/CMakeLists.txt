@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(seneka_leg_control)
+project(seneka_turret)
 
 
 set(CMAKE_BUILD_TYPE Release)

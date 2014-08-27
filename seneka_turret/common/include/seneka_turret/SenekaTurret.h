@@ -1,6 +1,6 @@
 /*!
 *****************************************************************
-* SenekaTrunk.h
+* SenekaTurret.h
 *
 * Copyright (c) 2013
 * Fraunhofer Institute for Manufacturing Engineering
@@ -10,7 +10,7 @@
 *
 * Repository name: seneka_sensor_node
 *
-* ROS package name: seneka_trunk_control
+* ROS package name: seneka_turret
 *
 * Author: Thorsten Kannacher, E-Mail: Thorsten.Andreas.Kannacher@ipa.fraunhofer.de
 * 
@@ -20,7 +20,7 @@
 * Modified xx/20xx: 
 *
 * Description:
-* The seneka_trunk_control package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+* The seneka_turret package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
 * This package might work with other hardware and can be used for other purposes, 
 * however the development has been specifically for this project and the deployed sensors.
 *
@@ -55,12 +55,12 @@
 *
 ****************************************************************/
 
-#ifndef SENEKA_TRUNK_H_
-#define SENEKA_TRUNK_H_
+#ifndef SENEKA_TURRET_H_
+#define SENEKA_TURRET_H_
 
-/*********************************************/
-/*************** SenekaTrunk *****************/
-/*********************************************/
+/**********************************************/
+/*************** SenekaTurret *****************/
+/**********************************************/
 
 #define TRUNK_TX_ROTATE_ID          0x196   // "execute rotation"-command CAN-ID; also priority of CAN message (bus arbitration);
 #define TRUNK_TX_MODE_BYTE_NR       0       // position of data byte in CAN frame;
@@ -78,17 +78,17 @@
 
 using namespace std;
 
-class SenekaTrunk {
+class SenekaTurret {
 
   public:
 
-    SenekaTrunk(string can_interface);
-    ~SenekaTrunk();
+    SenekaTurret(string can_interface);
+    ~SenekaTurret();
 
-    // available modes of trunk rotation;
+    // available modes of turret rotation;
     // each mode respects optionally given parameters (cf. executeRotation() parameters);
     enum Mode {
-      ENDLESS = 0,  // endless trunk rotation;
+      ENDLESS = 0,  // endless turret rotation;
       CUSTOM  = 1,  // rotation to given target position;
       SINGLE  = 2,  // single entire rotation;
     };
@@ -117,7 +117,7 @@ class SenekaTrunk {
 /*****************************************/
 
 // constructor;
-SenekaTrunk::SenekaTrunk(string can_interface = "can0") {
+SenekaTurret::SenekaTurret(string can_interface = "can0") {
 
   // open socket for CAN communication; respect optionally given differing CAN interface;
   SocketCAN::openRAW(socket, can_interface);
@@ -133,10 +133,10 @@ SenekaTrunk::SenekaTrunk(string can_interface = "can0") {
 }
 
 // destructor;
-SenekaTrunk::~SenekaTrunk() {};
+SenekaTurret::~SenekaTurret() {};
 
 // executes rotation in respect of <mode> according to optionally given parameters;
-bool SenekaTrunk::rotate(Mode &mode, Direction direction = NEGATIVE, unsigned char target_velocity = 25, unsigned char target_position = 0) {
+bool SenekaTurret::rotate(Mode &mode, Direction direction = NEGATIVE, unsigned char target_velocity = 25, unsigned char target_position = 0) {
 
   struct can_frame frame;
 
@@ -157,7 +157,7 @@ bool SenekaTrunk::rotate(Mode &mode, Direction direction = NEGATIVE, unsigned ch
 }
 
 // interrupts rotation; no emergency stop;
-bool SenekaTrunk::interrupt(void) {
+bool SenekaTurret::interrupt(void) {
 
   struct can_frame frame;
 
@@ -173,7 +173,7 @@ bool SenekaTrunk::interrupt(void) {
 }
 
 // returns updated position value;
-unsigned char SenekaTrunk::getPosition(void) {
+unsigned char SenekaTurret::getPosition(void) {
 
   struct can_frame frame;
   SocketCAN::readRAW(socket, frame);
@@ -182,4 +182,4 @@ unsigned char SenekaTrunk::getPosition(void) {
 
 }
 
-#endif // SENEKA_TRUNK_H_
+#endif // SENEKA_TURRET_H_

@@ -7,9 +7,9 @@ find_package(catkin REQUIRED
   roscpp
   seneka_socketcan
   seneka_laser_scan
-  seneka_trunk_control
-  seneka_leg_control
-  seneka_tilt_control
+  seneka_turret
+  seneka_leg
+  seneka_tilt
 )
 
 catkin_package(
@@ -18,9 +18,9 @@ catkin_package(
     roscpp
     seneka_socketcan
     seneka_laser_scan
-    seneka_trunk_control
-    seneka_leg_control
-    seneka_tilt_control
+    seneka_turret
+    seneka_leg
+    seneka_tilt
 )
 
 include_directories(

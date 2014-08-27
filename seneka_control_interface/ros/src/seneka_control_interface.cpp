@@ -58,9 +58,9 @@
 #include <ros/ros.h>
 #include <seneka_socketcan/SocketCAN.h>
 #include <seneka_laser_scan/SenekaLaserScan.h>
-#include <seneka_trunk_control/SenekaTrunk.h>
-#include <seneka_tilt_control/SenekaTilt.h>
-#include <seneka_leg_control/SenekaLeg.h>
+#include <seneka_turret/SenekaTurret.h>
+#include <seneka_tilt/SenekaTilt.h>
+#include <seneka_leg/SenekaLeg.h>
 
 #include <iostream>
 
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
   ros::NodeHandle nh;
 
   SenekaLaserScan laser_scan;
-  SenekaTrunk     trunk;
+  SenekaTurret    turret;
   SenekaTilt      tilt;
   SenekaLeg       leg1(1);
   SenekaLeg       leg2(2);
