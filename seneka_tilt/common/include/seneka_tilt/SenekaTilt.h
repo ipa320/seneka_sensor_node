@@ -72,17 +72,13 @@
 #define TILT_ANGLE_MAX              +45;    // maximum angle of tilt unit;
 #define TILT_ANGLE_MIN              -45;    // minimum angle of tilt unit;
 
-#include <seneka_socketcan/SocketCAN.h>
-#include <string>
+#include <seneka_socketcan/general_device.h>
 
-using namespace std;
-
-class SenekaTilt {
+class SenekaTilt : public SenekaGeneralCANDevice {
 
   public:
 
-    SenekaTilt(string can_interface);
-    ~SenekaTilt();
+    SenekaTilt(const std::string &can_interface = "can0") : SenekaGeneralCANDevice(TILT_RX_POSITION_ID, can_interface) {}
 
     // available directions;
     enum Direction {
@@ -90,64 +86,15 @@ class SenekaTilt {
       UP   = 1,
     };
 
-    bool turn(Direction direction, unsigned char sensitivity);
-    unsigned char getPosition(void);
-
-  private:
-
-    int socket; // socket for CAN communication;
-
+    bool turn(Direction direction, unsigned char sensitivity) const {
+		struct can_frame frame = fillFrame(TILT_TX_TURN_ID);
+		
+		frame.data[TILT_TX_DIRECTION_BYTE_NR]   = direction;   // direction;
+		frame.data[TILT_TX_SENSITIVITY_BYTE_NR] = sensitivity; // sensitivity; [] = %; [0%; 100%]; increment = 1%;
+		
+		return sendFrame(frame);
+	}
+    unsigned char getPosition(void) const {return readFrame().data[TILT_RX_POSITION_BYTE_NR];}
 };
-
-// constructor;
-SenekaTilt::SenekaTilt(string can_interface = "can0") {
-
-  // open socket for CAN communication; respect optionally given differing CAN interface;
-  SocketCAN::openRAW(socket, can_interface);
-
-  // create receive filter; only need to receive CAN frames of CAN_ID <TILT_RX_POSITION_ID>;
-  struct can_filter filter[1];
-  filter[1].can_id = TILT_RX_POSITION_ID;
-  filter[1].can_mask = CAN_SFF_MASK;
-
-  // set receive filter;
-  SocketCAN::setFilter(socket, filter);
-
-};
-
-SenekaTilt::~SenekaTilt() {};
-
-// executes rotation in respect of <mode> according to optionally given parameters;
-bool SenekaTilt::turn(Direction direction, unsigned char sensitivity = 15) {
-
-  struct can_frame frame;
-
-  frame.can_id  = TILT_TX_TURN_ID;
-  frame.can_dlc = 8; // count of data bytes;
-
-  for (int i = 0; i < frame.can_dlc; i++) {
-    frame.data[i] = 0x00;
-  }
-
-  frame.data[TILT_TX_DIRECTION_BYTE_NR]   = direction;   // direction;
-  frame.data[TILT_TX_SENSITIVITY_BYTE_NR] = sensitivity; // sensitivity; [] = %; [0%; 100%]; increment = 1%;
-
-  return SocketCAN::writeRAW(socket, frame);
-
-}
-
-// returns updated position value;
-unsigned char SenekaTilt::getPosition(void) {
-
-  struct can_frame frame;
-  SocketCAN::readRAW(socket, frame);
-
-  return frame.data[TILT_RX_POSITION_BYTE_NR];
-
-}
-
-/********************************************/
-/********************************************/
-/********************************************/
 
 #endif // SENEKA_TILT_H_

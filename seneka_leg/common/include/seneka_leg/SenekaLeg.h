@@ -72,17 +72,14 @@
 #define LEG_RX_POSITION_BYTE_NR   7       // position of data byte in CAN frame;
 #define LEG_RX_LEG_BYTE_NR        0       // position of data byte in CAN frame;
 
-#include <seneka_socketcan/SocketCAN.h>
-#include <string>
+#include <seneka_socketcan/general_device.h>
 
-using namespace std;
-
-class SenekaLeg {
+class SenekaLeg : public SenekaGeneralCANDevice {
 
   public:
 
-    SenekaLeg(unsigned char leg_nr, string can_interface);
-    ~SenekaLeg();
+    SenekaLeg(unsigned char leg_nr, const std::string &can_interface = "can0") :
+		SenekaGeneralCANDevice(LEG_RX_POSITION_ID, can_interface), leg_nr_(leg_nr) {}
 
     // available commands;
     enum Command {
@@ -90,69 +87,25 @@ class SenekaLeg {
       RETRACT = 1,
     };
 
-    bool executeCommand(Command command, unsigned char leg_nr);
-    bool interrupt(unsigned char leg_nr);
+    bool executeCommand(Command command) const {
+		struct can_frame frame = fillFrame(LEG_TX_COMMAND_ID);
+		
+		frame.data[LEG_TX_LEG_BYTE_NR] = leg_nr_;        // leg number;
+		frame.data[LEG_TX_CMD_TYPE_BYTE_NR] = command;  // command type (extend/retract);
+		
+		return sendFrame(frame);
+	}
+    bool interrupt(unsigned char leg_nr) const {
+		struct can_frame frame = fillFrame(LEG_TX_INTERRUPT_ID);
+		
+		frame.data[LEG_TX_LEG_BYTE_NR] = leg_nr_;        // leg number;
+		
+		return sendFrame(frame);
+	}
 
   private:
-
-    int socket; // socket for CAN communication;
-
+    int leg_nr_;
 };
 
-SenekaLeg::SenekaLeg(unsigned char leg_nr, string can_interface = "can0") {
-
-  // open socket for CAN communication; respect optionally given differing CAN interface;
-  SocketCAN::openRAW(socket, can_interface);
-
-  // create receive filter; only need to receive CAN frames of CAN_ID <LEG_RX_POSITION_ID>;
-  struct can_filter filter[1];
-  filter[1].can_id = TILT_RX_POSITION_ID;
-  filter[1].can_mask = CAN_SFF_MASK;
-
-  // set receive filter;
-  SocketCAN::setFilter(socket, filter);
-
-};
-
-SenekaLeg::~SenekaLeg() {};
-
-bool SenekaLeg::executeCommand(Command command, unsigned char leg_nr) {
-
-  struct can_frame frame;
-
-  frame.can_id  = LEG_TX_COMMAND_ID;
-  frame.can_dlc = 8; // count of data bytes;
-
-  for (int i = 0; i < frame.can_dlc; i++) {
-    frame.data[i] = 0x00;
-  }
-
-  frame.data[LEG_TX_LEG_BYTE_NR] = leg_nr;        // leg number;
-  frame.data[LEG_TX_CMD_TYPE_BYTE_NR] = command;  // command type (extend/retract);
-
-  return SocketCAN::writeRAW(socket, frame);
-
-}
-
-bool SenekaLeg::interrupt(unsigned char leg_nr) {
-
-  struct can_frame frame;
-
-  frame.can_id  = LEG_TX_INTERRUPT_ID;
-  frame.can_dlc = 8; // count of data bytes;
-
-  for (int i = 0; i < frame.can_dlc; i++) {
-    frame.data[i] = 0x00;
-  }
-
-  frame.data[LEG_TX_LEG_BYTE_NR] = leg_nr; // leg number;
-
-  return SocketCAN::writeRAW(socket, frame);
-
-}
-
-/********************************************/
-/********************************************/
-/********************************************/
 
 #endif // SENEKA_LEG_H_

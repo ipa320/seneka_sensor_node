@@ -73,17 +73,12 @@
 #define TRUNK_RX_POSITION_ID        0x35E   // CAN-ID of CAN frame containing current trunk position; also priority of CAN message (bus arbitration);
 #define TRUNK_RX_POSITION_BYTE_NR   7       // position of data byte in CAN frame;
 
-#include <seneka_socketcan/SocketCAN.h>
-#include <string>
+#include <seneka_socketcan/general_device.h>
 
-using namespace std;
-
-class SenekaTurret {
-
+class SenekaTurret : public SenekaGeneralCANDevice {
   public:
 
-    SenekaTurret(string can_interface);
-    ~SenekaTurret();
+    SenekaTurret(const std::string &can_interface = "can0") : SenekaGeneralCANDevice(TRUNK_RX_POSITION_ID, can_interface) {}
 
     // available modes of turret rotation;
     // each mode respects optionally given parameters (cf. executeRotation() parameters);
@@ -100,86 +95,23 @@ class SenekaTurret {
     };
 
     // executes rotation in respect of <mode> according to optionally given parameters;
-    bool rotate(Mode &mode, Direction direction, unsigned char target_velocity, unsigned char target_position);
+    bool rotate(Mode &mode, Direction direction, unsigned char target_velocity, unsigned char target_position) const {
+		struct can_frame frame = fillFrame(TRUNK_TX_ROTATE_ID);
+		
+		frame.data[TRUNK_TX_MODE_BYTE_NR]      = mode;             // mode;
+		frame.data[TRUNK_TX_DIRECTION_BYTE_NR] = direction;        // direction;
+		frame.data[TRUNK_TX_VELOCITY_BYTE_NR]  = target_velocity;  // target velocity; [] = %; [0%; 100%]; increment = 1%;
+		frame.data[TRUNK_TX_TARGETPOS_BYTE_NR] = target_position;  // target position; [] = °; [0°; 360°]; increment = 1°;
+		
+		return sendFrame(frame);
+	}
     // interrupts rotation; no emergency stop;
-    bool interrupt(void);
+    bool interrupt(void) const {
+		return sendFrame(fillFrame(TRUNK_TX_INTERRUPT_ID));
+	}
     // returns updated position value;
-    unsigned char getPosition(void);
-
-  private:
-
-    int socket; // socket for CAN communication;
-
+    unsigned char getPosition(void) const {return readFrame().data[TRUNK_RX_POSITION_BYTE_NR];}
 };
 
-/*****************************************/
-/*****************************************/
-/*****************************************/
-
-// constructor;
-SenekaTurret::SenekaTurret(string can_interface = "can0") {
-
-  // open socket for CAN communication; respect optionally given differing CAN interface;
-  SocketCAN::openRAW(socket, can_interface);
-
-  // create receive filter; only need to receive CAN frames of CAN_ID <TRUNK_RX_POSITION_ID>;
-  struct can_filter filter[1];
-  filter[1].can_id = TRUNK_RX_POSITION_ID;
-  filter[1].can_mask = CAN_SFF_MASK;
-
-  // set receive filter;
-  SocketCAN::setFilter(socket, filter);
-
-}
-
-// destructor;
-SenekaTurret::~SenekaTurret() {};
-
-// executes rotation in respect of <mode> according to optionally given parameters;
-bool SenekaTurret::rotate(Mode &mode, Direction direction = NEGATIVE, unsigned char target_velocity = 25, unsigned char target_position = 0) {
-
-  struct can_frame frame;
-
-  frame.can_id  = TRUNK_TX_ROTATE_ID;
-  frame.can_dlc = 8; // count of data bytes;
-
-  for (int i = 0; i < frame.can_dlc; i++) {
-    frame.data[i] = 0x00;
-  }
-
-  frame.data[TRUNK_TX_MODE_BYTE_NR]      = mode;             // mode;
-  frame.data[TRUNK_TX_DIRECTION_BYTE_NR] = direction;        // direction;
-  frame.data[TRUNK_TX_VELOCITY_BYTE_NR]  = target_velocity;  // target velocity; [] = %; [0%; 100%]; increment = 1%;
-  frame.data[TRUNK_TX_TARGETPOS_BYTE_NR] = target_position;  // target position; [] = °; [0°; 360°]; increment = 1°;
-
-  return SocketCAN::writeRAW(socket, frame);
-
-}
-
-// interrupts rotation; no emergency stop;
-bool SenekaTurret::interrupt(void) {
-
-  struct can_frame frame;
-
-  frame.can_id  = TRUNK_TX_INTERRUPT_ID;
-  frame.can_dlc = 8; // count of data bytes;
-
-  for (int i = 0; i < frame.can_dlc; i++) {
-    frame.data[i] = 0x00;
-  }
-
-  return SocketCAN::writeRAW(socket, frame);
-
-}
-
-// returns updated position value;
-unsigned char SenekaTurret::getPosition(void) {
-
-  struct can_frame frame;
-  SocketCAN::readRAW(socket, frame);
-
-  return frame.data[TRUNK_RX_POSITION_BYTE_NR];
-
-}
 
 #endif // SENEKA_TURRET_H_
