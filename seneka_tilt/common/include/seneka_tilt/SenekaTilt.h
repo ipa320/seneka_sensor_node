@@ -75,10 +75,15 @@
 #include <seneka_socketcan/general_device.h>
 
 class SenekaTilt : public SenekaGeneralCANDevice {
+	void readPosition(const struct can_frame &frame) {
+		std::cout<<(int)frame.data[TILT_RX_POSITION_BYTE_NR]<<std::endl;
+	}
 
   public:
 
-    SenekaTilt(const std::string &can_interface = "can0") : SenekaGeneralCANDevice(TILT_RX_POSITION_ID, can_interface) {}
+    SenekaTilt(const std::string &can_interface = "can0") : SenekaGeneralCANDevice(can_interface) {
+		addListener(TILT_RX_POSITION_ID, boost::bind(&SenekaTilt::readPosition, this, _1));
+	}
 
     // available directions;
     enum Direction {

@@ -76,9 +76,14 @@
 #include <seneka_socketcan/general_device.h>
 
 class SenekaTurret : public SenekaGeneralCANDevice {
+	void readPosition(const struct can_frame &frame) {
+		frame.data[TRUNK_RX_POSITION_BYTE_NR];
+	}
   public:
 
-    SenekaTurret(const std::string &can_interface = "can0") : SenekaGeneralCANDevice(TRUNK_RX_POSITION_ID, can_interface) {}
+    SenekaTurret(const std::string &can_interface = "can0") : SenekaGeneralCANDevice(can_interface) {
+		addListener(TRUNK_RX_POSITION_ID, boost::bind(&SenekaTurret::readPosition, this, _1));
+	}
 
     // available modes of turret rotation;
     // each mode respects optionally given parameters (cf. executeRotation() parameters);

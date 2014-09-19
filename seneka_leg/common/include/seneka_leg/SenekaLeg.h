@@ -75,11 +75,15 @@
 #include <seneka_socketcan/general_device.h>
 
 class SenekaLeg : public SenekaGeneralCANDevice {
+	void readPosition(const struct can_frame &frame) {
+	}
 
   public:
 
     SenekaLeg(unsigned char leg_nr, const std::string &can_interface = "can0") :
-		SenekaGeneralCANDevice(LEG_RX_POSITION_ID, can_interface), leg_nr_(leg_nr) {}
+		SenekaGeneralCANDevice(can_interface), leg_nr_(leg_nr) {
+		addListener(LEG_RX_POSITION_ID, boost::bind(&SenekaLeg::readPosition, this, _1));
+	}
 
     // available commands;
     enum Command {
