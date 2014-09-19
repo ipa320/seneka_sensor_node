@@ -113,11 +113,11 @@ int main(int argc, char *argv[]) {
   
   ControlNode node;
   
-  node.add(tilt, "turret");
+  node.add(turret, "turret");
   node.add(tilt, "tilt");
-  node.add(tilt, "leg1");
-  node.add(tilt, "leg2");
-  node.add(tilt, "leg3");
+  node.add(leg1, "leg1");
+  node.add(leg2, "leg2");
+  node.add(leg3, "leg3");
   
   ros::spin();
 
