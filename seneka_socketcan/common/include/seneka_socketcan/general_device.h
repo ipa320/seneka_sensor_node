@@ -69,7 +69,8 @@ class SenekaGeneralCANDevice {
   protected:
 	typedef boost::function<void(const struct can_frame&)> callback;
 
-    SenekaGeneralCANDevice(const std::string &can_interface = "can0") {
+    SenekaGeneralCANDevice(const std::string &can_interface = "can0") :
+    joint_id_(-1) {
 	  // open socket for CAN communication; respect optionally given differing CAN interface;
 	  SocketCAN::openRAW(socket_, can_interface);
 	  
@@ -108,7 +109,25 @@ class SenekaGeneralCANDevice {
 		return SocketCAN::writeRAW(socket_, frame);
 	}
 	
+	void updated(const double val) {
+		lock_.lock();
+		int id = joint_id_;
+		update_callback tmp = update_cb_;
+		lock_.unlock();
+		
+		tmp(id, val);
+	}
+	
   public:
+  
+	typedef boost::function<void(const int, const double)> update_callback;
+	
+	void setUpdateCallback(const int joint_id, const update_callback &cb) {
+		lock_.lock();
+		joint_id_ = joint_id;
+		update_cb_ = cb;
+		lock_.unlock();
+	}
   
     virtual ~SenekaGeneralCANDevice() {
 		running_ = false;
@@ -140,4 +159,8 @@ class SenekaGeneralCANDevice {
     boost::mutex lock_;
     boost::shared_ptr<boost::thread> thread_;
     bool running_;
+    
+    //comm funcs
+    int joint_id_;
+    update_callback update_cb_;
 };

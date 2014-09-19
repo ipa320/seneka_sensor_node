@@ -76,7 +76,7 @@
 
 class SenekaTilt : public SenekaGeneralCANDevice {
 	void readPosition(const struct can_frame &frame) {
-		std::cout<<(int)frame.data[TILT_RX_POSITION_BYTE_NR]<<std::endl;
+		updated(frame.data[TILT_RX_POSITION_BYTE_NR]*M_PI*2/256);
 	}
 
   public:

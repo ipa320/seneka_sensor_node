@@ -62,6 +62,8 @@
 #include <seneka_tilt/SenekaTilt.h>
 #include <seneka_leg/SenekaLeg.h>
 
+#include <sensor_msgs/JointState.h>
+
 #include <iostream>
 
 using namespace std;
@@ -69,6 +71,32 @@ using namespace std;
 /*********************************************/
 /*************** main function ***************/
 /*********************************************/
+
+class ControlNode {
+	ros::NodeHandle nh_;
+	ros::Publisher pub_joints_;
+	sensor_msgs::JointState joint_state_;
+public:
+	
+	ControlNode() {
+		pub_joints_  = nh_.advertise<sensor_msgs::JointState>("/joint_states", 10);
+	}
+	
+	void add(SenekaGeneralCANDevice &dev, const std::string &name) {
+		dev.setUpdateCallback((int)joint_state_.position.size(), boost::bind(&ControlNode::update_joint, this, _1, _2) );
+		
+		joint_state_.position.push_back(0.);
+		joint_state_.name.push_back(name);
+	}
+	
+	void update_joint(const int id, const double val) {
+		if(id<0 || id>=(int)joint_state_.position.size())
+			return;
+			
+		joint_state_.position[id] = val;
+		pub_joints_.publish(joint_state_);
+	}
+};
 
 int main(int argc, char *argv[]) {
 
@@ -83,17 +111,19 @@ int main(int argc, char *argv[]) {
   SenekaLeg       leg2(2);
   SenekaLeg       leg3(3);
   
-  ros::Rate loop_rate(1); // [] = Hz;
+  ControlNode node;
+  
+  node.add(tilt, "turret");
+  node.add(tilt, "tilt");
+  node.add(tilt, "leg1");
+  node.add(tilt, "leg2");
+  node.add(tilt, "leg3");
+  
+  ros::Rate loop_rate(30); // [] = Hz;
 
   while(nh.ok()) {
-
-    // stop here after one cycle;
-    ROS_ERROR("Press ENTER to continue.");
-    if (cin.get() == '\n') {}
-
     ros::spinOnce();
     loop_rate.sleep();
-
   }
 
   return 0;
