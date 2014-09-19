@@ -118,9 +118,9 @@ namespace SocketCAN {
   /*****************************************/
 
   // set filter covering the RAW protocol;
-  void setFilter(const int &skt, const struct can_filter * filter) {
+  void setFilter(const int &skt, const struct can_filter * filter, const int num) {
 
-    setsockopt(skt, SOL_CAN_RAW, CAN_RAW_FILTER, &filter, sizeof(filter));
+    setsockopt(skt, SOL_CAN_RAW, CAN_RAW_FILTER, &filter, sizeof(filter)*num);
 
   }
 

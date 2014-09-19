@@ -59,23 +59,35 @@
 
 #include <seneka_socketcan/SocketCAN.h>
 #include <string>
+#include <vector>
+#include <boost/bind.hpp>
+#include <boost/thread.hpp>
+#include <boost/shared_ptr.hpp>
 
 class SenekaGeneralCANDevice {
+	SenekaGeneralCANDevice(const SenekaGeneralCANDevice&);
   protected:
+	typedef boost::function<void(const struct can_frame&)> callback;
 
-    SenekaGeneralCANDevice(const int can_id, const std::string &can_interface = "can0") {
+    SenekaGeneralCANDevice(const std::string &can_interface = "can0") {
 	  // open socket for CAN communication; respect optionally given differing CAN interface;
 	  SocketCAN::openRAW(socket_, can_interface);
-
-	  // create receive filter; only need to receive CAN frames of CAN_ID <TILT_RX_POSITION_ID>;
-	  struct can_filter filter[1];
-	  filter[1].can_id = can_id;
-	  filter[1].can_mask = CAN_SFF_MASK;
-
-	  // set receive filter;
-	  SocketCAN::setFilter(socket_, filter);
+	  
+	  thread_.reset(new boost::thread(boost::ref(*this)));
 	}
-    virtual ~SenekaGeneralCANDevice() {}
+    
+    void addListener(const int can_id, const callback &cb) {
+		struct can_filter f;
+		f.can_id = can_id;
+		f.can_mask = CAN_SFF_MASK;
+		
+		lock_.lock();
+		filters_.push_back(f);
+		cbs_.push_back(cb);
+		lock_.unlock();
+		
+		SocketCAN::setFilter(socket_, &filters_[0], (int)filters_.size());
+	}
 
     struct can_frame readFrame() const {
 	  struct can_frame frame;
@@ -95,8 +107,37 @@ class SenekaGeneralCANDevice {
 	bool sendFrame(const struct can_frame & frame) const {
 		return SocketCAN::writeRAW(socket_, frame);
 	}
+	
+  public:
+  
+    virtual ~SenekaGeneralCANDevice() {
+		running_ = false;
+		if(thread_) thread_->join();
+	}
+	
+	void operator()() {
+		struct can_frame frame;
+		running_ = true;
+		
+		while(running_) {
+			SocketCAN::readRAW(socket_, frame);
+			
+			lock_.lock();
+			for(size_t i=0; i<filters_.size(); i++) {
+				if(filters_[i].can_id == frame.can_id)
+					cbs_[i](frame);
+			}
+			lock_.unlock();
+		}
+	}
 
   private:
 
     int socket_; // socket for CAN communication;
+    std::vector<struct can_filter> filters_;
+    std::vector<callback> cbs_;
+    
+    boost::mutex lock_;
+    boost::shared_ptr<boost::thread> thread_;
+    bool running_;
 };
