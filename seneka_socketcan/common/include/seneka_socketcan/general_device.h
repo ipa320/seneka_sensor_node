@@ -143,8 +143,12 @@ class SenekaGeneralCANDevice {
 			
 			lock_.lock();
 			for(size_t i=0; i<filters_.size(); i++) {
-				if(filters_[i].can_id == frame.can_id)
-					cbs_[i](frame);
+				if(filters_[i].can_id == frame.can_id) {
+					callback tmp = cbs_[i];
+					lock_.unlock();
+					tmp(frame);
+					lock_.lock();
+				}
 			}
 			lock_.unlock();
 		}

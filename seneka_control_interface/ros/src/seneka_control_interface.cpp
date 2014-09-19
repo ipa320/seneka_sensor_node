@@ -119,12 +119,7 @@ int main(int argc, char *argv[]) {
   node.add(tilt, "leg2");
   node.add(tilt, "leg3");
   
-  ros::Rate loop_rate(30); // [] = Hz;
-
-  while(nh.ok()) {
-    ros::spinOnce();
-    loop_rate.sleep();
-  }
+  ros::spin();
 
   return 0;
 
