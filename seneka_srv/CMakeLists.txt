@@ -9,6 +9,7 @@ set(CMAKE_BUILD_TYPE Release)
 ## is used, also find other catkin packages
 find_package(catkin REQUIRED COMPONENTS
   roscpp
+  std_msgs
   message_generation
 )
 
@@ -40,7 +41,8 @@ add_service_files(
 
 ## Generate added messages and services with any dependencies listed here
 generate_messages(
-#  DEPENDENCIES
+  DEPENDENCIES
+  std_msgs
 )
 
 ###################################
