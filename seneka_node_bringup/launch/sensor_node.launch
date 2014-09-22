@@ -1,4 +1,5 @@
 <launch>
+	<include file="$(find seneka_sensor_node_description)/launch/seneka_sensor_node_description.launch" />
 
 	<include file="$(find seneka_node_bringup)/launch/dgps.launch" />
 	<include file="$(find seneka_node_bringup)/launch/laser_scan.launch" />
