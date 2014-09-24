@@ -75,9 +75,31 @@
 #include <seneka_socketcan/general_device.h>
 
 class SenekaLeg : public SenekaGeneralCANDevice {
-	void readPosition(const struct can_frame &frame) {
+	enum {BN_STATUS=0, BN_M0=1, BN_M1=3, BN_SERVO=5};
+	struct can_frame send_frame_;
+	
+	uint16_t _read16(const uint8_t *buf) {
+		return ( (uint16_t)buf[0] | (((uint16_t)buf[1])<<8) );
+	}
+	void _write16(uint8_t *buf, uint16_t val) {
+		buf[0] = (val&0xff);
+		buf[1] = (val>>8);
 	}
 	
+	void readPosition(const struct can_frame &frame) {
+		if(frame.data[BN_STATUS]&0x80)
+			return;
+		const bool sw = (frame.data[BN_STATUS]&0x02)!=0;
+		updated(_read16(frame.data+BN_M0), 0);
+		updated(_read16(frame.data+BN_M1), 1);
+	}
+	
+	virtual void _setTarget(const int joint, const double val) {
+		_write16(send_frame_.data+(joint*2+1), (uint16_t)std::floor(val));
+		sendFrame(send_frame_);
+		
+		if(joint==2)	//servo cannot be read!
+			updated(val, 2);
 	}
 
   public:
