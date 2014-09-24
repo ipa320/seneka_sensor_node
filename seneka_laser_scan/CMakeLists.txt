@@ -7,12 +7,18 @@ find_package(catkin REQUIRED COMPONENTS
 )
 
 catkin_package(
-  CATKIN_DEPENDS roscpp laser_assembler
+  INCLUDE_DIRS
+  ros/include
+  CATKIN_DEPENDS
+    roscpp
+    laser_assembler
 )
 
-include_directories(include ${catkin_INCLUDE_DIRS})
+include_directories(
+  ros/include
+  ${catkin_INCLUDE_DIRS}
+)
 
-add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.cpp)
-target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
-
-add_dependencies(${PROJECT_NAME} laser_assembler_gencpp)
+#add_executable(${PROJECT_NAME} src/${PROJECT_NAME}.cpp)
+#target_link_libraries(${PROJECT_NAME} ${catkin_LIBRARIES})
+#add_dependencies(${PROJECT_NAME} laser_assembler_gencpp)

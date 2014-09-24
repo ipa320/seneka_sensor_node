@@ -142,7 +142,7 @@ class Dgps {
             char reply_number;
             char record_interpretation_flags;
 
-            char * data_bytes;                  // maximum of 244 bytes for data; concatenate pages if needed!;
+            std::vector<char> data_bytes;                  // maximum of 244 bytes for data; concatenate pages if needed!;
             
             // footer;
             char checksum;                      // calculated over: all bytes between stx and checksum;
@@ -200,7 +200,7 @@ class Dgps {
         // these 16 bytes of data form another separate packet, including header, data part and tail;
         // for now, I couldn't figure out why;
         // to avoid this kind of mistake, the following workaround is necessary;
-        unsigned char * debugBuffer(unsigned char * buffer);
+        std::vector<unsigned char> debugBuffer(unsigned char * buffer);
 
         enum DataType {
 
@@ -213,7 +213,7 @@ class Dgps {
         };
 
         // function to reorder incoming bits;
-        bool *  invertBitOrder      (bool * bits, DataType data_type, bool invertBitsPerByte = true, bool invertByteOrder = false);
+        std::vector<bool>  invertBitOrder      (bool * bits, DataType data_type, bool invertBitsPerByte = true, bool invertByteOrder = false);
         // function to extract numbers of data type CHAR;
         char    getCHAR             (unsigned char byte);
         // function to extract numbers of data type LONG from an 4-byte array;

@@ -1,0 +1,7 @@
+kinematics_extend:
+  leg1: [0, 1, 2]
+  leg2: [0, 2, [3,True]]
+  
+kinematics_retract:
+  leg1: [0, 1, 2]
+  leg2: [0, 2, [3,True]]
