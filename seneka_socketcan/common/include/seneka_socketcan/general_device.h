@@ -63,23 +63,25 @@
 #include <boost/bind.hpp>
 #include <boost/thread.hpp>
 #include <boost/shared_ptr.hpp>
+//#include <boost/atomic.hpp>
 
 class SenekaGeneralCANDevice {
 	SenekaGeneralCANDevice(const SenekaGeneralCANDevice&);
   protected:
 	typedef boost::function<void(const struct can_frame&)> callback;
 
-    SenekaGeneralCANDevice(const std::string &can_interface = "can0") :
-    joint_id_(-1) {
+    SenekaGeneralCANDevice(const size_t num_joints=1, const std::string &can_interface = "can0") :
+    error_(false), joint_id_(-1), can_id_(-1), num_joints_(num_joints), corr_(num_joints) {
 	  // open socket for CAN communication; respect optionally given differing CAN interface;
-	  SocketCAN::openRAW(socket_, can_interface);
+	  if(!SocketCAN::openRAW(socket_, can_interface))
+		error_ = true;
 	  
 	  thread_.reset(new boost::thread(boost::ref(*this)));
 	}
     
     void addListener(const int can_id, const callback &cb) {
 		struct can_filter f;
-		f.can_id = can_id;
+		f.can_id = can_id_ = can_id;
 		f.can_mask = CAN_SFF_MASK;
 		
 		lock_.lock();
@@ -106,21 +108,39 @@ class SenekaGeneralCANDevice {
 	}
 	
 	bool sendFrame(const struct can_frame & frame) const {
-		return SocketCAN::writeRAW(socket_, frame);
+		const bool r = SocketCAN::writeRAW(socket_, frame);
+		if(!r) error_ = true;
+		return r;
 	}
 	
-	void updated(const double val) {
+	void updated(double val, const size_t joint=0) {
+		if(joint>=num_joints_) return;
+		
+		val = (val+corr_[joint].corr_offset_) * corr_[joint].corr_factor_;
+		
 		lock_.lock();
-		int id = joint_id_;
+		const int id = joint_id_+(int)joint;
 		update_callback tmp = update_cb_;
 		lock_.unlock();
 		
 		tmp(id, val);
 	}
 	
+	void updated(bool val) {
+		lock_.lock();
+		const int id = joint_id_;
+		update_callback tmp = update_cb_btn_;
+		lock_.unlock();
+		
+		tmp(id, val);
+	}
+	
+	virtual void _setTarget(const int joint, const double val) = 0;
+	
   public:
   
 	typedef boost::function<void(const int, const double)> update_callback;
+	typedef boost::function<void(const int, const bool)> update_callback_btn;
 	
 	void setUpdateCallback(const int joint_id, const update_callback &cb) {
 		lock_.lock();
@@ -128,10 +148,23 @@ class SenekaGeneralCANDevice {
 		update_cb_ = cb;
 		lock_.unlock();
 	}
+	
+	void setUpdateCallbackButton(const update_callback_btn &cb) {
+		lock_.lock();
+		update_cb_btn_ = cb;
+		lock_.unlock();
+	}
   
     virtual ~SenekaGeneralCANDevice() {
 		running_ = false;
 		if(thread_) thread_->join();
+	}
+	
+	void setCorrection(const size_t joint, const double off, const double fact) {
+		 if(joint>=num_joints_) return;
+		
+		 corr_[joint].corr_offset_ = off;
+		 corr_[joint].corr_factor_ = fact;
 	}
 	
 	void operator()() {
@@ -153,10 +186,24 @@ class SenekaGeneralCANDevice {
 			lock_.unlock();
 		}
 	}
+	
+	virtual void init(const int can_id) = 0;
+	virtual void setTarget(const int joint, double val) {
+		if(joint>=num_joints_) return;
+		
+		val = (val/corr_[joint].corr_factor_)-corr_[joint].corr_offset_;		
+		_setTarget(joint, val);
+	}
+		
+	int getNumJoints() const {return num_joints_;}
+	int getCanID() const {return can_id_;}
+	bool error() const {return error_/*.load()*/;}
 
   private:
 
     int socket_; // socket for CAN communication;
+    //mutable boost::atomic<bool> error_;
+    mutable bool error_;
     std::vector<struct can_filter> filters_;
     std::vector<callback> cbs_;
     
@@ -165,6 +212,14 @@ class SenekaGeneralCANDevice {
     bool running_;
     
     //comm funcs
-    int joint_id_;
+    int joint_id_, can_id_;
+    size_t num_joints_;
     update_callback update_cb_;
+    update_callback_btn update_cb_btn_;
+    
+    struct SCorrection {
+		double corr_offset_, corr_factor_;
+		SCorrection(): corr_offset_(0.), corr_factor_(1.) {}
+	};
+	std::vector<SCorrection> corr_;
 };
