@@ -304,7 +304,7 @@ bool Dgps::getDgpsData() {
 
     // see comment at debugBuffer() function;
     int bytes_received_debugged = bytes_received - 16;
-    unsigned char * debugged_buffer = debugBuffer(buffer);
+    std::vector<unsigned char> debugged_buffer = debugBuffer(buffer);
 
     /**************************************************/
     /**************************************************/
@@ -449,7 +449,7 @@ bool Dgps::getDgpsData() {
 
         // hereby called functions analyze the received packet in-depth, structure it, extract and finnaly serve GPS data;
         // if everything works fine, GPS data is getting stored in Dgps::GpsData gps_data;
-        if (!analyzeData(debugged_buffer, bytes_received_debugged)) {
+        if (!analyzeData(&debugged_buffer.front(), bytes_received_debugged)) {
 
             msg << "Failed to gather GPS data.";
             transmitStatement(WARNING);
@@ -497,7 +497,7 @@ bool Dgps::analyzeData(unsigned char *  buffer,         // points to received pa
 
     // --- data part ---
 
-    temp_packet.data_bytes = new char[temp_packet.length];
+    temp_packet.data_bytes.resize(temp_packet.length);
 
     for (int i = 0; i < (temp_packet.length - 4); i++) {
 
@@ -679,9 +679,9 @@ bool Dgps::extractGpsData() {
 // these 16 bytes of data form another separate packet, including header, data part and tail;
 // for now, I couldn't figure out why;
 // to avoid this kind of mistake, the following workaround is necessary;
-unsigned char * Dgps::debugBuffer(unsigned char * buffer) {
+std::vector<unsigned char> Dgps::debugBuffer(unsigned char * buffer) {
 
-    unsigned char * debugged_buffer = new unsigned char [112];
+    std::vector<unsigned char> debugged_buffer(112);
 
     int j = 16;
 
@@ -706,12 +706,12 @@ unsigned char * Dgps::debugBuffer(unsigned char * buffer) {
 // function to reorder incoming bits
 // neccessary because of motorola format;
 // see Trimbel BD982 GNSS Receiver Manual, p. 66ff;
-bool * Dgps::invertBitOrder(bool * bits, Dgps::DataType data_type, bool invertBitsPerByte, bool invertByteOrder) {
+std::vector<bool> Dgps::invertBitOrder(bool * bits, Dgps::DataType data_type, bool invertBitsPerByte, bool invertByteOrder) {
 
-bool * reversed_8_bit   = new bool[ 8];
-bool * reversed_16_bit  = new bool[16];
-bool * reversed_32_bit  = new bool[32];
-bool * reversed_64_bit  = new bool[64];
+	std::vector<bool> reversed_8_bit(8);
+	std::vector<bool> reversed_16_bit(16);
+	std::vector<bool> reversed_32_bit(32);
+	std::vector<bool> reversed_64_bit(64);
 
     switch (data_type) {
 
@@ -780,7 +780,7 @@ bool * reversed_64_bit  = new bool[64];
 
         default:
 
-            return NULL;
+            return std::vector<bool>();
 
     }
 
@@ -800,8 +800,7 @@ char Dgps::getCHAR(unsigned char byte) {
 
     }
 
-    bool * resulting_bits;
-    resulting_bits = invertBitOrder(bits, CHAR);
+    std::vector<bool> resulting_bits = invertBitOrder(bits, CHAR);
 
     for (int i = 0; i < 8; i++) {
 
@@ -837,8 +836,7 @@ long Dgps::getLONG(unsigned char * bytes) {
 
     }
 
-    bool * resulting_bits;
-    resulting_bits = invertBitOrder(bits, LONG);
+    std::vector<bool> resulting_bits = invertBitOrder(bits, LONG);
 
     for (int i = 0; i < 32; i++) {
 
@@ -895,8 +893,7 @@ double Dgps::getDOUBLE(unsigned char * bytes, int exponent_bias) {
 
     }
 
-    bool * resulting_bits;
-    resulting_bits = invertBitOrder(bits, DOUBLE);
+    std::vector<bool> resulting_bits = invertBitOrder(bits, DOUBLE);
     for (int i = 0; i < 64; i++) bits[i] = resulting_bits[i];
 
     // calculate sign, fraction and exponent
