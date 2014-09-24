@@ -1,0 +1,143 @@
+#!/usr/bin/env python
+#################################################################
+##\file
+#
+# \note
+#   Copyright (c) 2014 \n
+#   Fraunhofer Institute for Manufacturing Engineering
+#   and Automation (IPA) \n
+#
+#   All rights reserved. \n\n
+#
+#################################################################
+#
+# \note
+#   ROS package name: ipa_kuka_rsi
+#
+# \author
+#   Author: Joshua Hampp
+#
+# \date Date of creation: 06/21/2014
+#
+# \brief
+#   test script
+#
+#################################################################
+
+import roslib; roslib.load_manifest('seneka_control_interface')
+import rospy
+
+from threading import Thread
+import collections
+
+import control_msgs.msg
+import trajectory_msgs.msg
+import std_msgs.msg
+import std_srvs.srv
+import seneka_srv.srv
+
+class StateMachine:
+    def __init__(self):
+        self.handlers = {}
+        self.startState = None
+        self.endStates = []
+
+    def add_state(self, name, handler, end_state=0):
+        name = name.upper()
+        self.handlers[name] = handler
+        if end_state:
+            self.endStates.append(name)
+
+    def set_start(self, name):
+        self.startState = name.upper()
+
+    def run(self, cargo):
+        try:
+            handler = self.handlers[self.startState]
+        except:
+            raise InitializationError("must call .set_start() before .run()")
+        if not self.endStates:
+            raise  InitializationError("at least one state must be an end_state")
+    
+        while True:
+            (newState, cargo) = handler(cargo)
+            if newState.upper() in self.endStates:
+                print("reached ", newState)
+                break 
+            else:
+                handler = self.handlers[newState.upper()]
+
+class Comm:
+	def __init__(self):
+		#configuration
+		self.kin_extend = rospy.get_param('~kinematics_extend')
+		self.kin_retract = rospy.get_param('~kinematics_retract')
+		
+		#ros stuff
+		rospy.wait_for_service('joint_path_command')
+		self.srv_traj = rospy.ServiceProxy("joint_path_command", seneka_srv.srv.JointTrajectory)
+		self.buttons = []
+		for i in xrange(3):
+			self.buttons.append(False)
+			#rospy.Subscriber("button"+str(i), std_msgs.msg.Bool, self.on_button, i)
+		rospy.Service('extend', std_srvs.srv.Empty, self.extend)
+		
+	def extend(self, _dummy):
+		return self.exec_srv(self.kin_extend)
+	def retract(self, _dummy):
+		return self.exec_srv(self.kin_retract)
+	
+	def send_kinematics(self, traj, name, check):
+		msg = trajectory_msgs.msg.JointTrajectory()
+		msg.joint_names = [name]
+		for st in traj:
+			pt = trajectory_msgs.msg.JointTrajectoryPoint()
+			pt.positions = [st]
+			pt.time_from_start = rospy.rostime.Duration(10)
+			msg.points.append(pt)
+		try:
+			req = seneka_srv.srv.JointTrajectoryRequest()
+			req.traj = msg
+			req.check_switch = [check]*len(pt.positions)
+			return self.srv_traj(req)
+		except rospy.ServiceException as exc:
+			print("Service did not process request: " + str(exc))
+		return False
+
+	def on_button(self, msg, index):
+		self.buttons[index] = msg.data
+		
+	def execute_kinematic(self, name, traj):
+		for t in traj:
+			check = False
+			if isinstance(t, collections.Iterable):
+				pos = t[0]
+				if len(t)>1: check = t[1]
+			else: pos = t
+			if not isinstance(pos, collections.Iterable): pos = [pos]
+			r = self.send_kinematics(pos, name, check)
+			if r and check: return True
+			elif not r: return False
+		return True
+
+	def exec_srv(self, param):
+		threads=[]
+		for name in param:
+			t = Thread(target=self.execute_kinematic, args=(name, param[name]))
+			t.start()
+			threads.append( t )
+		for t in threads:
+			t.join()
+		return std_srvs.srv.EmptyResponse()
+
+
+if __name__ == '__main__':
+    try:
+        rospy.init_node('leg_kinematics')
+	comm = Comm()
+	rospy.spin()
+
+	#rospy.sleep(10.1)
+	#comm.send_kinematics([[0,1,2],[3,4,5]])
+    except rospy.ROSInterruptException:
+        print "program interrupted before completion"
