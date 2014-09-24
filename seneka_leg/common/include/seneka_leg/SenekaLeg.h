@@ -77,38 +77,19 @@
 class SenekaLeg : public SenekaGeneralCANDevice {
 	void readPosition(const struct can_frame &frame) {
 	}
+	
+	}
 
   public:
 
-    SenekaLeg(unsigned char leg_nr, const std::string &can_interface = "can0") :
-		SenekaGeneralCANDevice(can_interface), leg_nr_(leg_nr) {
-		addListener(LEG_RX_POSITION_ID, boost::bind(&SenekaLeg::readPosition, this, _1));
+    SenekaLeg(const std::string &can_interface = "can0") :
+		SenekaGeneralCANDevice(3, can_interface) {
 	}
-
-    // available commands;
-    enum Command {
-      EXTEND = 0,
-      RETRACT = 1,
-    };
-
-    bool executeCommand(Command command) const {
-		struct can_frame frame = fillFrame(LEG_TX_COMMAND_ID);
-		
-		frame.data[LEG_TX_LEG_BYTE_NR] = leg_nr_;        // leg number;
-		frame.data[LEG_TX_CMD_TYPE_BYTE_NR] = command;  // command type (extend/retract);
-		
-		return sendFrame(frame);
+	
+	virtual void init(const int can_id = LEG_RX_POSITION_ID) {
+		addListener(can_id, boost::bind(&SenekaLeg::readPosition, this, _1));
+		send_frame_ = fillFrame(can_id);
 	}
-    bool interrupt(unsigned char leg_nr) const {
-		struct can_frame frame = fillFrame(LEG_TX_INTERRUPT_ID);
-		
-		frame.data[LEG_TX_LEG_BYTE_NR] = leg_nr_;        // leg number;
-		
-		return sendFrame(frame);
-	}
-
-  private:
-    int leg_nr_;
 };
 
 
