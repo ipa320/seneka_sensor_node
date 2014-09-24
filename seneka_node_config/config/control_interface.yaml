@@ -1,0 +1,7 @@
+max_tolerance: 0.02
+
+leg1:
+  can_id: 0x196
+  button: contact_sensors/leg1
+  offset: 0.0
+  factor: 1.0
