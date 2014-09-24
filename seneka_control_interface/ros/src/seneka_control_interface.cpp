@@ -58,8 +58,6 @@
 #include <ros/ros.h>
 #include <seneka_socketcan/SocketCAN.h>
 #include <seneka_laser_scan/SenekaLaserScan.h>
-#include <seneka_turret/SenekaTurret.h>
-#include <seneka_tilt/SenekaTilt.h>
 #include <seneka_leg/SenekaLeg.h>
 
 #include <sensor_msgs/JointState.h>

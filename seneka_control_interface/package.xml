@@ -26,16 +26,27 @@
   <build_depend>roscpp</build_depend>
   <build_depend>seneka_socketcan</build_depend>
   <build_depend>seneka_laser_scan</build_depend>
-  <build_depend>seneka_turret</build_depend>
   <build_depend>seneka_leg</build_depend>
-  <build_depend>seneka_tilt</build_depend>
+  <!--build_depend>seneka_turret</build_depend>
+  <build_depend>seneka_tilt</build_depend-->
+  
+  <build_depend>seneka_srv</build_depend>
+  <build_depend>diagnostic_msgs</build_depend>
+  <build_depend>trajectory_msgs</build_depend>
+  <build_depend>std_msgs</build_depend>
   
 
   <run_depend>roscpp</run_depend>
+  <run_depend>rospy</run_depend>
   <run_depend>seneka_socketcan</run_depend>
   <run_depend>seneka_laser_scan</run_depend>
-  <run_depend>seneka_turret</run_depend>
   <run_depend>seneka_leg</run_depend>
-  <run_depend>seneka_tilt</run_depend>
+  <!--run_depend>seneka_turret</run_depend>
+  <run_depend>seneka_tilt</run_depend-->
+  
+  <run_depend>seneka_srv</run_depend>
+  <run_depend>diagnostic_msgs</run_depend>
+  <run_depend>trajectory_msgs</run_depend>
+  <run_depend>std_msgs</run_depend>
 
 </package>
