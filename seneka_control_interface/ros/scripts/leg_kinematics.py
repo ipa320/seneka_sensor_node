@@ -30,7 +30,6 @@ import rospy
 from threading import Thread
 import collections
 
-import control_msgs.msg
 import trajectory_msgs.msg
 import std_msgs.msg
 import std_srvs.srv
