@@ -81,6 +81,7 @@ class Comm:
 			self.buttons.append(False)
 			#rospy.Subscriber("button"+str(i), std_msgs.msg.Bool, self.on_button, i)
 		rospy.Service('extend', std_srvs.srv.Empty, self.extend)
+		rospy.Service('retract', std_srvs.srv.Empty, self.retract)
 		
 	def extend(self, _dummy):
 		return self.exec_srv(self.kin_extend)
@@ -89,12 +90,13 @@ class Comm:
 	
 	def send_kinematics(self, traj, name, check):
 		msg = trajectory_msgs.msg.JointTrajectory()
-		msg.joint_names = [name]
-		for st in traj:
-			pt = trajectory_msgs.msg.JointTrajectoryPoint()
-			pt.positions = [st]
-			pt.time_from_start = rospy.rostime.Duration(10)
-			msg.points.append(pt)
+		msg.joint_names = name
+		
+		pt = trajectory_msgs.msg.JointTrajectoryPoint()
+		pt.positions = traj
+		pt.time_from_start = rospy.rostime.Duration(10)
+		msg.points.append(pt)
+		
 		try:
 			req = seneka_srv.srv.JointTrajectoryRequest()
 			req.traj = msg
@@ -110,12 +112,10 @@ class Comm:
 	def execute_kinematic(self, name, traj):
 		for t in traj:
 			check = False
-			if isinstance(t, collections.Iterable):
-				pos = t[0]
-				if len(t)>1: check = t[1]
-			else: pos = t
+			pos = t[0:2]
+			if len(t)>2: check = t[2]
 			if not isinstance(pos, collections.Iterable): pos = [pos]
-			r = self.send_kinematics(pos, name, check)
+			r = self.send_kinematics(pos, [name+"0",name+"1"], check)
 			if r and check: return True
 			elif not r: return False
 		return True
