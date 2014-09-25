@@ -266,13 +266,17 @@ public:
 	void publishState() {
 		// publishing diagnotic messages
 		diagnostic_msgs::DiagnosticArray diagnostics;
-		diagnostics.status.resize(devices_.size());
+		diagnostics.status.resize(joint_state_.name.size());
 
 		// set data to diagnostics
+		size_t j=0;
 		for(size_t i=0; i<devices_.size(); i++) {
-			diagnostics.status[i].level = devices_[i]->error()?2:1;
-			diagnostics.status[i].name = joint_state_.name[i];
-			diagnostics.status[i].message = devices_[i]->error()?"error":"ok";
+			for(size_t k=0; k<devices_[i]->getNumJoints(); k++) {
+				diagnostics.status[j].level = devices_[i]->error()?2:1;
+				diagnostics.status[j].name = joint_state_.name[j];
+				diagnostics.status[j].message = devices_[i]->error()?"error":"ok";
+				++j;
+			}
 		}
 		
 		// publish diagnostic message
