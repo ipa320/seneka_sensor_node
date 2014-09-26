@@ -88,6 +88,8 @@ class ControlNode {
 	
 	double max_tolerance_;
 	boost::mutex lock_;
+
+	bool testing_;
 	
 	/// reorder a vector with a given list of indices, if not possible returns false
 	template< class T >
@@ -141,6 +143,7 @@ public:
 		
 		ros::NodeHandle pnh("~");	//parameter lookup in local namespace
 		pnh.param<double>("max_tolerance", max_tolerance_, 0.01);
+		pnh.param<bool>("testing", testing_, false);
 	}
 	
 	void add(SenekaGeneralCANDevice &dev, const std::string &name) {
@@ -281,6 +284,20 @@ public:
 		
 		// publish diagnostic message
 		pub_diag_.publish(diagnostics);
+
+		if(testing_) {
+			std::cout<<"testing..."<<std::endl;
+			boost::mutex::scoped_lock lock(lock_);
+			for(size_t i=0; i<joint_state_.position.size(); i++)
+				std::cout<<joint_state_.name[i]<<": \t"<<joint_state_.position[i]<<std::endl;
+			const double delta = 0.2;
+			switch(getchar()) {
+				case 'w': devices_[0]->setTarget(0, joint_state_.position[0]+delta); break;
+				case 's': devices_[0]->setTarget(0, joint_state_.position[0]-delta); break;
+				case 'a': devices_[0]->setTarget(1, joint_state_.position[1]-delta); break;
+				case 'd': devices_[0]->setTarget(1, joint_state_.position[1]+delta); break;
+			}
+		}
 	}
 	
 	void update_joint(const int id, const double val) {
