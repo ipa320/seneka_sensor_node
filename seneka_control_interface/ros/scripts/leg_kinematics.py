@@ -28,8 +28,9 @@ import roslib; roslib.load_manifest('seneka_control_interface')
 import rospy
 
 from threading import Thread
-import collections
+import collections, copy
 
+import sensor_msgs.msg
 import trajectory_msgs.msg
 import std_msgs.msg
 import std_srvs.srv
@@ -73,6 +74,8 @@ class Comm:
 		self.kin_retract = rospy.get_param('~kinematics_retract')
 		
 		#ros stuff
+		self.last_pos = {}
+		rospy.Subscriber("/joint_states", sensor_msgs.msg.JointState, self.on_joint_state)
 		rospy.wait_for_service('joint_path_command')
 		self.srv_traj = rospy.ServiceProxy("joint_path_command", seneka_srv.srv.JointTrajectory)
 		self.buttons = []
@@ -81,11 +84,30 @@ class Comm:
 			#rospy.Subscriber("button"+str(i), std_msgs.msg.Bool, self.on_button, i)
 		rospy.Service('extend', std_srvs.srv.Empty, self.extend)
 		rospy.Service('retract', std_srvs.srv.Empty, self.retract)
+
+	def on_joint_state(self, msg):
+		if len(msg.name)!=len(msg.position): return
+		for i in xrange(len(msg.name)):
+			self.last_pos[msg.name[i]] = msg.position[i]
 		
 	def extend(self, _dummy):
 		return self.exec_srv(self.kin_extend)
+
 	def retract(self, _dummy):
-		return self.exec_srv(self.kin_retract)
+		param = copy.deepcopy(self.kin_retract)
+		for l in param: #l=legX
+			if not l+"0" in self.last_pos:
+				print "not found "+l
+				continue
+			pos = self.last_pos[l+"0"]
+			val = param[l]
+			print pos, val
+			for i in range(len(val)-1):
+				if pos>=min(val[i][0],val[i+1][0]) and pos<=max(val[i][0],val[i+1][0]):
+					print "found at "+str(i)
+					for j in range(i+1): param[l].pop(0)
+					break
+		return self.exec_srv(param)
 	
 	def send_kinematics(self, traj, name, check):
 		msg = trajectory_msgs.msg.JointTrajectory()
