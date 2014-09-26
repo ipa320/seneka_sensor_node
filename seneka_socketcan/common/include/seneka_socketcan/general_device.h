@@ -123,7 +123,7 @@ class SenekaGeneralCANDevice {
 		update_callback tmp = update_cb_;
 		lock_.unlock();
 		
-		tmp(id, val);
+		if(tmp) tmp(id, val);
 	}
 	
 	void updated(bool val) {
@@ -132,7 +132,7 @@ class SenekaGeneralCANDevice {
 		update_callback tmp = update_cb_btn_;
 		lock_.unlock();
 		
-		tmp(id, val);
+		if(tmp) tmp(id, val);
 	}
 	
 	virtual void _setTarget(const int joint, const double val) = 0;
