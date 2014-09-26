@@ -1,11 +1,12 @@
-max_tolerance: 0.02
+max_tolerance: 0.08
+testing: false
 
 leg1:
   can_id: 0x196
   button: contact_sensors/leg1
 leg10:
-  offset: 0x9AA
-  factor: 0x4BC
+  offset: -0x9AA
+  factor: 0.0008250825
 leg11:
-  offset: 0x3A9
-  factor: 0x117
+  offset: -0x3A9
+  factor: 0.00358422939

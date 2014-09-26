@@ -1,5 +1,5 @@
 kinematics_extend:
-  leg1: [[0.5,0.5,True],[0.75,0.75,True],[0.25,0.25,True]]
+  leg1: [[0.7,0.7,True]]
   
 kinematics_retract:
-  leg1: [[0.5,0.5],[0.25,0.25],[0.75,0.75]]
+  leg1: [[0.7,0.7],[0.4,0.8]]
