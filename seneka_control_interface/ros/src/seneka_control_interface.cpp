@@ -171,7 +171,10 @@ public:
 		for(size_t i=0; i<dev.getNumJoints(); i++) {
 			const std::string fullname = name+(dev.getNumJoints()>1?boost::lexical_cast<std::string>(i):"");
 			joint_state_.position.push_back(0.);
-			joint_state_.name.push_back(fullname);
+			
+			std::string joint_name;
+			pnh.param<std::string>(fullname+"/alias", joint_name, fullname);
+			joint_state_.name.push_back(joint_name);
 			
 			double off, fact;
 			pnh.param<double>(fullname+"/offset", off, 0.);
