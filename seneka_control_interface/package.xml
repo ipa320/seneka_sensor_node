@@ -24,6 +24,7 @@
   
 
   <build_depend>roscpp</build_depend>
+  <build_depend>actionlib</build_depend>
   <build_depend>seneka_socketcan</build_depend>
   <build_depend>seneka_laser_scan</build_depend>
   <build_depend>seneka_leg</build_depend>
@@ -38,6 +39,7 @@
 
   <run_depend>roscpp</run_depend>
   <run_depend>rospy</run_depend>
+  <run_depend>actionlib</run_depend>
   <run_depend>seneka_socketcan</run_depend>
   <run_depend>seneka_laser_scan</run_depend>
   <run_depend>seneka_leg</run_depend>
