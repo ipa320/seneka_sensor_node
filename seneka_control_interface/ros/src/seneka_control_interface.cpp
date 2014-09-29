@@ -327,22 +327,21 @@ int main(int argc, char *argv[]) {
 
   // ROS initialization; apply "seneka_control_interface" as node name;
   ros::init(argc, argv, "seneka_control_interface");
-  ros::NodeHandle nh;
+  ros::NodeHandle nh("~");
 
   SenekaLaserScan laser_scan;
-  SenekaLeg    turret;
-  SenekaLeg      tilt;
-  SenekaLeg       leg1;
-  SenekaLeg       leg2;
-  SenekaLeg       leg3;
   
   ControlNode node;
-  
-  node.add(turret, "turret");
-  node.add(tilt, "tilt");
-  node.add(leg1, "leg1");
-  node.add(leg2, "leg2");
-  node.add(leg3, "leg3");
+  std::vector<boost::shared_ptr<SenekaLeg> > devices;
+  {
+	std::vector<std::string> l;
+	nh.param<std::vector<std::string> >("devices", l, l);
+	devices.resize(l.size());
+	for(size_t i=0; i<l.size(); i++) {
+		devices[i].reset(new SenekaLeg());
+		node.add(*devices[i], l[i]);
+	}
+  }
   
   ros::Rate rate(20);
   while(ros::ok()) {
