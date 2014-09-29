@@ -92,6 +92,7 @@ class SenekaLeg : public SenekaGeneralCANDevice {
 		const bool sw = (frame.data[BN_STATUS]&0x02)!=0;
 		updated(_read16(frame.data+BN_M0), 0);
 		updated(_read16(frame.data+BN_M1), 1);
+		updated(_read16(frame.data+BN_SERVO), 2);
 		updated(!sw);
 	}
 	
