@@ -5,11 +5,10 @@ set(CMAKE_BUILD_TYPE Release)
 
 find_package(catkin REQUIRED
   roscpp
+  actionlib
   seneka_socketcan
   seneka_laser_scan
-#  seneka_turret
   seneka_leg
-#  seneka_tilt
 )
 
 catkin_package(

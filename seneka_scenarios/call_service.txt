@@ -1,0 +1,5 @@
+Call service by rosbridge:
+
+{ "op": "call_service",
+  "service": "/extend"
+}

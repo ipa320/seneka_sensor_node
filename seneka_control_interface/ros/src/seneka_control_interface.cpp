@@ -56,6 +56,7 @@
 ****************************************************************/
 
 #include <ros/ros.h>
+#include <actionlib/server/simple_action_server.h>
 #include <seneka_socketcan/SocketCAN.h>
 #include <seneka_laser_scan/SenekaLaserScan.h>
 #include <seneka_leg/SenekaLeg.h>
@@ -65,6 +66,8 @@
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <trajectory_msgs/JointTrajectory.h>
 #include <seneka_srv/JointTrajectory.h>
+#include <control_msgs/FollowJointTrajectoryAction.h>
+#include <control_msgs/FollowJointTrajectoryFeedback.h>
 
 #include <iostream>
 #include <boost/thread/mutex.hpp>
@@ -82,6 +85,7 @@ class ControlNode {
 	ros::Subscriber sub_joint_path_command_;///< subscriber for a trajectory
 	ros::ServiceServer srv_joint_path_command_;
 	sensor_msgs::JointState joint_state_;
+	actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction> as_joint_; 
 	
 	std::vector<SenekaGeneralCANDevice*> devices_;
 	std::vector<bool> btns_;
@@ -135,7 +139,9 @@ class ControlNode {
 	}
 public:
 	
-	ControlNode() {
+	ControlNode():
+		as_joint_("/tilt_controller/follow_joint_trajectory", false)	//hacky
+	{
 		pub_joints_  = nh_.advertise<sensor_msgs::JointState>("/joint_states", 10);
 		pub_diag_ = nh_.advertise<diagnostic_msgs::DiagnosticArray> ("/diagnostics", 1);
 		sub_joint_path_command_ = nh_.subscribe("joint_path_command", 1, &ControlNode::cb_joint_path_command, this);
@@ -144,6 +150,9 @@ public:
 		ros::NodeHandle pnh("~");	//parameter lookup in local namespace
 		pnh.param<double>("max_tolerance", max_tolerance_, 0.01);
 		pnh.param<bool>("testing", testing_, false);
+		
+		as_joint_.registerGoalCallback(boost::bind(&ControlNode::cb_follow_joint_traj, this));
+		as_joint_.start();
 	}
 	
 	void add(SenekaGeneralCANDevice &dev, const std::string &name) {
@@ -171,7 +180,10 @@ public:
 		for(size_t i=0; i<dev.getNumJoints(); i++) {
 			const std::string fullname = name+(dev.getNumJoints()>1?boost::lexical_cast<std::string>(i):"");
 			joint_state_.position.push_back(0.);
-			joint_state_.name.push_back(fullname);
+			
+			std::string joint_name;
+			pnh.param<std::string>(fullname+"/alias", joint_name, fullname);
+			joint_state_.name.push_back(joint_name);
 			
 			double off, fact;
 			pnh.param<double>(fullname+"/offset", off, 0.);
@@ -190,6 +202,23 @@ public:
 	void cb_joint_path_command(const trajectory_msgs::JointTrajectory &jt)
 	{
 		_cb_joint_path_command(jt, seneka_srv::JointTrajectory::Request::_check_switch_type());
+	}
+
+	void cb_follow_joint_traj()
+	{
+		control_msgs::FollowJointTrajectoryGoalConstPtr goal_ptr = as_joint_.acceptNewGoal();
+		if(!goal_ptr) {
+			ROS_ERROR("missing goal");
+			return;
+		}
+		
+		control_msgs::FollowJointTrajectoryGoal goal = *goal_ptr;
+		control_msgs::FollowJointTrajectoryResult result;
+		
+		_cb_joint_path_command(goal.trajectory, seneka_srv::JointTrajectory::Request::_check_switch_type());
+		
+		result.error_code = control_msgs::FollowJointTrajectoryResult::INVALID_GOAL;
+		as_joint_.setSucceeded(result);
 	}
 	
 	bool _cb_joint_path_command(const trajectory_msgs::JointTrajectory &jt, const seneka_srv::JointTrajectory::Request::_check_switch_type &check_switch)
@@ -327,22 +356,21 @@ int main(int argc, char *argv[]) {
 
   // ROS initialization; apply "seneka_control_interface" as node name;
   ros::init(argc, argv, "seneka_control_interface");
-  ros::NodeHandle nh;
+  ros::NodeHandle nh("~");
 
   SenekaLaserScan laser_scan;
-  SenekaLeg    turret;
-  SenekaLeg      tilt;
-  SenekaLeg       leg1;
-  SenekaLeg       leg2;
-  SenekaLeg       leg3;
   
   ControlNode node;
-  
-  node.add(turret, "turret");
-  node.add(tilt, "tilt");
-  node.add(leg1, "leg1");
-  node.add(leg2, "leg2");
-  node.add(leg3, "leg3");
+  std::vector<boost::shared_ptr<SenekaLeg> > devices;
+  {
+	std::vector<std::string> l;
+	nh.param<std::vector<std::string> >("devices", l, l);
+	devices.resize(l.size());
+	for(size_t i=0; i<l.size(); i++) {
+		devices[i].reset(new SenekaLeg());
+		node.add(*devices[i], l[i]);
+	}
+  }
   
   ros::Rate rate(20);
   while(ros::ok()) {

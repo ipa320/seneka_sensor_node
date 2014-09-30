@@ -1,5 +1,6 @@
 max_tolerance: 0.08
 testing: false
+devices: ["leg1","yaw"]
 
 leg1:
   can_id: 0x196
@@ -10,3 +11,15 @@ leg10:
 leg11:
   offset: -0x3A9
   factor: 0.00358422939
+
+yaw:
+  can_id: 0x196
+yaw0:
+  alias: turret
+  offset: -0x9AA
+  factor: 0.0008250825
+yaw2:
+  alias: tilt
+  offset: -0x9AA
+  factor: 0.0008250825
+

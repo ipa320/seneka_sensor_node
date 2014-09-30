@@ -28,13 +28,14 @@ import roslib; roslib.load_manifest('seneka_control_interface')
 import rospy
 
 from threading import Thread
-import collections, copy
+import collections, copy, math
 
 import sensor_msgs.msg
 import trajectory_msgs.msg
 import std_msgs.msg
 import std_srvs.srv
 import seneka_srv.srv
+import laser_assembler.srv
 
 class StateMachine:
     def __init__(self):
@@ -75,15 +76,19 @@ class Comm:
 		
 		#ros stuff
 		self.last_pos = {}
+		self.pub_pc = rospy.Publisher('/laser_pc', sensor_msgs.msg.PointCloud)
 		rospy.Subscriber("/joint_states", sensor_msgs.msg.JointState, self.on_joint_state)
 		rospy.wait_for_service('joint_path_command')
 		self.srv_traj = rospy.ServiceProxy("joint_path_command", seneka_srv.srv.JointTrajectory)
+		rospy.wait_for_service('assemble_scans')
+		self.srv_assemble_scans = rospy.ServiceProxy("assemble_scans", laser_assembler.srv.AssembleScans)
 		self.buttons = []
 		for i in xrange(3):
 			self.buttons.append(False)
 			#rospy.Subscriber("button"+str(i), std_msgs.msg.Bool, self.on_button, i)
 		rospy.Service('extend', std_srvs.srv.Empty, self.extend)
 		rospy.Service('retract', std_srvs.srv.Empty, self.retract)
+		rospy.Service('scan', std_srvs.srv.Empty, self.scan)
 
 	def on_joint_state(self, msg):
 		if len(msg.name)!=len(msg.position): return
@@ -113,10 +118,17 @@ class Comm:
 		msg = trajectory_msgs.msg.JointTrajectory()
 		msg.joint_names = name
 		
-		pt = trajectory_msgs.msg.JointTrajectoryPoint()
-		pt.positions = traj
-		pt.time_from_start = rospy.rostime.Duration(10)
-		msg.points.append(pt)
+		if len(traj)>0 and isinstance(traj[0], collections.Iterable):
+			for t in traj:
+				pt = trajectory_msgs.msg.JointTrajectoryPoint()
+				pt.positions = t
+				pt.time_from_start = rospy.rostime.Duration(10)
+				msg.points.append(pt)
+		else:
+			pt = trajectory_msgs.msg.JointTrajectoryPoint()
+			pt.positions = traj
+			pt.time_from_start = rospy.rostime.Duration(10)
+			msg.points.append(pt)
 		
 		try:
 			req = seneka_srv.srv.JointTrajectoryRequest()
@@ -149,6 +161,21 @@ class Comm:
 			threads.append( t )
 		for t in threads:
 			t.join()
+		return std_srvs.srv.EmptyResponse()
+		
+	def scan(self, _dummy):
+		req=laser_assembler.srv.AssembleScansRequest()
+		req.begin = rospy.Time.now()
+		kin = [[0], [2*math.pi-0.01]]
+		# use shortest path
+		if "turret" in self.last_pos and self.last_pos["turret"]>math.pi:
+				kin.reverse()
+		self.send_kinematics(kin,["turret"], False)
+		req.end = rospy.Time.now()
+		
+		resp = self.srv_assemble_scans(req)
+		self.pub_pc.publish(resp.cloud)
+		
 		return std_srvs.srv.EmptyResponse()
 
 
