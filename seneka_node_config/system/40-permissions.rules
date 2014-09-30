@@ -1,0 +1,2 @@
+#make rs232 accessable
+KERNEL=="ttyS[0-3]", GROUP="dialout", MODE="0777"
