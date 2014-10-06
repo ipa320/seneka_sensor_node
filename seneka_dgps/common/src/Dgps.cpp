@@ -80,7 +80,7 @@ int read_with_timeout(boost::asio::serial_port& sock,
 { 
 	boost::optional<boost::system::error_code> timer_result; 
 	boost::asio::deadline_timer timer(sock.io_service()); 
-	timer.expires_from_now(boost::posix_time::seconds(1)); 
+	timer.expires_from_now(boost::posix_time::milliseconds(100)); 
 	timer.async_wait(boost::bind(set_result1, &timer_result, _1)); 
 
 
@@ -99,7 +99,7 @@ int read_with_timeout(boost::asio::serial_port& sock,
 	} 
 
 
-	if (*read_result) {
+	if (*read_result && !(*read_result==boost::asio::error::operation_aborted && bytes_to_transfer>0) ) {
 		std::cout<<"error code: "<<(*read_result)<<std::endl;
 	  return 0; //throw boost::system::system_error(*read_result);
 	  }
@@ -229,7 +229,7 @@ bool Dgps::checkConnection() {
     /**************************************************/
     /**************************************************/
 
-	unsigned char result[128];
+	unsigned char result[1];
 	const int num = read_with_timeout(m_SerialIO, boost::asio::buffer(result,sizeof(result)));
 	
     /**************************************************/
