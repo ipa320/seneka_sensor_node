@@ -1,4 +1,0 @@
-trajectory_msgs/JointTrajectory traj
-bool[] check_switch
----
-bool success

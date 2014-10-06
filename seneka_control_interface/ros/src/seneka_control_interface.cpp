@@ -65,7 +65,7 @@
 #include <std_msgs/Bool.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <trajectory_msgs/JointTrajectory.h>
-#include <seneka_srv/JointTrajectory.h>
+#include <seneka_control_interface/JointTrajectoryAction.h>
 #include <control_msgs/FollowJointTrajectoryAction.h>
 #include <control_msgs/FollowJointTrajectoryFeedback.h>
 
@@ -83,9 +83,9 @@ class ControlNode {
 	ros::Publisher pub_joints_, pub_diag_;
 	std::vector<boost::shared_ptr<ros::Publisher> > pub_btns_;
 	ros::Subscriber sub_joint_path_command_;///< subscriber for a trajectory
-	ros::ServiceServer srv_joint_path_command_;
 	sensor_msgs::JointState joint_state_;
 	actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction> as_joint_; 
+	actionlib::ActionServer<seneka_control_interface::JointTrajectoryAction> as_joint_path_; 
 	
 	std::vector<SenekaGeneralCANDevice*> devices_;
 	std::vector<bool> btns_;
@@ -140,12 +140,12 @@ class ControlNode {
 public:
 	
 	ControlNode():
-		as_joint_("/tilt_controller/follow_joint_trajectory", false)	//hacky
+		as_joint_("/tilt_controller/follow_joint_trajectory", false),	//hacky
+		as_joint_path_(nh_, "/ex_joint_trajectory", false)	//hacky
 	{
 		pub_joints_  = nh_.advertise<sensor_msgs::JointState>("/joint_states", 10);
 		pub_diag_ = nh_.advertise<diagnostic_msgs::DiagnosticArray> ("/diagnostics", 1);
 		sub_joint_path_command_ = nh_.subscribe("joint_path_command", 1, &ControlNode::cb_joint_path_command, this);
-		srv_joint_path_command_ = nh_.advertiseService("joint_path_command", &ControlNode::cb_joint_path_srv, this);
 		
 		ros::NodeHandle pnh("~");	//parameter lookup in local namespace
 		pnh.param<double>("max_tolerance", max_tolerance_, 0.01);
@@ -153,6 +153,9 @@ public:
 		
 		as_joint_.registerGoalCallback(boost::bind(&ControlNode::cb_follow_joint_traj, this));
 		as_joint_.start();
+		
+		as_joint_path_.registerGoalCallback(boost::bind(&ControlNode::cb_follow_joint_path_traj, this, _1));
+		as_joint_path_.start();
 	}
 	
 	void add(SenekaGeneralCANDevice &dev, const std::string &name) {
@@ -192,16 +195,27 @@ public:
 		}
 		lock_.unlock();
 	}
+
+	void cb_follow_joint_path_traj(actionlib::ActionServer<seneka_control_interface::JointTrajectoryAction>::GoalHandle gh)
+	{		
+		seneka_control_interface::JointTrajectoryGoal goal = *gh.getGoal();
+		gh.setAccepted();
 	
-	bool cb_joint_path_srv(seneka_srv::JointTrajectory::Request  &req, seneka_srv::JointTrajectory::Response &res)
-	{
-		res.success = _cb_joint_path_command(req.traj, req.check_switch);
-		return true;
+		boost::thread(&ControlNode::__cb_follow_joint_path_traj, this, goal, gh);
+	}
+
+	void __cb_follow_joint_path_traj(seneka_control_interface::JointTrajectoryGoal &goal, actionlib::ActionServer<seneka_control_interface::JointTrajectoryAction>::GoalHandle gh)
+	{		
+		seneka_control_interface::JointTrajectoryResult result;
+
+		result.success = _cb_joint_path_command(goal.traj, goal.check_switch);
+		
+		gh.setSucceeded(result);
 	}
 	
 	void cb_joint_path_command(const trajectory_msgs::JointTrajectory &jt)
 	{
-		_cb_joint_path_command(jt, seneka_srv::JointTrajectory::Request::_check_switch_type());
+		_cb_joint_path_command(jt, seneka_control_interface::JointTrajectoryGoal::_check_switch_type());
 	}
 
 	void cb_follow_joint_traj()
@@ -215,13 +229,13 @@ public:
 		control_msgs::FollowJointTrajectoryGoal goal = *goal_ptr;
 		control_msgs::FollowJointTrajectoryResult result;
 		
-		_cb_joint_path_command(goal.trajectory, seneka_srv::JointTrajectory::Request::_check_switch_type());
+		_cb_joint_path_command(goal.trajectory, seneka_control_interface::JointTrajectoryGoal::_check_switch_type());
 		
 		result.error_code = control_msgs::FollowJointTrajectoryResult::INVALID_GOAL;
 		as_joint_.setSucceeded(result);
 	}
 	
-	bool _cb_joint_path_command(const trajectory_msgs::JointTrajectory &jt, const seneka_srv::JointTrajectory::Request::_check_switch_type &check_switch)
+	bool _cb_joint_path_command(const trajectory_msgs::JointTrajectory &jt, const seneka_control_interface::JointTrajectoryGoal::_check_switch_type &check_switch)
 	{
 		for(size_t p=0; p<jt.points.size(); p++) {
 			if(jt.joint_names.size()!=jt.points[p].positions.size()) {
@@ -254,7 +268,10 @@ public:
 					if(j>=joint_state_.name.size()) continue;
 					
 					bool check = true;
-					boost::mutex::scoped_lock lock(lock_);						
+					boost::mutex::scoped_lock lock(lock_);					
+
+std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<std::endl;
+	
 					if(p<check_switch.size() && check_switch[p]) {
 						size_t jj=j;
 						for(size_t d=0; d<devices_.size(); d++) {

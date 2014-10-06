@@ -26,6 +26,7 @@
 
 import roslib; roslib.load_manifest('seneka_control_interface')
 import rospy
+import actionlib
 
 from threading import Thread
 import collections, copy, math
@@ -34,7 +35,7 @@ import sensor_msgs.msg
 import trajectory_msgs.msg
 import std_msgs.msg
 import std_srvs.srv
-import seneka_srv.srv
+import seneka_control_interface.msg
 import laser_assembler.srv
 
 class StateMachine:
@@ -78,9 +79,7 @@ class Comm:
 		self.last_pos = {}
 		self.pub_pc = rospy.Publisher('/laser_pc', sensor_msgs.msg.PointCloud)
 		rospy.Subscriber("/joint_states", sensor_msgs.msg.JointState, self.on_joint_state)
-		rospy.wait_for_service('joint_path_command')
-		self.srv_traj = rospy.ServiceProxy("joint_path_command", seneka_srv.srv.JointTrajectory)
-		rospy.wait_for_service('assemble_scans')
+		#rospy.wait_for_service('assemble_scans')
 		self.srv_assemble_scans = rospy.ServiceProxy("assemble_scans", laser_assembler.srv.AssembleScans)
 		self.buttons = []
 		for i in xrange(3):
@@ -115,6 +114,9 @@ class Comm:
 		return self.exec_srv(param)
 	
 	def send_kinematics(self, traj, name, check):
+		client = actionlib.SimpleActionClient('/ex_joint_trajectory', seneka_control_interface.msg.JointTrajectoryAction)
+		client.wait_for_server()
+
 		msg = trajectory_msgs.msg.JointTrajectory()
 		msg.joint_names = name
 		
@@ -130,14 +132,14 @@ class Comm:
 			pt.time_from_start = rospy.rostime.Duration(10)
 			msg.points.append(pt)
 		
-		try:
-			req = seneka_srv.srv.JointTrajectoryRequest()
-			req.traj = msg
-			req.check_switch = [check]*len(pt.positions)
-			return self.srv_traj(req)
-		except rospy.ServiceException as exc:
-			print("Service did not process request: " + str(exc))
-		return False
+		req = seneka_control_interface.msg.JointTrajectoryGoal()
+		req.traj = msg
+		req.check_switch = [check]*len(pt.positions)
+		print req
+
+		client.send_goal(req)
+		client.wait_for_result(rospy.Duration.from_sec(50.0))
+		return True
 
 	def on_button(self, msg, index):
 		self.buttons[index] = msg.data
