@@ -47,7 +47,7 @@ include_directories(
 )
 
 ## Declare a cpp executable
-add_executable(seneka_dgps_node ros/src/seneka_dgps_node.cpp ros/src/SenekaDgps.cpp common/src/Dgps.cpp common/src/SerialIO.cpp)
+add_executable(seneka_dgps_node ros/src/seneka_dgps_node.cpp ros/src/SenekaDgps.cpp common/src/Dgps.cpp)
 
 add_dependencies(seneka_dgps_node seneka_msg_gencpp)
 

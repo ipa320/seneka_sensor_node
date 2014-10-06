@@ -63,14 +63,15 @@
 /*************** includes ***************/
 /****************************************/
 
-#include <seneka_dgps/SerialIO.h>
+#include <boost/asio/serial_port.hpp>
 
 #include <sstream>
 #include <string>
-#include <cstring>
+#include <iomanip>
 #include <vector>
 #include <iostream>
-#include <iomanip>
+/*
+#include <cstring>
 #include <stdio.h>
 #include <math.h>
 #include <endian.h>
@@ -81,7 +82,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <linux/serial.h>
+#include <linux/serial.h>*/
 
 /******************************************/
 /*************** DGPS class ***************/
@@ -228,7 +229,8 @@ class Dgps {
     private:
 
         // serial input/output instance;
-        SerialIO m_SerialIO;
+        boost::asio::io_service io_service_;
+        boost::asio::serial_port m_SerialIO;
 
         /*********************************************/
         /*************** data handling ***************/
