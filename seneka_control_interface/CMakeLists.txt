@@ -17,9 +17,8 @@ catkin_package(
     roscpp
     seneka_socketcan
     seneka_laser_scan
-#    seneka_turret
     seneka_leg
-#    seneka_tilt
+    control_msgs
 )
 
 include_directories(
