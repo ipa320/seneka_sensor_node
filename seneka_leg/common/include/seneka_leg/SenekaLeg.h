@@ -111,7 +111,7 @@ class SenekaLeg : public SenekaGeneralCANDevice {
 	}
 	
 	virtual void init(const int can_id = LEG_RX_POSITION_ID) {
-		addListener(can_id, boost::bind(&SenekaLeg::readPosition, this, _1));
+		addListener(can_id+1, boost::bind(&SenekaLeg::readPosition, this, _1));
 		send_frame_ = fillFrame(can_id);
 		memset(send_frame_.data, 0xff, sizeof(send_frame_.data)); //set to "stop"-value
 	}
