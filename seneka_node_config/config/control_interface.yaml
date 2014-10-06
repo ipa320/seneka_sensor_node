@@ -1,19 +1,39 @@
 max_tolerance: 0.08
 testing: false
-devices: ["leg1","yaw"]
+devices: ["leg1","leg2","leg3","yaw"]
 
 leg1:
   can_id: 0x196
   button: contact_sensors/leg1
 leg10:
-  offset: -0x9AA
-  factor: 0.0008250825
+  offset: 0
+  factor: 1
 leg11:
-  offset: -0x3A9
-  factor: 0.00358422939
+  offset: 0
+  factor: 1
+
+leg2:
+  can_id: 0x1A6
+  button: contact_sensors/leg2
+leg20:
+  offset: 0
+  factor: 1
+leg21:
+  offset: 0
+  factor: 1
+
+leg3:
+  can_id: 0x1B6
+  button: contact_sensors/leg3
+leg30:
+  offset: 0
+  factor: 1
+leg31:
+  offset: 0
+  factor: 1
 
 yaw:
-  can_id: 0x196
+  can_id: 0x1C6
 yaw0:
   alias: turret
   offset: -0x9AA
