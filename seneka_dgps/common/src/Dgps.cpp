@@ -63,9 +63,14 @@
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 
-void set_result(boost::optional<boost::system::error_code>* a, boost::system::error_code b) 
+void set_result1(boost::optional<boost::system::error_code>* a, boost::system::error_code b) 
 { 
 	a->reset(b);
+} 
+void set_result2(boost::optional<boost::system::error_code>* a, boost::system::error_code b, size_t *bytes_transferred, size_t _bytes_transferred) 
+{ 
+	a->reset(b);
+	*bytes_transferred = _bytes_transferred;
 } 
 
 
@@ -76,12 +81,13 @@ int read_with_timeout(boost::asio::serial_port& sock,
 	boost::optional<boost::system::error_code> timer_result; 
 	boost::asio::deadline_timer timer(sock.io_service()); 
 	timer.expires_from_now(boost::posix_time::seconds(1)); 
-	timer.async_wait(boost::bind(set_result, &timer_result, _1)); 
+	timer.async_wait(boost::bind(set_result1, &timer_result, _1)); 
 
 
+	size_t bytes_to_transfer = 0;
 	boost::optional<boost::system::error_code> read_result; 
 	boost::asio::async_read(sock, buffers, 
-		boost::bind(set_result, &read_result, _1)); 
+		boost::bind(set_result2, &read_result, _1, &bytes_to_transfer, boost::asio::placeholders::bytes_transferred)); 
 
 	sock.io_service().reset(); 
 	while (sock.io_service().run_one()) 
@@ -98,7 +104,12 @@ int read_with_timeout(boost::asio::serial_port& sock,
 	  return 0; //throw boost::system::system_error(*read_result);
 	  }
 	  
-	return boost::asio::buffer_size(buffers);
+	  std::cout<<"read "<<bytes_to_transfer<<" bytes"<<std::endl;
+	  const char* b=boost::asio::buffer_cast<const char*>(buffers);
+	  for(size_t i=0; i<bytes_to_transfer; i++)
+		printf("%x", b[i]);
+	  
+	return bytes_to_transfer;
 } 
 
 /*********************************************************/
