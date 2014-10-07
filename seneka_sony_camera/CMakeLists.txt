@@ -6,7 +6,7 @@ set(CMAKE_BUILD_TYPE Release)
 
 # the following statement is to ensure that the required SDK for this package is installed and sourced properly
 if(NOT "$ENV{PUREGEV_ROOT}" STREQUAL "/opt/pleora/ebus_sdk")
-  message(STATUS "+++++++++ Did not find PUREGEV_ROOT, not building seneka_sony_camera +++++++++")
+  message(SEND_ERROR "+++++++++ Did not find PUREGEV_ROOT, not building seneka_sony_camera +++++++++")
   return()
 else(NOT "$ENV{PUREGEV_ROOT}" STREQUAL "/opt/pleora/ebus_sdk")
   message(STATUS "+++++++++ Did find PUREGEV_ROOT, building seneka_sony_camera +++++++++")
