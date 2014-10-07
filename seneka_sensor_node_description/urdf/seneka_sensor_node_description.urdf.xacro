@@ -23,6 +23,8 @@
   
   <xacro:property name="param_distance_camera_to_tower_axis" value="${0.21}"/> <!--TODO-->
   <xacro:property name="param_distance_camera_base_to_axis" value="${0.03}"/> <!--TODO-->
+  <xacro:property name="param_distance_camera_to_thermal_camera" value="${0.03}"/> <!--TODO-->
+  <xacro:property name="param_distance_camera_to_sony_camera" value="${-0.03}"/> <!--TODO-->
 
   <!-- ***************************************************** -->
   <!-- ##### ##### XACRO:PARAMETERS:JOINT_LIMITS ##### ##### -->
@@ -108,6 +110,8 @@
   <xacro:macro_link name="foot_3"/>
   <xacro:macro_link name="camera_base"/>
   <xacro:macro_link name="camera_axis"/>
+  <xacro:macro_link name="thermal_image_view"/>
+  <xacro:macro_link name="sony_image_view"/>
 
   <!-- ************************************ -->
   <!-- ##### ##### ROBOT:JOINTS ##### ##### -->
@@ -144,6 +148,8 @@
 
   <!--TODO-->
   <xacro:macro_joint_revolute name="camera_axis" type="revolute" parent="link_camera_base" child="link_camera_axis" origin="${param_distance_camera_base_to_axis} 0 0" rpy="0 0 0" axis="0 1 0" lower="${param_lower_angle_limit_camera_joint}" upper="${param_upper_angle_limit_camera_joint}"/>
-  <xacro:macro_joint_fixed name="camera_base" type="fixed" parent="link_tower_axis" child="link_camera_base" origin="0 0 ${param_distance_camera_to_tower_axis}" rpy="0 0 0"/>
-
+  <xacro:macro_joint_fixed name="camera_base" type="fixed" parent="link_tower_axis" child="link_camera_base" origin="${param_distance_camera_to_tower_axis} 0 0" rpy="0 0 0"/>
+  <xacro:macro_joint_fixed name="thermal_image_view" type="fixed" parent="link_camera_axis" child="link_thermal_image_view" origin="0 ${param_distance_camera_to_thermal_camera} 0" rpy="0 0 0"/>
+  <xacro:macro_joint_fixed name="sony_image_view" type="fixed" parent="link_camera_axis" child="link_sony_image_view" origin="0 ${param_distance_camera_to_sony_camera} 0" rpy="0 0 0"/>
+  
 </robot>
