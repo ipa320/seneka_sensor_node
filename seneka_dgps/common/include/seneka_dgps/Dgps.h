@@ -132,22 +132,22 @@ class Dgps {
         struct PacketData {
 
             // header;
-            char stx;
-            char status;
-            char packet_type;
-            char length;
+            uint8_t stx;
+            uint8_t status;
+            uint8_t packet_type;
+            uint8_t length;
             
             // data part;
-            char record_type;
-            char page_counter;                  // see user guide for bit interpretation!;
-            char reply_number;
-            char record_interpretation_flags;
+            uint8_t record_type;
+            uint8_t page_counter;                  // see user guide for bit interpretation!;
+            uint8_t reply_number;
+            uint8_t record_interpretation_flags;
 
-            std::vector<char> data_bytes;                  // maximum of 244 bytes for data; concatenate pages if needed!;
+            std::vector<uint8_t> data_bytes;                  // maximum of 244 bytes for data; concatenate pages if needed!;
             
             // footer;
-            char checksum;                      // calculated over: all bytes between stx and checksum;
-            char etx;
+            uint8_t checksum;                      // calculated over: all bytes between stx and checksum;
+            uint8_t etx;
         
         };
 
