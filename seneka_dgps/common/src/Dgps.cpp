@@ -80,7 +80,7 @@ int read_with_timeout(boost::asio::serial_port& sock,
 { 
 	boost::optional<boost::system::error_code> timer_result; 
 	boost::asio::deadline_timer timer(sock.io_service()); 
-	timer.expires_from_now(boost::posix_time::milliseconds(100)); 
+	timer.expires_from_now(boost::posix_time::milliseconds(500)); 
 	timer.async_wait(boost::bind(set_result1, &timer_result, _1)); 
 
 
@@ -107,7 +107,7 @@ int read_with_timeout(boost::asio::serial_port& sock,
 	  std::cout<<"read "<<bytes_to_transfer<<" bytes"<<std::endl;
 	  const char* b=boost::asio::buffer_cast<const char*>(buffers);
 	  for(size_t i=0; i<bytes_to_transfer; i++)
-		printf("%x", b[i]);
+		printf("%x ", b[i]);
 	  
 	return bytes_to_transfer;
 } 
@@ -311,7 +311,7 @@ bool Dgps::getDgpsData() {
     unsigned char checksum;
     unsigned char etx           = 0x03;
 
-    checksum = (status + packet_type + length + data_type + flags + reserved) % 256;
+    checksum = (status + packet_type + length + data_type + flags + reserved);
 
     char message[]      = {stx, status, packet_type, length, data_type, flags, reserved, checksum, etx};
     int message_size    = sizeof(message) / sizeof(message[0]);
@@ -345,8 +345,9 @@ bool Dgps::getDgpsData() {
 	const int bytes_received = read_with_timeout(m_SerialIO, boost::asio::buffer(buffer,sizeof(buffer)));
 	
     // see comment at debugBuffer() function;
-    int bytes_received_debugged = bytes_received - 16;
-    std::vector<unsigned char> debugged_buffer = debugBuffer(buffer);
+    int bytes_received_debugged = bytes_received;// - 16;
+    //std::vector<unsigned char> debugged_buffer = debugBuffer(buffer);
+    unsigned char *debugged_buffer = buffer;
 
     /**************************************************/
     /**************************************************/
@@ -491,7 +492,7 @@ bool Dgps::getDgpsData() {
 
         // hereby called functions analyze the received packet in-depth, structure it, extract and finnaly serve GPS data;
         // if everything works fine, GPS data is getting stored in Dgps::GpsData gps_data;
-        if (!analyzeData(&debugged_buffer.front(), bytes_received_debugged)) {
+        if (!analyzeData(debugged_buffer, bytes_received_debugged)) {
 
             msg << "Failed to gather GPS data.";
             transmitStatement(WARNING);
@@ -526,59 +527,43 @@ bool Dgps::analyzeData(unsigned char *  buffer,         // points to received pa
     /**************************************************/
 
     // --- header ---
-    temp_packet.stx         = buffer[0] % 256;
-    temp_packet.status      = buffer[1] % 256;
-    temp_packet.packet_type = buffer[2] % 256;
-    temp_packet.length      = buffer[3] % 256;
+    temp_packet.stx         = buffer[0];
+    temp_packet.status      = buffer[1];
+    temp_packet.packet_type = buffer[2];
+    temp_packet.length      = buffer[3];
 
     // --- data part header ---
-    temp_packet.record_type                 = buffer[4] % 256;
-    temp_packet.page_counter                = buffer[5] % 256;
-    temp_packet.reply_number                = buffer[6] % 256;
-    temp_packet.record_interpretation_flags = buffer[7] % 256;
+    temp_packet.record_type                 = buffer[4];
+    temp_packet.page_counter                = buffer[5];
+    temp_packet.reply_number                = buffer[6];
+    temp_packet.record_interpretation_flags = buffer[7];
 
     // --- data part ---
 
     temp_packet.data_bytes.resize(temp_packet.length);
 
-    for (int i = 0; i < (temp_packet.length - 4); i++) {
-
-        temp_packet.data_bytes[i] = buffer[8 + i] % 256;
-
-    }
+    for (int i = 0; i < (temp_packet.length - 4); i++)
+        temp_packet.data_bytes[i] = buffer[8 + i];
 
     // --- tail ---
-    temp_packet.checksum    = buffer[temp_packet.length + 4]        % 256;
-    temp_packet.etx         = buffer[temp_packet.length + 4 + 1]    % 256;
+    temp_packet.checksum    = buffer[temp_packet.length + 4]       ;
+    temp_packet.etx         = buffer[temp_packet.length + 4 + 1]   ;
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
 
     // verify checksum;
-    char checksum = 0x00;
-    checksum = checksum + (temp_packet.status                       % 256);
-    checksum = checksum + (temp_packet.packet_type                  % 256);
-    checksum = checksum + (temp_packet.length                       % 256);
-    checksum = checksum + (temp_packet.record_type                  % 256);
-    checksum = checksum + (temp_packet.page_counter                 % 256);
-    checksum = checksum + (temp_packet.reply_number                 % 256);
-    checksum = checksum + (temp_packet.record_interpretation_flags  % 256);
+    unsigned char checksum = 0x00;
             
     // calculate checksum over data bytes;
-    for (int i = 0; i < (temp_packet.length - 4); i++) {
-
-        checksum = checksum + temp_packet.data_bytes[i];
-
-    }
-
-    // wrap checksum into 1 byte;
-    checksum = checksum % 256;
+    for (int i = 1; i < temp_packet.length+4; i++)
+        checksum += buffer[i];
 
     // check for checksum mismatch;
     if (checksum != temp_packet.checksum) {
 
-        msg << "Checksum mismatch.";
+        msg << "Checksum mismatch. "<<(int)checksum<<" != "<<(int)temp_packet.checksum;
         transmitStatement(WARNING);
 
         return false;
@@ -730,11 +715,8 @@ std::vector<unsigned char> Dgps::debugBuffer(unsigned char * buffer) {
     // this assigns debugged_buffer[] with the byte values of the original received bytes in buffer[],
     // omitting the first 16 bytes;
     for (int i = 0; i < 112; i++) {
-
         debugged_buffer[i] = buffer[j];
-
         j++;
-
     }
 
     return debugged_buffer;
