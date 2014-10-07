@@ -45,7 +45,7 @@ yaw0:
   offset: 0
   factor: 0.00001525902
 yaw2:
-  alias: tilt
+  alias: camera_axis
   offset: -0x9AA
   factor: 0.0008250825
 
