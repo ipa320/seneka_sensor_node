@@ -1,4 +1,7 @@
 <launch>
+
+<include file="$(find optris_drivers)/optris_drivers.launch" />
+
 <group ns="seneka">
   <node name="termo_video_manager" pkg="seneka_termo_video_manager" type="termo_video_manager">
   
