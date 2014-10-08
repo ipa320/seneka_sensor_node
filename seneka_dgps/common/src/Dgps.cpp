@@ -186,11 +186,16 @@ bool Dgps::open(const char * pcPort, int iBaudRate) {
         return true;
     }
     
-    m_SerialIO.set_option(boost::asio::serial_port_base::baud_rate(iBaudRate));
-	m_SerialIO.set_option(boost::asio::serial_port_base::character_size(8));
-	m_SerialIO.set_option(boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one));
-	m_SerialIO.set_option(boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none));
-	m_SerialIO.set_option(boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::none));
+    m_SerialIO.set_option(boost::asio::serial_port_base::baud_rate(iBaudRate), ec);
+    if(ec) printf("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::character_size(8), ec);
+    if(ec) printf("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one), ec);
+    if(ec) printf("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none), ec);
+    if(ec) printf("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::none), ec);
+    if(ec) printf("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
 }
 
 /**************************************************/
