@@ -1,10 +1,10 @@
 <launch>
 
 	<node name="seneka_control_interface" pkg="seneka_control_interface" type="seneka_control_interface" output="screen">
-		<rosparam file="$(find seneka_node_config)/config/control_interface.yaml" command="load"/>
+		<rosparam file="$(find seneka_node_config)/config/$(env ROBOT)/control_interface.yaml" command="load"/>
 	</node>
 	
 	<node name="leg_kinematics" pkg="seneka_control_interface" type="leg_kinematics.py" output="screen">
-		<rosparam file="$(find seneka_node_config)/config/control_interface_kinematics.yaml" command="load"/>
+		<rosparam file="$(find seneka_node_config)/config/$(env ROBOT)/control_interface_kinematics.yaml" command="load"/>
 	</node>
 </launch>
