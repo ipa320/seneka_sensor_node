@@ -1,2 +1,8 @@
 <launch>
+<group ns="seneka">
+  <node name="seneka_windsensor" pkg="seneka_windsensor" type="seneka_windsensor" respawn="true" output="screen">
+    	<param name="windsensor_port"	    type="string" value="/dev/ttyS1"/>
+	<param name="windsensor_baudrate"   type="int"    value="4800"/>
+  </node>
+</group>
 </launch>
