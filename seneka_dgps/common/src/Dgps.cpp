@@ -80,7 +80,7 @@ int read_with_timeout(boost::asio::serial_port& sock,
 { 
 	boost::optional<boost::system::error_code> timer_result; 
 	boost::asio::deadline_timer timer(sock.io_service()); 
-	timer.expires_from_now(boost::posix_time::milliseconds(500)); 
+	timer.expires_from_now(boost::posix_time::milliseconds(1000)); 
 	timer.async_wait(boost::bind(set_result1, &timer_result, _1)); 
 
 
