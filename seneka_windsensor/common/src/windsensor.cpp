@@ -54,9 +54,64 @@
  ****************************************************************/
 #include <seneka_windsensor/windsensor.h>
 #include <ros/ros.h>
+#include <boost/optional.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/bind.hpp> 
+#include <boost/asio.hpp>
+#include <boost/thread.hpp>
+
 using namespace std;
 
 typedef unsigned char BYTE;
+
+void set_result1(boost::optional<boost::system::error_code>* a, boost::system::error_code b) 
+{ 
+	a->reset(b);
+} 
+void set_result2(boost::optional<boost::system::error_code>* a, boost::system::error_code b, size_t *bytes_transferred, size_t _bytes_transferred) 
+{ 
+	a->reset(b);
+	*bytes_transferred = _bytes_transferred;
+} 
+
+
+template <typename MutableBufferSequence> 
+int read_with_timeout(boost::asio::serial_port& sock, 
+  const MutableBufferSequence& buffers) 
+{ 
+	boost::optional<boost::system::error_code> timer_result; 
+	boost::asio::deadline_timer timer(sock.io_service()); 
+	timer.expires_from_now(boost::posix_time::milliseconds(500)); 
+	timer.async_wait(boost::bind(set_result1, &timer_result, _1)); 
+
+
+	size_t bytes_to_transfer = 0;
+	boost::optional<boost::system::error_code> read_result; 
+	boost::asio::async_read(sock, buffers, 
+		boost::bind(set_result2, &read_result, _1, &bytes_to_transfer, boost::asio::placeholders::bytes_transferred)); 
+
+	sock.io_service().reset(); 
+	while (sock.io_service().run_one()) 
+	{ 
+	  if (read_result) 
+		timer.cancel(); 
+	  else if (timer_result) 
+		sock.cancel(); 
+	} 
+
+
+	if (*read_result && !(*read_result==boost::asio::error::operation_aborted && bytes_to_transfer>0) ) {
+		std::cout<<"error code: "<<(*read_result)<<std::endl;
+	  return 0; //throw boost::system::system_error(*read_result);
+	  }
+	  
+	  std::cout<<"read "<<bytes_to_transfer<<" bytes"<<std::endl;
+	  const char* b=boost::asio::buffer_cast<const char*>(buffers);
+	  for(size_t i=0; i<bytes_to_transfer; i++)
+		printf("%x ", b[i]);
+	  
+	return bytes_to_transfer;
+} 
 
 int sensor_port = 0;
 int sensor_baudrate = 0;
@@ -69,10 +124,12 @@ int direction_unit = 0;     // degree = 0
 int temperature_unit = 0;   // centigrade = 0
                             // fahrenheit = 1
 
-windsensor::windsensor(int in_speed_unit, int in_direction_unit, int in_temperature_unit) {
+windsensor::windsensor(int in_speed_unit, int in_direction_unit, int in_temperature_unit) : m_SerialIO(io_service_) {
     speed_unit = in_speed_unit;
     direction_unit = in_direction_unit;
     temperature_unit = in_temperature_unit;
+    
+	boost::thread t(boost::bind(&boost::asio::io_service::run, &io_service_));
 }
 
 windsensor::~windsensor() {
@@ -80,18 +137,11 @@ windsensor::~windsensor() {
 }
 
 bool windsensor::open(const char* pcPort, int iBaudRate) {
-    int bRetSerial;
-    // for windsensor :default is 4800
-    if (iBaudRate != 4800)
-        return false;
-    // initialize Serial Interface
-    m_SerialIO.setBaudRate(iBaudRate);
-    m_SerialIO.setDeviceName(pcPort);
-    bRetSerial = m_SerialIO.open();
-    if (bRetSerial == 0) {
-        // Clears the read and transmit buffer.
-        //	    m_iPosReadBuf2 = 0;
-        m_SerialIO.purge();
+    // open port;
+    boost::system::error_code ec;
+    m_SerialIO.open(pcPort, ec);
+    
+    if(!ec) {
         connected = true;
         ROS_DEBUG("serial connection opened successfully");
         return true;
@@ -100,6 +150,17 @@ bool windsensor::open(const char* pcPort, int iBaudRate) {
         ROS_ERROR("could not connect to serial device");
         return false;
     }
+    
+    m_SerialIO.set_option(boost::asio::serial_port_base::baud_rate(iBaudRate), ec);
+    if(ec) ROS_ERROR("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::character_size(8), ec);
+    if(ec) ROS_ERROR("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one), ec);
+    if(ec) ROS_ERROR("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none), ec);
+    if(ec) ROS_ERROR("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::none), ec);
+    if(ec) ROS_ERROR("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
 }
 
 void windsensor::close() {
@@ -299,7 +360,7 @@ bool windsensor::read(float sensor_values[], string sensor_units[]){
         int bytesread;
         int iResultsFound = 0;
         // read from serial
-        bytesread = m_SerialIO.readNonBlocking((char*) Buffer, 1024);
+		bytesread = read_with_timeout(m_SerialIO, boost::asio::buffer(Buffer,sizeof(Buffer)));
         success = true;
         ROS_DEBUG("read %i bytes from windsensor: %i, %i", bytesread, sensor_port, sensor_baudrate);
         // extract sensor values and set sensor units
