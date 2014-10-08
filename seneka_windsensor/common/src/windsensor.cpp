@@ -137,6 +137,12 @@ windsensor::~windsensor() {
 }
 
 bool windsensor::open(const char* pcPort, int iBaudRate) {
+
+    //now comes a hack...
+    char buf[256];
+    sprintf(buf, "stty -F %s ispeed %d ospeed %d", pcPort, iBaudRate, iBaudRate);
+    system(buf);
+
     // open port;
     boost::system::error_code ec;
     m_SerialIO.open(pcPort, ec);

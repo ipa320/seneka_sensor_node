@@ -159,6 +159,11 @@ void Dgps::transmitStatement(DiagnosticFlag flag) {
 // establishes serial connection
 bool Dgps::open(const char * pcPort, int iBaudRate) {
 
+    //now comes a hack...
+    char buf[256];
+    sprintf(buf, "stty -F %s ispeed %d ospeed %d", pcPort, iBaudRate, iBaudRate);
+    system(buf);
+
     msg << "Establishing serial connection to GPS device...";
     transmitStatement(INFO);
 
