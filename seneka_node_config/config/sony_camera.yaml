@@ -1,5 +1,5 @@
 # camera ip address
-camera_ip_address: '192.168.0.1'
+camera_ip_address: '192.168.0.20'
 
 # zooming parameter
 # Optical zoom= zoom_ratio_optical={1-20} zoom_ratio_digital={1}
