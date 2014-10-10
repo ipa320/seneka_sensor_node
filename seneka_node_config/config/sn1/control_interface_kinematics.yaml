@@ -1,9 +1,23 @@
 kinematics_extend:
-  leg1: [[0x9803, 0xA403, True]]
-  leg2: [[0x1802, 0x8B03, True]]
-  leg3: [[0xBD03, 0x7003, True]]
+  leg1:
+    joints: ["joint_knee_1", "joint_hip_1"]
+    kin: [[0x9803, 0xA403, True]]
+  leg2:
+    joints: ["joint_knee_2", "joint_hip_2"]
+    kin: [[0x1802, 0x8B03, True]]
+  leg3:
+    joints: ["joint_knee_3", "joint_hip_3"]
+    kin: [[0xBD03, 0x7003, True]]
   
 kinematics_retract:
-  leg1: [[0xAA08, 0xCB04],[0x9803, 0xCB04]]
-  leg2: [[0x4407, 0xE004],[0x1802, 0x8B03]]
-  leg3: [[0xAA08, 0xBB04],[0xBD03, 0x7003]]
+  leg1:
+    joints: ["joint_knee_1", "joint_hip_1"]
+    kin: [[0xAA08, 0xCB04],[0x9803, 0xCB04]]
+  leg2:
+    joints: ["joint_knee_2", "joint_hip_2"]
+    kin: [[0x4407, 0xE004],[0x1802, 0x8B03]]
+  leg3:
+    joints: ["joint_knee_3", "joint_hip_3"]
+    kin: [[0xAA08, 0xBB04],[0xBD03, 0x7003]]
+    
+turrent_joint: "joint_tower_axis"
