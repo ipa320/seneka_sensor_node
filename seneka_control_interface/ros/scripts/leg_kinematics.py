@@ -89,7 +89,11 @@ class Comm:
 		rospy.Service('extend', std_srvs.srv.Empty, self.extend)
 		rospy.Service('retract', std_srvs.srv.Empty, self.retract)
 		rospy.Service('scan', std_srvs.srv.Empty, self.scan)
+		rospy.Subscriber("move_turret", std_msgs.msg.Float64, self.on_turret_aim)
 
+	def on_turret_aim(self, msg):
+		self.send_kinematics([[msg.data]],[self.joint_turret], False)
+		
 	def on_joint_state(self, msg):
 		if len(msg.name)!=len(msg.position): return
 		for i in xrange(len(msg.name)):
