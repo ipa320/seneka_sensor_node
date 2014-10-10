@@ -112,6 +112,7 @@
   <xacro:macro_link name="camera_axis"/>
   <xacro:macro_link name="thermal_image_view"/>
   <xacro:macro_link name="sony_image_view"/>
+  <xacro:macro_link name="laser"/>
 
   <!-- ************************************ -->
   <!-- ##### ##### ROBOT:JOINTS ##### ##### -->
@@ -151,5 +152,6 @@
   <xacro:macro_joint_fixed name="camera_base" type="fixed" parent="link_tower_axis" child="link_camera_base" origin="${param_distance_camera_to_tower_axis} 0 0" rpy="0 0 0"/>
   <xacro:macro_joint_fixed name="thermal_image_view" type="fixed" parent="link_camera_axis" child="link_thermal_image_view" origin="0 ${param_distance_camera_to_thermal_camera} 0" rpy="0 0 0"/>
   <xacro:macro_joint_fixed name="sony_image_view" type="fixed" parent="link_camera_axis" child="link_sony_image_view" origin="0 ${param_distance_camera_to_sony_camera} 0" rpy="0 0 0"/>
+  <xacro:macro_joint_fixed name="laser" type="fixed" parent="link_tower_axis" child="link_laser" origin="0 0 0" rpy="0 0 0"/>
   
 </robot>
