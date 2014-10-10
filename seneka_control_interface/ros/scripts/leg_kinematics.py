@@ -74,6 +74,7 @@ class Comm:
 		#configuration
 		self.kin_extend = rospy.get_param('~kinematics_extend')
 		self.kin_retract = rospy.get_param('~kinematics_retract')
+		self.joint_turret = rospy.get_param('~turrent_joint')
 		
 		#ros stuff
 		self.last_pos = {}
@@ -150,7 +151,7 @@ class Comm:
 			pos = t[0:2]
 			if len(t)>2: check = t[2]
 			if not isinstance(pos, collections.Iterable): pos = [pos]
-			r = self.send_kinematics(pos, [name+"0",name+"1"], check)
+			r = self.send_kinematics(pos, name, check)
 			if r and check: return True
 			elif not r: return False
 		return True
@@ -158,7 +159,7 @@ class Comm:
 	def exec_srv(self, param):
 		threads=[]
 		for name in param:
-			t = Thread(target=self.execute_kinematic, args=(name, param[name]))
+			t = Thread(target=self.execute_kinematic, args=(param[name].joints, param[name].kin))
 			t.start()
 			threads.append( t )
 		for t in threads:
@@ -168,11 +169,11 @@ class Comm:
 	def scan(self, _dummy):
 		req=laser_assembler.srv.AssembleScansRequest()
 		req.begin = rospy.Time.now()
-		kin = [[0], [2*math.pi-0.01]]
+		kin = [[0], [math.pi], [2*math.pi-0.05]]
 		# use shortest path
-		if "turret" in self.last_pos and self.last_pos["turret"]>math.pi:
+		if self.joint_turret in self.last_pos and self.last_pos[self.joint_turret]>math.pi:
 				kin.reverse()
-		self.send_kinematics(kin,["turret"], False)
+		self.send_kinematics(kin,[self.joint_turret], False)
 		req.end = rospy.Time.now()
 		
 		resp = self.srv_assemble_scans(req)
