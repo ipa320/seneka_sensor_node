@@ -79,6 +79,7 @@ class Comm:
 		#ros stuff
 		self.last_pos = {}
 		self.pub_pc = rospy.Publisher('/laser_pc', sensor_msgs.msg.PointCloud)
+		self.pub_resp = rospy.Publisher('bridge_response', std_msgs.msg.String)
 		rospy.Subscriber("/joint_states", sensor_msgs.msg.JointState, self.on_joint_state)
 		#rospy.wait_for_service('assemble_scans')
 		self.srv_assemble_scans = rospy.ServiceProxy("assemble_scans", laser_assembler.srv.AssembleScans)
@@ -90,9 +91,15 @@ class Comm:
 		rospy.Service('retract', std_srvs.srv.Empty, self.retract)
 		rospy.Service('scan', std_srvs.srv.Empty, self.scan)
 		rospy.Subscriber("move_turret", std_msgs.msg.Float64, self.on_turret_aim)
+		
+	def send_response(self, msg, success=True):
+		msg = std_msgs.msg.String()
+		msg.data = str(msg)+" "+str(success)
+		self.pub_resp.publish(msg)
 
 	def on_turret_aim(self, msg):
-		self.send_kinematics([[msg.data]],[self.joint_turret], False)
+		r = self.send_kinematics([[msg.data]],[self.joint_turret], False)
+		self.send_response("move_turret", r)
 		
 	def on_joint_state(self, msg):
 		if len(msg.name)!=len(msg.position): return
@@ -100,7 +107,9 @@ class Comm:
 			self.last_pos[msg.name[i]] = msg.position[i]
 		
 	def extend(self, _dummy):
-		return self.exec_srv(self.kin_extend)
+		r = self.exec_srv(self.kin_extend)
+		self.send_response("extend", r)
+		return r
 
 	def retract(self, _dummy):
 		param = copy.deepcopy(self.kin_retract)
@@ -116,7 +125,9 @@ class Comm:
 					print "found at "+str(i)
 					for j in range(i+1): param[l].pop(0)
 					break
-		return self.exec_srv(param)
+		r = self.exec_srv(param)
+		self.send_response("retract", r)
+		return r
 	
 	def send_kinematics(self, traj, name, check):
 		client = actionlib.SimpleActionClient('/ex_joint_trajectory', seneka_control_interface.msg.JointTrajectoryAction)
@@ -177,11 +188,13 @@ class Comm:
 		# use shortest path
 		if self.joint_turret in self.last_pos and self.last_pos[self.joint_turret]>math.pi:
 				kin.reverse()
-		self.send_kinematics(kin,[self.joint_turret], False)
+		r = self.send_kinematics(kin,[self.joint_turret], False)
 		req.end = rospy.Time.now()
 		
 		resp = self.srv_assemble_scans(req)
 		self.pub_pc.publish(resp.cloud)
+		
+		self.send_response("scan", r)
 		
 		return std_srvs.srv.EmptyResponse()
 
