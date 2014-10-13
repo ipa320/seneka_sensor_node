@@ -97,7 +97,7 @@ class SenekaLeg : public SenekaGeneralCANDevice {
 	}
 	
 	virtual void _setTarget(const int joint, const double val) {
-		_write16(send_frame_.data+(joint*2+1), (uint16_t)std::max(0.f, std::min((float)0xffff, std::floor(val))));
+		_write16(send_frame_.data+(joint*2+1), (uint16_t)std::max(0., std::min((double)0xffff, std::floor(val))));
 		sendFrame(send_frame_);
 		
 		if(joint==2)	//servo cannot be read!
