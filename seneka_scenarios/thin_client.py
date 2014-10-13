@@ -5,6 +5,7 @@ import time
 
 class GetLoggersClient(WebSocketClient):
      #interface
+     on_result = None
 
      def extend(self):
          self.call("/extend")
@@ -14,6 +15,10 @@ class GetLoggersClient(WebSocketClient):
 
      def scan(self):
          self.call("/scan")
+         
+     def move_to(self, pos):
+         msg = {'op': 'publish', 'topic': '/move_turret', 'msg': {'data': pos}}
+         self.send(dumps(msg))
 
      #internal
      def call(self, srv):
@@ -22,6 +27,7 @@ class GetLoggersClient(WebSocketClient):
 
      def opened(self):
          print "Connection opened..."
+         self.send(dumps({"op":"subscribe","id":"bridge_response","topic":"/bridge_response"});
 
      def closed(self, code, reason=None):
          print code, reason
@@ -29,6 +35,13 @@ class GetLoggersClient(WebSocketClient):
 
      def received_message(self, m):
          print "received", m
+         #TODO: parse
+         data="abc True"
+         ar = data.split(" ")
+         req = ar[0]
+         success = bool(ar[1])
+         if self.on_result!=None:
+			 self.on_result(req,success)
 
 if __name__=="__main__":
      try:
