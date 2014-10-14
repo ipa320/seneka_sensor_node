@@ -1,4 +1,4 @@
-from json import dumps
+from json import dumps, loads
 #https://github.com/Lawouach/WebSocket-for-Python
 from ws4py.client.threadedclient import WebSocketClient
 import time
@@ -29,6 +29,7 @@ class GetLoggersClient(WebSocketClient):
 
      def received_message(self, m):
          print "received", m
+         print(loads(m))
 
 if __name__=="__main__":
      try:
