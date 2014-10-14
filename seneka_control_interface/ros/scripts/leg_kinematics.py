@@ -168,7 +168,7 @@ class Comm:
 	def scan(self, _dummy):
 		req=laser_assembler.srv.AssembleScansRequest()
 		req.begin = rospy.Time.now()
-		kin = [[0], [2*math.pi-0.01]]
+		kin = [[0], [math.pi]]#, [2*math.pi-0.1]]
 		# use shortest path
 		if "turret" in self.last_pos and self.last_pos["turret"]>math.pi:
 				kin.reverse()
