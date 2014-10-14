@@ -355,9 +355,13 @@ std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<std::endl;
 		if(pub_joints_.getNumSubscribers()>0) pub_joints_.publish(joint_state_);
 	}
 	
-	void update_button(const int id, const bool val) {
+	void update_button(const int _id, const bool val) {
+		const int id=_id/3;
 		if(id<0 || id>=(int)pub_btns_.size() || !pub_btns_[id])
+		{
+			ROS_WARN("setting invalid button %d", id);
 			return;
+		}
 			
 		if(pub_btns_[id]->getNumSubscribers()>0) {
 			std_msgs::Bool msg;
