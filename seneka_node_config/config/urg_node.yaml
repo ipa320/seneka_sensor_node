@@ -12,7 +12,7 @@ ip_address: '192.168.0.10'
 #~frame_id (string, default: laser)
 #The frame in which laser scans will be returned.
 #This frame should be at the optical center of the laser, with the x-axis along the zero degree ray, and the y-axis along the 90 degree ray. 
-#frame_id:
+frame_id: 'link_laser'
 
 #~calibrate_time (bool, default: false)
 #Whether the node should calibrate the device's time offset on startup.

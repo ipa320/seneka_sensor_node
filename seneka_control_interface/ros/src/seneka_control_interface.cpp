@@ -355,9 +355,18 @@ std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<std::endl;
 		if(pub_joints_.getNumSubscribers()>0) pub_joints_.publish(joint_state_);
 	}
 	
-	void update_button(const int id, const bool val) {
-		if(id<0 || id>=(int)pub_btns_.size() || !pub_btns_[id])
+	void update_button(const int _id, const bool val) {
+		int id=_id;
+		for(size_t d=0; d<devices_.size(); d++) {
+			if(id<(int)devices_[d]->getNumJoints())
+				break;
+			id-=(int)devices_[d]->getNumJoints();
+		}
+		
+		if(id<0 || id>=(int)pub_btns_.size() || !pub_btns_[id]) {
+			ROS_WARN("update_button: id %d is not present", id);
 			return;
+		}
 			
 		if(pub_btns_[id]->getNumSubscribers()>0) {
 			std_msgs::Bool msg;
