@@ -26,3 +26,4 @@ kinematics_retract:
     kin: [[0x08AA, 0x04AE],[0x03BD, 0x04AE]]
     
 turrent_joint: "joint_tower_axis"
+camera_joint: "joint_camera_axis"
