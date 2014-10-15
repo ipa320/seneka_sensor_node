@@ -1,4 +1,4 @@
-max_tolerance: 0.08
+max_tolerance: 0x300
 testing: false
 devices: ["leg1","leg2","leg3","yaw"]
 
@@ -6,11 +6,11 @@ leg1:
   can_id: 0x196
   button: contact_sensors/leg1
 leg10:
-#  alias: joint_knee_1
+  alias: joint_knee_1
   offset: 0
   factor: 1
 leg11:
-#  alias: joint_hip_1
+  alias: joint_hip_1
   offset: 0
   factor: 1
 
@@ -18,11 +18,11 @@ leg2:
   can_id: 0x1A6
   button: contact_sensors/leg2
 leg20:
-#  alias: joint_knee_2
+  alias: joint_knee_2
   offset: 0
   factor: 1
 leg21:
-#  alias: joint_hip_2
+  alias: joint_hip_2
   offset: 0
   factor: 1
 
@@ -30,23 +30,22 @@ leg3:
   can_id: 0x1B6
   button: contact_sensors/leg3
 leg30:
-#  alias: joint_knee_3
+  alias: joint_knee_3
   offset: 0
   factor: 1
 leg31:
-#  alias: joint_hip_3
+  alias: joint_hip_3
   offset: 0
   factor: 1
 
 yaw:
   can_id: 0x1C6
 yaw0:
-  alias: turret
-#joint_tower_axis
+  alias: joint_tower_axis
   offset: 0
-  factor: 0.00001525902
+  factor: 0.00009587526
 yaw2:
-#  alias: camera_axis
-  offset: -0x9AA
-  factor: 0.0008250825
+  alias: joint_camera_axis
+  offset: 0
+  factor: 1
 
