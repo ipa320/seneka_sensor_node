@@ -359,8 +359,10 @@ std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<std::endl;
 	void update_button(const int _id, const bool val) {
 		int id=_id;
 		for(size_t d=0; d<devices_.size(); d++) {
-			if(id<(int)devices_[d]->getNumJoints())
+			if(id<(int)devices_[d]->getNumJoints()) {
+				id = (int)d;
 				break;
+			}
 			id-=(int)devices_[d]->getNumJoints();
 		}
 		
