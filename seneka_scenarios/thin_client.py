@@ -1,3 +1,10 @@
+
+import roslib; roslib.load_manifest('seneka_scenarios')
+import rospy
+
+import std_msgs.msg
+import std_srvs.srv
+
 from json import dumps
 import json, sys
 #https://github.com/Lawouach/WebSocket-for-Python
@@ -8,10 +15,10 @@ class GetLoggersClient(WebSocketClient):
      #interface
      on_result = None
 
-     def extend(self):
+     def extend(self, dummy=None):
          self.call("/extend")
 
-     def retract(self):
+     def retract(self, dummy=None):
          self.call("/retract")
 
      def scan(self):
@@ -20,6 +27,9 @@ class GetLoggersClient(WebSocketClient):
      def move_to(self, pos):
          msg = {'op': 'publish', 'topic': '/move_turret', 'msg': {'data': pos}}
          self.send(dumps(msg))
+         
+     def on_move_to(self, msg):
+         self.move_to(msg.data)
 
      #internal
      def call(self, srv):
@@ -54,9 +64,17 @@ def sample_handler(req, success):
 	
 if __name__=="__main__":
      try:
+         rospy.init_node('bridge')
+        
          ws = GetLoggersClient('ws://127.0.0.1:9090/')	#adjust here
+         
          ws.on_result = sample_handler
+         ws.pub_resp = rospy.Publisher('bridge_response', std_msgs.msg.String)
+         rospy.Service('extend', std_srvs.srv.Empty, ws.extend)
+         rospy.Service('retract', std_srvs.srv.Empty, ws.retract)
+         rospy.Subscriber("move_turret", std_msgs.msg.Float64, ws.on_move_to)
          ws.connect()
-         while True: time.sleep(1)
+         
+         rospy.spin()
      except KeyboardInterrupt:
          ws.close()
