@@ -114,7 +114,7 @@ class Comm:
 	def extend(self, _dummy):
 		r = self.exec_srv(self.kin_extend)
 		self.send_response("extend", r)
-		return r
+		return std_srvs.srv.EmptyResponse()
 
 	def retract(self, _dummy):
 		param = copy.deepcopy(self.kin_retract)
@@ -132,7 +132,7 @@ class Comm:
 					break
 		r = self.exec_srv(param)
 		self.send_response("retract", r)
-		return r
+		return std_srvs.srv.EmptyResponse()
 	
 	def send_kinematics(self, traj, name, check):
 		client = actionlib.SimpleActionClient('/ex_joint_trajectory', seneka_control_interface.msg.JointTrajectoryAction)
