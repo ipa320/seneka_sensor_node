@@ -105,11 +105,6 @@ int read_with_timeout(boost::asio::serial_port& sock,
 	  return 0; //throw boost::system::system_error(*read_result);
 	  }
 	  
-	  std::cout<<"read "<<bytes_to_transfer<<" bytes"<<std::endl;
-	  const char* b=boost::asio::buffer_cast<const char*>(buffers);
-	  for(size_t i=0; i<bytes_to_transfer; i++)
-		printf("%x ", b[i]);
-	  
 	return bytes_to_transfer;
 } 
 

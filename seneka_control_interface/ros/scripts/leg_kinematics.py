@@ -75,13 +75,14 @@ class Comm:
 		self.kin_extend = rospy.get_param('~kinematics_extend')
 		self.kin_retract = rospy.get_param('~kinematics_retract')
 		self.joint_turret = rospy.get_param('~turrent_joint')
+		self.joint_camera = rospy.get_param('~camera_joint')
 		
 		#ros stuff
 		self.last_pos = {}
 		self.pub_pc = rospy.Publisher('/laser_pc', sensor_msgs.msg.PointCloud)
 		self.pub_resp = rospy.Publisher('bridge_response', std_msgs.msg.String)
 		rospy.Subscriber("/joint_states", sensor_msgs.msg.JointState, self.on_joint_state)
-		#rospy.wait_for_service('assemble_scans')
+		rospy.wait_for_service('assemble_scans')
 		self.srv_assemble_scans = rospy.ServiceProxy("assemble_scans", laser_assembler.srv.AssembleScans)
 		self.buttons = []
 		for i in xrange(3):
@@ -91,15 +92,19 @@ class Comm:
 		rospy.Service('retract', std_srvs.srv.Empty, self.retract)
 		rospy.Service('scan', std_srvs.srv.Empty, self.scan)
 		rospy.Subscriber("move_turret", std_msgs.msg.Float64, self.on_turret_aim)
+		rospy.Subscriber("move_camera", std_msgs.msg.Float64, self.on_camera_aim)
 		
 	def send_response(self, msg, success=True):
-		msg = std_msgs.msg.String()
-		msg.data = str(msg)+" "+str(success)
+		msg = std_msgs.msg.String(str(msg)+" "+str(success))
 		self.pub_resp.publish(msg)
 
 	def on_turret_aim(self, msg):
 		r = self.send_kinematics([[msg.data]],[self.joint_turret], False)
 		self.send_response("move_turret", r)
+
+	def on_camera_aim(self, msg):
+		r = self.send_kinematics([[msg.data]],[self.joint_camera], False)
+		self.send_response("move_camera", r)
 		
 	def on_joint_state(self, msg):
 		if len(msg.name)!=len(msg.position): return
@@ -174,7 +179,7 @@ class Comm:
 	def exec_srv(self, param):
 		threads=[]
 		for name in param:
-			t = Thread(target=self.execute_kinematic, args=(param[name].joints, param[name].kin))
+			t = Thread(target=self.execute_kinematic, args=(param[name]['joints'], param[name]['kin']))
 			t.start()
 			threads.append( t )
 		for t in threads:

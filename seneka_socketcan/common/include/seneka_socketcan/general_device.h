@@ -187,6 +187,12 @@ class SenekaGeneralCANDevice {
 		}
 	}
 	
+	virtual double getTolerance(const double tol, const size_t joint) const {
+		 if(joint>=num_joints_) return tol;
+		
+		 return std::abs(tol * corr_[joint].corr_factor_);
+	}
+	
 	virtual void init(const int can_id) = 0;
 	virtual void setTarget(const int joint, double val) {
 		if(joint>=num_joints_) return;

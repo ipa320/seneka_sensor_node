@@ -428,6 +428,7 @@ void Sony_Camera_Node::publishImage()
 
             cv::waitKey(30);
         }
+        else ROS_WARN("Operation unsuccessful. %s %s", lOperationResult.GetCodeString().GetAscii(), lOperationResult.GetDescription().GetAscii());
         // re-queue the buffer in the stream object
 
         lStream.QueueBuffer( lBuffer );

@@ -1,4 +1,4 @@
-max_tolerance: 0.08
+max_tolerance: 0x300
 testing: false
 devices: ["leg1","leg2","leg3","yaw"]
 
@@ -45,7 +45,7 @@ yaw0:
   offset: 0
   factor: 0.00009587526
 yaw2:
-  alias: camera_axis
-  offset: -0x9AA
-  factor: 0.0008250825
+  alias: joint_camera_axis
+  offset: -3000
+  factor: 0.00065449846
 
