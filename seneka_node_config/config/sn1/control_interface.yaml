@@ -46,6 +46,6 @@ yaw0:
   factor: 0.00009587526
 yaw2:
   alias: joint_camera_axis
-  offset: -0x9AA
-  factor: 0.0008250825
+  offset: 0
+  factor: 1
 
