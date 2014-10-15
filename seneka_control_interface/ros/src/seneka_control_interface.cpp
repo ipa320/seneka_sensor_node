@@ -352,6 +352,7 @@ std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<std::endl;
 			
 		boost::mutex::scoped_lock lock(lock_);
 		joint_state_.position[id] = val;
+		joint_state_.header.stamp = ros::Time::now();
 		if(pub_joints_.getNumSubscribers()>0) pub_joints_.publish(joint_state_);
 	}
 	
