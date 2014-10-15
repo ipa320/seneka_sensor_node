@@ -82,7 +82,7 @@ class Comm:
 		self.pub_pc = rospy.Publisher('/laser_pc', sensor_msgs.msg.PointCloud)
 		self.pub_resp = rospy.Publisher('bridge_response', std_msgs.msg.String)
 		rospy.Subscriber("/joint_states", sensor_msgs.msg.JointState, self.on_joint_state)
-		#rospy.wait_for_service('assemble_scans')
+		rospy.wait_for_service('assemble_scans')
 		self.srv_assemble_scans = rospy.ServiceProxy("assemble_scans", laser_assembler.srv.AssembleScans)
 		self.buttons = []
 		for i in xrange(3):
@@ -145,7 +145,7 @@ class Comm:
 			for t in traj:
 				pt = trajectory_msgs.msg.JointTrajectoryPoint()
 				pt.positions = t
-				pt.time_from_start = rospy.rostime.Duration(30)
+				pt.time_from_start = rospy.rostime.Duration(10)
 				msg.points.append(pt)
 		else:
 			pt = trajectory_msgs.msg.JointTrajectoryPoint()
@@ -179,7 +179,7 @@ class Comm:
 	def exec_srv(self, param):
 		threads=[]
 		for name in param:
-			t = Thread(target=self.execute_kinematic, args=(param[name].joints, param[name].kin))
+			t = Thread(target=self.execute_kinematic, args=(param[name]['joints'], param[name]['kin']))
 			t.start()
 			threads.append( t )
 		for t in threads:
