@@ -18,12 +18,15 @@ class GetLoggersClient(WebSocketClient):
 
      def extend(self, dummy=None):
          self.call("/extend")
+         return std_srvs.srv.EmptyResponse()
 
      def retract(self, dummy=None):
          self.call("/retract")
+         return std_srvs.srv.EmptyResponse()
 
      def scan(self):
          self.call("/scan")
+         return std_srvs.srv.EmptyResponse()
          
      def move_to(self, pos):
          msg = {'op': 'publish', 'topic': '/move_turret', 'msg': {'data': pos}}
