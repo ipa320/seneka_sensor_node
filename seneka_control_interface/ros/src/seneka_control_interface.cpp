@@ -269,26 +269,30 @@ public:
 					
 					bool check = true;
 					boost::mutex::scoped_lock lock(lock_);					
-
-std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<std::endl;
 	
-					if(p<check_switch.size() && check_switch[p]) {
-						size_t jj=j;
-						for(size_t d=0; d<devices_.size(); d++) {
-							if(jj<devices_[d]->getNumJoints()) {
+					double  tmp_max_tolerance = max_tolerance_;
+					size_t jj=j;
+					for(size_t d=0; d<devices_.size(); d++) {
+						if(jj<devices_[d]->getNumJoints()) {
+							tmp_max_tolerance = devices_[d]->getTolerance(max_tolerance_, jj);
+								
+							if(p<check_switch.size() && check_switch[p]) {
 								check_was_ok = false;
 								if(btns_[d]) {
 									devices_[d]->setTarget(jj, joint_state_.position[j]);
 									check = false;
 									check_was_ok = true;
 								}
-								break;
 							}
-							jj-=devices_[d]->getNumJoints();
+								
+							break;
 						}
+						jj-=devices_[d]->getNumJoints();
 					}
+
+std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.position[j]<<" "<<tmp_max_tolerance<<std::endl;
 					
-					if(check && std::abs(joint_state_.position[j]-jt.points[p].positions[i])>max_tolerance_)
+					if(check && std::abs(joint_state_.position[j]-jt.points[p].positions[i])>tmp_max_tolerance)
 						out = true;
 				}
 				
