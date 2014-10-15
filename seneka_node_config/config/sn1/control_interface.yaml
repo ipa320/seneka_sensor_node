@@ -1,4 +1,4 @@
-max_tolerance: 0.08
+max_tolerance: 0x300
 testing: false
 devices: ["leg1","leg2","leg3","yaw"]
 
