@@ -28,5 +28,6 @@
   <run_depend>rospy</run_depend>
   <run_depend>std_srv</run_depend>
   <run_depend>std_msgs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
 
 </package>

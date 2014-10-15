@@ -3,6 +3,7 @@ import roslib; roslib.load_manifest('seneka_scenarios')
 import rospy
 
 import std_msgs.msg
+import sensor_msgs.msg
 import std_srvs.srv
 
 from json import dumps
@@ -39,6 +40,7 @@ class GetLoggersClient(WebSocketClient):
      def opened(self):
          print "Connection opened..."
          msg = {'op': 'subscribe', 'topic': "/bridge_response"}
+         msg = {'op': 'subscribe', 'topic': "/joint_states"}
          self.send(dumps(msg))
 
      def closed(self, code, reason=None):
@@ -48,14 +50,26 @@ class GetLoggersClient(WebSocketClient):
      def received_message(self, m):
          try:
                   msg = json.loads(str(m))
-                  if not 'topic' in msg or msg['topic']!='/bridge_response': return
+                  if not 'topic' in msg: return
          
-                  ar = msg['msg']['data'].split(" ")
-                  if len(ar)<2: return
-                  req = ar[0]
-                  success = bool(ar[1])
-                  if self.on_result!=None:
-                           self.on_result(req,success)
+                  if msg['topic']=='/joint_states':
+					  result = sensor_msgs.msg.JointState()
+					  result.position = msg['msg']['position']
+					  result.name = msg['msg']['name']
+					  result.header.stamp.secs = msg['msg']['header']['stamp']['secs']
+					  result.header.stamp.nsecs = msg['msg']['header']['stamp']['nsecs']
+					  self.pub_joint_states.publish(result)
+					  
+                  if msg['topic']=='/bridge_response':
+					  ar = msg['msg']['data'].split(" ")
+					  if len(ar)<2: return
+					  req = ar[0]
+					  success = bool(ar[1])
+					  result = std_msgs.msg.String()
+					  result.data = msg['msg']['data']
+					  self.pub_resp.publish(result)
+					  if self.on_result!=None:
+							   self.on_result(req,success)
          except:
                   print "error", sys.exc_info()[0]
 
@@ -66,10 +80,11 @@ if __name__=="__main__":
      try:
          rospy.init_node('bridge')
         
-         ws = GetLoggersClient('ws://127.0.0.1:9090/')	#adjust here
+         ws = GetLoggersClient('ws://172.21.6.102:9090/')	#adjust here
          
          ws.on_result = sample_handler
          ws.pub_resp = rospy.Publisher('bridge_response', std_msgs.msg.String)
+         ws.pub_joint_states = rospy.Publisher('/sensornode/joint_states', sensor_msgs.msg.JointState)
          rospy.Service('extend', std_srvs.srv.Empty, ws.extend)
          rospy.Service('retract', std_srvs.srv.Empty, ws.retract)
          rospy.Subscriber("move_turret", std_msgs.msg.Float64, ws.on_move_to)
