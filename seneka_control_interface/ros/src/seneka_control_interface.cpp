@@ -292,7 +292,9 @@ public:
 
 std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.position[j]<<" "<<tmp_max_tolerance<<std::endl;
 					
-					if(check && std::abs(joint_state_.position[j]-jt.points[p].positions[i])>tmp_max_tolerance)
+					double dist = std::abs(joint_state_.position[j]-jt.points[p].positions[i]);
+					while(dist>M_PI) dist=2*M_PI-dist;
+					if(check && dist>tmp_max_tolerance)
 						out = true;
 				}
 				
