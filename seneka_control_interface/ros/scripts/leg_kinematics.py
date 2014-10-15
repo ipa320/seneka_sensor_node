@@ -95,8 +95,7 @@ class Comm:
 		rospy.Subscriber("move_camera", std_msgs.msg.Float64, self.on_camera_aim)
 		
 	def send_response(self, msg, success=True):
-		msg = std_msgs.msg.String()
-		msg.data = str(msg)+" "+str(success)
+		msg = std_msgs.msg.String(str(msg)+" "+str(success))
 		self.pub_resp.publish(msg)
 
 	def on_turret_aim(self, msg):
