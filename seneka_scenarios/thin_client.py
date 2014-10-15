@@ -40,7 +40,7 @@ class GetLoggersClient(WebSocketClient):
      def opened(self):
          print "Connection opened..."
          msg = {'op': 'subscribe', 'topic': "/bridge_response"}
-         msg = {'op': 'subscribe', 'topic': "/joint_states"}
+         msg = {'op': 'subscribe', 'topic': "/joint_states", 'throttle_rate': 20}
          self.send(dumps(msg))
 
      def closed(self, code, reason=None):
