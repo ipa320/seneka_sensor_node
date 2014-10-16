@@ -6,24 +6,24 @@
 kinematics_extend:
   leg1:
     joints: ["joint_knee_1", "joint_hip_1"]
-    kin: [[0x08AA, 0x04C0, True]]
+    kin: [[0x0770, 0x04BC, True]]
   leg2:
     joints: ["joint_knee_2", "joint_hip_2"]
-    kin: [[0x0744, 0x04D0, True]]
+    kin: [[0x0770, 0x04D2, True]]
   leg3:
     joints: ["joint_knee_3", "joint_hip_3"]
-    kin: [[0x08AA, 0x04AE, True]]
+    kin: [[0x075C, 0x04BB, True]]
   
 kinematics_retract:
   leg1:
     joints: ["joint_knee_1", "joint_hip_1"]
-    kin: [[0x0398, 0x04C0]]
+    kin: [[0x0260, 0x04BC]]
   leg2:
     joints: ["joint_knee_2", "joint_hip_2"]
-    kin: [[0x0218, 0x04D0]]
+    kin: [[0x0276, 0x04D2]]
   leg3:
     joints: ["joint_knee_3", "joint_hip_3"]
-    kin: [[0x03BD, 0x04AE]]
+    kin: [[0x0242, 0x04BB]]
     
 turrent_joint: "joint_tower_axis"
 camera_joint: "joint_camera_axis"
