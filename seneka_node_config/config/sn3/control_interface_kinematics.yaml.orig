@@ -1,0 +1,39 @@
+#description
+#
+#device name: [[joint0 (knee), joint1 (hip), check for button] ,...]
+#
+
+kinematics_extend:
+<<<<<<< HEAD
+  leg1: [[0x08AA, 0x04C0, True]]
+  leg2: [[0x0744, 0x04D0, True]]
+  leg3: [[0x08AA, 0x04AE, True]]
+  
+kinematics_retract:
+  leg1: [[0x08AA, 0x04C0],[0x0398, 0x04C0]]
+  leg2: [[0x0744, 0x04D0],[0x0218, 0x04D0]]
+  leg3: [[0x08AA, 0x04AE],[0x03BD, 0x04AE]]
+=======
+  leg1:
+    joints: ["joint_knee_1", "joint_hip_1"]
+    kin: [[0x9803, 0xA403, True]]
+  leg2:
+    joints: ["joint_knee_2", "joint_hip_2"]
+    kin: [[0x1802, 0x8B03, True]]
+  leg3:
+    joints: ["joint_knee_3", "joint_hip_3"]
+    kin: [[0xBD03, 0x7003, True]]
+  
+kinematics_retract:
+  leg1:
+    joints: ["joint_knee_1", "joint_hip_1"]
+    kin: [[0xAA08, 0xCB04],[0x9803, 0xCB04]]
+  leg2:
+    joints: ["joint_knee_2", "joint_hip_2"]
+    kin: [[0x4407, 0xE004],[0x1802, 0x8B03]]
+  leg3:
+    joints: ["joint_knee_3", "joint_hip_3"]
+    kin: [[0xAA08, 0xBB04],[0xBD03, 0x7003]]
+    
+turrent_joint: "joint_tower_axis"
+>>>>>>> 66f4776e173a9b14e2e2ab1f133ed6c3a4d79a83
