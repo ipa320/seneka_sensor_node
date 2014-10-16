@@ -93,7 +93,7 @@ class ControlNode {
 	double max_tolerance_;
 	boost::mutex lock_;
 
-	bool testing_;
+	bool testing_, updated_;
 	
 	/// reorder a vector with a given list of indices, if not possible returns false
 	template< class T >
@@ -141,7 +141,8 @@ public:
 	
 	ControlNode():
 		as_joint_("/tilt_controller/follow_joint_trajectory", false),	//hacky
-		as_joint_path_(nh_, "/ex_joint_trajectory", false)	//hacky
+		as_joint_path_(nh_, "/ex_joint_trajectory", false),	//hacky
+		updated_(false)
 	{
 		pub_joints_  = nh_.advertise<sensor_msgs::JointState>("/joint_states", 10);
 		pub_diag_ = nh_.advertise<diagnostic_msgs::DiagnosticArray> ("/diagnostics", 1);
@@ -319,6 +320,18 @@ std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.
 	}
 	
 	void publishState() {
+		if(updated_) {
+			boost::mutex::scoped_lock lock(lock_);
+			if(pub_joints_.getNumSubscribers()>0) pub_joints_.publish(joint_state_);
+			for(size_t id=0; id<pub_btns_.size(); id++) {
+				if(pub_btns_[id] && pub_btns_[id]->getNumSubscribers()>0) {
+					std_msgs::Bool msg;
+					msg.data = btns_[id];
+					pub_btns_[id]->publish(msg);
+				}
+			}
+			updated_ = false;
+		}
 		// publishing diagnotic messages
 		diagnostic_msgs::DiagnosticArray diagnostics;
 		diagnostics.status.resize(joint_state_.name.size());
@@ -359,7 +372,7 @@ std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.
 		boost::mutex::scoped_lock lock(lock_);
 		joint_state_.position[id] = val;
 		joint_state_.header.stamp = ros::Time::now();
-		if(pub_joints_.getNumSubscribers()>0) pub_joints_.publish(joint_state_);
+		updated_ = true;
 	}
 	
 	void update_button(const int _id, const bool val) {
@@ -377,13 +390,9 @@ std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.
 			return;
 		}
 			
-		if(pub_btns_[id]->getNumSubscribers()>0) {
-			std_msgs::Bool msg;
-			msg.data = val;
-			pub_btns_[id]->publish(msg);
-		}
 		boost::mutex::scoped_lock lock(lock_);
 		btns_[id] = val;
+		updated_ = true;
 	}
 };
 
@@ -407,7 +416,7 @@ int main(int argc, char *argv[]) {
 	}
   }
   
-  ros::Rate rate(20);
+  ros::Rate rate(30);
   while(ros::ok()) {
 	  node.publishState();
 	  ros::spinOnce();

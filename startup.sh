@@ -1,6 +1,6 @@
 #!/bin/bash
 
-sleep 10
+sleep 180
 
 export IGNORE_INTERACTIVE=1
 source /home/robot/.bashrc
