@@ -11,6 +11,12 @@ import json, sys
 #https://github.com/Lawouach/WebSocket-for-Python
 from ws4py.client.threadedclient import WebSocketClient
 import time
+from thread import start_new_thread
+
+def reconnect(ws):
+     time.sleep(1.0)
+     ws.__init__(ws.url)
+     ws.connect()
 
 class GetLoggersClient(WebSocketClient):
      #interface
@@ -46,7 +52,12 @@ class GetLoggersClient(WebSocketClient):
 
      def closed(self, code, reason=None):
          print code, reason
-         self.connect()
+
+     def on_reconnect(self, msg):
+         self.close()
+         self.url = msg.data
+         start_new_thread(reconnect,(self,))
+
 
      def received_message(self, m):
          try:
@@ -89,6 +100,7 @@ if __name__=="__main__":
          rospy.Service('extend', std_srvs.srv.Empty, ws.extend)
          rospy.Service('retract', std_srvs.srv.Empty, ws.retract)
          rospy.Subscriber("move_turret", std_msgs.msg.Float64, ws.on_move_to)
+         rospy.Subscriber("reconnect_bridge", std_msgs.msg.String, ws.on_reconnect)
          ws.connect()
          
          rospy.spin()
