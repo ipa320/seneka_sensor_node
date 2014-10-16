@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+
+<package>
+
+  <name>seneka_scenarios</name>
+  <version>0.0.0</version>
+  <license>LGPL</license>
+
+
+  <url>https://github.com/ipa320/seneka_sensor_node</url>
+
+
+  <description>
+  The seneka_control_interface package is part of the seneka_sensor_node metapackage, developed for the SeNeKa project at Fraunhofer IPA.
+  This package might work with other hardware and can be used for other purposes, however the development has been specifically for this project and the deployed sensors.
+  </description>
+
+
+  <maintainer email="Matthias.Gruhler@ipa.fraunhofer.de">Matthias Gruhler</maintainer>
+  <author email="Thorsten.Andreas.Kannacher@ipa.fraunhofer.de">Thorsten Kannacher</author>
+
+
+  <buildtool_depend>catkin</buildtool_depend>
+  
+
+  <build_depend>rospy</build_depend>
+
+  <run_depend>rospy</run_depend>
+  <run_depend>std_srv</run_depend>
+  <run_depend>std_msgs</run_depend>
+  <run_depend>sensor_msgs</run_depend>
+
+</package>
