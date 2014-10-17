@@ -44,8 +44,10 @@ yaw0:
   alias: joint_tower_axis
   offset: 0
   factor: 0.00009587526
+  in_rad: True
 yaw2:
   alias: joint_camera_axis
   offset: -3000
   factor: 0.00065449846
+  in_rad: True
 

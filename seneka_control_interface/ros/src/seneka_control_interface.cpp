@@ -189,6 +189,10 @@ public:
 			pnh.param<std::string>(fullname+"/alias", joint_name, fullname);
 			joint_state_.name.push_back(joint_name);
 			
+			bool in_rad;
+			pnh.param<bool>(fullname+"/in_rad", in_rad, false);
+			dev.setInRad(i, in_rad);
+			
 			double off, fact;
 			pnh.param<double>(fullname+"/offset", off, 0.);
 			pnh.param<double>(fullname+"/factor", fact, 1.);
@@ -271,11 +275,13 @@ public:
 					bool check = true;
 					boost::mutex::scoped_lock lock(lock_);					
 	
+					bool in_rad = false;
 					double  tmp_max_tolerance = max_tolerance_;
 					size_t jj=j;
 					for(size_t d=0; d<devices_.size(); d++) {
 						if(jj<devices_[d]->getNumJoints()) {
 							tmp_max_tolerance = devices_[d]->getTolerance(max_tolerance_, jj);
+							in_rad = devices_[d]->isInRad(jj);
 								
 							if(p<check_switch.size() && check_switch[p]) {
 								check_was_ok = false;
@@ -291,10 +297,10 @@ public:
 						jj-=devices_[d]->getNumJoints();
 					}
 
-std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.position[j]<<" "<<tmp_max_tolerance<<std::endl;
+//std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.position[j]<<" "<<tmp_max_tolerance<<std::endl;
 					
 					double dist = std::abs(joint_state_.position[j]-jt.points[p].positions[i]);
-					while(dist>M_PI) dist=2*M_PI-dist;
+					if(in_rad && dist>M_PI && dist<=2*M_PI) dist=2*M_PI-dist;
 					if(check && dist>tmp_max_tolerance)
 						out = true;
 				}
