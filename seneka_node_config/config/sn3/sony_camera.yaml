@@ -22,7 +22,7 @@ focusPosition: 53245
 focusNearLimit: 14  
 
 #titleText parameter, setting the ttile of the image
-titleText: 'test title....'
+titleText: ''
 
 #titleDisplay parameter 
 #true/false (1 = true, 0 = false)
