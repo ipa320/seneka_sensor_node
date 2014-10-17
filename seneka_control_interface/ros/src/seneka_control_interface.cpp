@@ -93,7 +93,7 @@ class ControlNode {
 	double max_tolerance_;
 	boost::mutex lock_;
 
-	bool testing_;
+	bool testing_, updated_;
 	
 	/// reorder a vector with a given list of indices, if not possible returns false
 	template< class T >
@@ -141,7 +141,8 @@ public:
 	
 	ControlNode():
 		as_joint_("/tilt_controller/follow_joint_trajectory", false),	//hacky
-		as_joint_path_(nh_, "/ex_joint_trajectory", false)	//hacky
+		as_joint_path_(nh_, "/ex_joint_trajectory", false),	//hacky
+		updated_(false)
 	{
 		pub_joints_  = nh_.advertise<sensor_msgs::JointState>("/joint_states", 10);
 		pub_diag_ = nh_.advertise<diagnostic_msgs::DiagnosticArray> ("/diagnostics", 1);
@@ -187,6 +188,10 @@ public:
 			std::string joint_name;
 			pnh.param<std::string>(fullname+"/alias", joint_name, fullname);
 			joint_state_.name.push_back(joint_name);
+			
+			bool in_rad;
+			pnh.param<bool>(fullname+"/in_rad", in_rad, false);
+			dev.setInRad(i, in_rad);
 			
 			double off, fact;
 			pnh.param<double>(fullname+"/offset", off, 0.);
@@ -270,11 +275,13 @@ public:
 					bool check = true;
 					boost::mutex::scoped_lock lock(lock_);					
 	
+					bool in_rad = false;
 					double  tmp_max_tolerance = max_tolerance_;
 					size_t jj=j;
 					for(size_t d=0; d<devices_.size(); d++) {
 						if(jj<devices_[d]->getNumJoints()) {
 							tmp_max_tolerance = devices_[d]->getTolerance(max_tolerance_, jj);
+							in_rad = devices_[d]->isInRad(jj);
 								
 							if(p<check_switch.size() && check_switch[p]) {
 								check_was_ok = false;
@@ -290,10 +297,10 @@ public:
 						jj-=devices_[d]->getNumJoints();
 					}
 
-std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.position[j]<<" "<<tmp_max_tolerance<<std::endl;
+//std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.position[j]<<" "<<tmp_max_tolerance<<std::endl;
 					
 					double dist = std::abs(joint_state_.position[j]-jt.points[p].positions[i]);
-					while(dist>M_PI) dist=2*M_PI-dist;
+					if(in_rad && dist>M_PI && dist<=2*M_PI) dist=2*M_PI-dist;
 					if(check && dist>tmp_max_tolerance)
 						out = true;
 				}
@@ -319,6 +326,18 @@ std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.
 	}
 	
 	void publishState() {
+		if(updated_) {
+			boost::mutex::scoped_lock lock(lock_);
+			if(pub_joints_.getNumSubscribers()>0) pub_joints_.publish(joint_state_);
+			for(size_t id=0; id<pub_btns_.size(); id++) {
+				if(pub_btns_[id] && pub_btns_[id]->getNumSubscribers()>0) {
+					std_msgs::Bool msg;
+					msg.data = btns_[id];
+					pub_btns_[id]->publish(msg);
+				}
+			}
+			updated_ = false;
+		}
 		// publishing diagnotic messages
 		diagnostic_msgs::DiagnosticArray diagnostics;
 		diagnostics.status.resize(joint_state_.name.size());
@@ -359,7 +378,7 @@ std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.
 		boost::mutex::scoped_lock lock(lock_);
 		joint_state_.position[id] = val;
 		joint_state_.header.stamp = ros::Time::now();
-		if(pub_joints_.getNumSubscribers()>0) pub_joints_.publish(joint_state_);
+		updated_ = true;
 	}
 	
 	void update_button(const int _id, const bool val) {
@@ -377,13 +396,9 @@ std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.
 			return;
 		}
 			
-		if(pub_btns_[id]->getNumSubscribers()>0) {
-			std_msgs::Bool msg;
-			msg.data = val;
-			pub_btns_[id]->publish(msg);
-		}
 		boost::mutex::scoped_lock lock(lock_);
 		btns_[id] = val;
+		updated_ = true;
 	}
 };
 
@@ -407,7 +422,7 @@ int main(int argc, char *argv[]) {
 	}
   }
   
-  ros::Rate rate(20);
+  ros::Rate rate(30);
   while(ros::ok()) {
 	  node.publishState();
 	  ros::spinOnce();

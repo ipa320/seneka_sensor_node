@@ -1,0 +1,61 @@
+# camera ip address
+camera_ip_address: '192.168.0.20'
+
+# zooming parameter
+# Optical zoom= zoom_ratio_optical={1-20} zoom_ratio_digital={1}
+# Digital zoom= zoom_ratio_optical={20} zoom_ratio_digital={2-12}
+zoom_ratio_optical: 1
+zoom_ratio_digital: 1
+
+# Autofoucs parameter
+# FocusAuto (0 = off, 1 = once, 2 = Infinity, 3 = Continuous)
+autoFocus: 0
+
+# videoModeNext parameter onnly set after the next power supply to the camera
+# e.g; videoModeNext (0 = HD_1080i_60Hz, 1 = HD_1080i_59p94_Hz, and so on till 11 = HD_720p_25_Hz)
+videoModeNext: 11
+
+#focusPosition parameter can be set only while the camera's FocusAuto is set to other than Continuos(=3)
+focusPosition: 53245 
+
+#focusNearLimit parameter can be set only while the camera's FocusAuto is set to Continuos(=3)
+focusNearLimit: 14  
+
+#titleText parameter, setting the ttile of the image
+titleText: ''
+
+#titleDisplay parameter 
+#true/false (1 = true, 0 = false)
+titleDisplay: 1
+
+#statusDisplay parameter
+#true/false (1 = true, 0 = false)
+statusDisplay: 1
+
+#backLightCompensation parameter
+#true/false (1 = true, 0 = false)
+backLightCompensation: 0
+
+#noiseReduction parameter
+#min = 0 and max = 5
+noiseReduction: 3
+
+#pictureEffect parameter
+#e.g;0 = Off, 1 = NegReversal, 2 = BlackAndWhite
+pictureEffect: 0
+
+#infraredCutFilter parameter
+#true/false (1 = true, 0 = false)
+infraredCutFilter: 0
+
+#infraredCutFilterAuto parameter
+#true/false (1 = true, 0 = false)
+infraredCutFilterAuto: 0
+
+#streaming (bool, default: false)
+#true: streaming enabled, false: streaming disabled
+streaming: false
+
+#debug_screen (bool, default: false)
+#true: debug screen enabled, false: debug screen disabled
+debug_screen: false
