@@ -145,12 +145,12 @@ class Comm:
 			for t in traj:
 				pt = trajectory_msgs.msg.JointTrajectoryPoint()
 				pt.positions = t
-				pt.time_from_start = rospy.rostime.Duration(10)
+				pt.time_from_start = rospy.rostime.Duration(20)
 				msg.points.append(pt)
 		else:
 			pt = trajectory_msgs.msg.JointTrajectoryPoint()
 			pt.positions = traj
-			pt.time_from_start = rospy.rostime.Duration(10)
+			pt.time_from_start = rospy.rostime.Duration(20)
 			msg.points.append(pt)
 		
 		req = seneka_control_interface.msg.JointTrajectoryGoal()
