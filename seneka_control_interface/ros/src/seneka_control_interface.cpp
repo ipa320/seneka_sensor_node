@@ -314,6 +314,23 @@ public:
 			
 			if(!ok) {
 				ROS_ERROR("timeout");
+				
+				//stop all used motors
+				for(size_t i=0; i<jt.points[p].positions.size(); i++) {
+					const size_t j = std::distance(joint_state_.name.begin(), std::find_if(joint_state_.name.begin(), joint_state_.name.end(), std::bind2nd(std::equal_to<std::string>(), jt.joint_names[i])));
+					if(j>=joint_state_.name.size()) continue;
+					
+					boost::mutex::scoped_lock lock(lock_);					
+	
+					size_t jj=j;
+					for(size_t d=0; d<devices_.size(); d++) {
+						if(jj<devices_[d]->getNumJoints()) {
+							devices_[d]->setTarget(jj, joint_state_.position[j]);
+							break;
+						}
+						jj-=devices_[d]->getNumJoints();
+					}
+				}
 				return false;
 			}
 			if(!check_was_ok) {
