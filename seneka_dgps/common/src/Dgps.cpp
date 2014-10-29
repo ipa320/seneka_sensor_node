@@ -57,20 +57,67 @@
 ****************************************************************/
 
 #include <seneka_dgps/Dgps.h>
+#include <boost/optional.hpp>
+#include <boost/asio/deadline_timer.hpp>
+#include <boost/bind.hpp> 
+#include <boost/asio.hpp>
+#include <boost/thread.hpp>
+
+void set_result1(boost::optional<boost::system::error_code>* a, boost::system::error_code b) 
+{ 
+	a->reset(b);
+} 
+void set_result2(boost::optional<boost::system::error_code>* a, boost::system::error_code b, size_t *bytes_transferred, size_t _bytes_transferred) 
+{ 
+	a->reset(b);
+	*bytes_transferred = _bytes_transferred;
+} 
+
+
+template <typename MutableBufferSequence> 
+int read_with_timeout(boost::asio::serial_port& sock, 
+  const MutableBufferSequence& buffers) 
+{ 
+	boost::optional<boost::system::error_code> timer_result; 
+	boost::asio::deadline_timer timer(sock.io_service()); 
+	timer.expires_from_now(boost::posix_time::milliseconds(1000)); 
+	timer.async_wait(boost::bind(set_result1, &timer_result, _1)); 
+
+
+	size_t bytes_to_transfer = 0;
+	boost::optional<boost::system::error_code> read_result; 
+	boost::asio::async_read(sock, buffers, 
+		boost::bind(set_result2, &read_result, _1, &bytes_to_transfer, boost::asio::placeholders::bytes_transferred)); 
+
+	sock.io_service().reset(); 
+	while (sock.io_service().run_one()) 
+	{ 
+	  if (read_result) 
+		timer.cancel(); 
+	  else if (timer_result) 
+		sock.cancel(); 
+	} 
+
+
+	if (*read_result && !(*read_result==boost::asio::error::operation_aborted && bytes_to_transfer>0) ) {
+		std::cout<<"error code: "<<(*read_result)<<std::endl;
+	  return 0; //throw boost::system::system_error(*read_result);
+	  }
+	  
+	return bytes_to_transfer;
+} 
 
 /*********************************************************/
 /*************** Dgps class implementation ***************/
 /*********************************************************/
 
 // constructor
-Dgps::Dgps() {}
+Dgps::Dgps() : m_SerialIO(io_service_) {
+	boost::thread t(boost::bind(&boost::asio::io_service::run, &io_service_));
+}
 
 // destructor
-Dgps::~Dgps() {
-
-    m_SerialIO.close();
-
-}
+Dgps::~Dgps() {}
 
 /**************************************************/
 /**************************************************/
@@ -107,6 +154,11 @@ void Dgps::transmitStatement(DiagnosticFlag flag) {
 // establishes serial connection
 bool Dgps::open(const char * pcPort, int iBaudRate) {
 
+    //now comes a hack...
+    char buf[256];
+    sprintf(buf, "stty -F %s ispeed %d ospeed %d", pcPort, iBaudRate, iBaudRate);
+    system(buf);
+
     msg << "Establishing serial connection to GPS device...";
     transmitStatement(INFO);
 
@@ -116,33 +168,34 @@ bool Dgps::open(const char * pcPort, int iBaudRate) {
     msg << "Baud rate: " << iBaudRate;
     transmitStatement(INFO);
 
-    // gather parameters;
-    m_SerialIO.setBaudRate  (iBaudRate);
-    m_SerialIO.setDeviceName(pcPort);
-
     // open port;
-    int port_opened = m_SerialIO.open();
+    boost::system::error_code ec;
+    m_SerialIO.open(pcPort, ec);
 
-    if (port_opened != 0) {
-
-        msg << "Failed to establish connection. Device is not available on given port.";
+    if (ec) {
+        msg << "Failed to establish connection. Device is not available on given port. "<<ec;
         transmitStatement(ERROR);
 
         return false;
-
     }
 
     else {
-
-        m_SerialIO.purge();
-
         msg << "Connection established.";
         transmitStatement(INFO);
 
         return true;
-        
     }
-
+    
+    m_SerialIO.set_option(boost::asio::serial_port_base::baud_rate(iBaudRate), ec);
+    if(ec) printf("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::character_size(8), ec);
+    if(ec) printf("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::stop_bits(boost::asio::serial_port_base::stop_bits::one), ec);
+    if(ec) printf("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::parity(boost::asio::serial_port_base::parity::none), ec);
+    if(ec) printf("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
+	m_SerialIO.set_option(boost::asio::serial_port_base::flow_control(boost::asio::serial_port_base::flow_control::none), ec);
+    if(ec) printf("failed apply settings (%s, %d)", ec.category().name(), (int)ec.value());
 }
 
 /**************************************************/
@@ -166,28 +219,24 @@ bool Dgps::checkConnection() {
     int message_size    = sizeof(message) / sizeof(message[0]);
 
     int bytes_sent  = 0;
-    bytes_sent      = m_SerialIO.write(message, message_size); // function returns number of transmitted bytes;
+    boost::system::error_code ec;
+    bytes_sent      = m_SerialIO.write_some(boost::asio::buffer(message, message_size), ec); // function returns number of transmitted bytes;
 
     if (!(bytes_sent > 0)) {
-
         msg << "Could not send test command.";
         transmitStatement(ERROR);
 
         msg << "Communication link check failed. Device is not available.";
         transmitStatement(ERROR);
-
     }
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
 
-    // test result;
-    unsigned char result[] = {0};
-
-    int bytes_received  = 0;
-    bytes_received      = m_SerialIO.readNonBlocking((char *) result, 1); // function returns number of received bytes;
-
+	unsigned char result[1];
+	const int num = read_with_timeout(m_SerialIO, boost::asio::buffer(result,sizeof(result)));
+	
     /**************************************************/
     /**************************************************/
     /**************************************************/
@@ -195,14 +244,14 @@ bool Dgps::checkConnection() {
     // analyzing received data;
 
     // checking if there is a response at all;
-    if (!(bytes_received > 0)) {
+    if (!(num > 0)) {
 
         msg << "Device does not respond.";
         transmitStatement(ERROR);
 
         return false;
-
     }
+    
 
     // checking for possible response "NAK" (15h);
     if (!(result[0] != 0x15)) {
@@ -267,7 +316,7 @@ bool Dgps::getDgpsData() {
     unsigned char checksum;
     unsigned char etx           = 0x03;
 
-    checksum = (status + packet_type + length + data_type + flags + reserved) % 256;
+    checksum = (status + packet_type + length + data_type + flags + reserved);
 
     char message[]      = {stx, status, packet_type, length, data_type, flags, reserved, checksum, etx};
     int message_size    = sizeof(message) / sizeof(message[0]);
@@ -278,13 +327,12 @@ bool Dgps::getDgpsData() {
 
     // transmission of request command
     int bytes_sent  = 0;
-    bytes_sent      = m_SerialIO.write(message, message_size); // function returns number of bytes which have been sent;
+    boost::system::error_code ec;
+    bytes_sent      = m_SerialIO.write_some(boost::asio::buffer(message, message_size), ec); // function returns number of transmitted bytes;
 
     if (bytes_sent != message_size) {
-
         msg << "Failed to transmit request command.";
         transmitStatement(WARNING);
-
     }
 
     /**************************************************/
@@ -299,12 +347,12 @@ bool Dgps::getDgpsData() {
     unsigned char buffer[112+16] = {0}; // why 112+16? --> see debugBuffer() function comment;
     
     // reading response from serial port;
-    int bytes_received  = 0;
-    bytes_received      = m_SerialIO.readNonBlocking((char*) buffer, (112+16)); // function returns number of bytes which have been received;
-
+	const int bytes_received = read_with_timeout(m_SerialIO, boost::asio::buffer(buffer,sizeof(buffer)));
+	
     // see comment at debugBuffer() function;
-    int bytes_received_debugged = bytes_received - 16;
-    std::vector<unsigned char> debugged_buffer = debugBuffer(buffer);
+    int bytes_received_debugged = bytes_received;// - 16;
+    //std::vector<unsigned char> debugged_buffer = debugBuffer(buffer);
+    unsigned char *debugged_buffer = buffer;
 
     /**************************************************/
     /**************************************************/
@@ -449,7 +497,7 @@ bool Dgps::getDgpsData() {
 
         // hereby called functions analyze the received packet in-depth, structure it, extract and finnaly serve GPS data;
         // if everything works fine, GPS data is getting stored in Dgps::GpsData gps_data;
-        if (!analyzeData(&debugged_buffer.front(), bytes_received_debugged)) {
+        if (!analyzeData(debugged_buffer, bytes_received_debugged)) {
 
             msg << "Failed to gather GPS data.";
             transmitStatement(WARNING);
@@ -484,59 +532,43 @@ bool Dgps::analyzeData(unsigned char *  buffer,         // points to received pa
     /**************************************************/
 
     // --- header ---
-    temp_packet.stx         = buffer[0] % 256;
-    temp_packet.status      = buffer[1] % 256;
-    temp_packet.packet_type = buffer[2] % 256;
-    temp_packet.length      = buffer[3] % 256;
+    temp_packet.stx         = buffer[0];
+    temp_packet.status      = buffer[1];
+    temp_packet.packet_type = buffer[2];
+    temp_packet.length      = buffer[3];
 
     // --- data part header ---
-    temp_packet.record_type                 = buffer[4] % 256;
-    temp_packet.page_counter                = buffer[5] % 256;
-    temp_packet.reply_number                = buffer[6] % 256;
-    temp_packet.record_interpretation_flags = buffer[7] % 256;
+    temp_packet.record_type                 = buffer[4];
+    temp_packet.page_counter                = buffer[5];
+    temp_packet.reply_number                = buffer[6];
+    temp_packet.record_interpretation_flags = buffer[7];
 
     // --- data part ---
 
     temp_packet.data_bytes.resize(temp_packet.length);
 
-    for (int i = 0; i < (temp_packet.length - 4); i++) {
-
-        temp_packet.data_bytes[i] = buffer[8 + i] % 256;
-
-    }
+    for (int i = 0; i < (temp_packet.length - 4); i++)
+        temp_packet.data_bytes[i] = buffer[8 + i];
 
     // --- tail ---
-    temp_packet.checksum    = buffer[temp_packet.length + 4]        % 256;
-    temp_packet.etx         = buffer[temp_packet.length + 4 + 1]    % 256;
+    temp_packet.checksum    = buffer[temp_packet.length + 4]       ;
+    temp_packet.etx         = buffer[temp_packet.length + 4 + 1]   ;
 
     /**************************************************/
     /**************************************************/
     /**************************************************/
 
     // verify checksum;
-    char checksum = 0x00;
-    checksum = checksum + (temp_packet.status                       % 256);
-    checksum = checksum + (temp_packet.packet_type                  % 256);
-    checksum = checksum + (temp_packet.length                       % 256);
-    checksum = checksum + (temp_packet.record_type                  % 256);
-    checksum = checksum + (temp_packet.page_counter                 % 256);
-    checksum = checksum + (temp_packet.reply_number                 % 256);
-    checksum = checksum + (temp_packet.record_interpretation_flags  % 256);
+    unsigned char checksum = 0x00;
             
     // calculate checksum over data bytes;
-    for (int i = 0; i < (temp_packet.length - 4); i++) {
-
-        checksum = checksum + temp_packet.data_bytes[i];
-
-    }
-
-    // wrap checksum into 1 byte;
-    checksum = checksum % 256;
+    for (int i = 1; i < temp_packet.length+4; i++)
+        checksum += buffer[i];
 
     // check for checksum mismatch;
     if (checksum != temp_packet.checksum) {
 
-        msg << "Checksum mismatch.";
+        msg << "Checksum mismatch. "<<(int)checksum<<" != "<<(int)temp_packet.checksum;
         transmitStatement(WARNING);
 
         return false;
@@ -688,11 +720,8 @@ std::vector<unsigned char> Dgps::debugBuffer(unsigned char * buffer) {
     // this assigns debugged_buffer[] with the byte values of the original received bytes in buffer[],
     // omitting the first 16 bytes;
     for (int i = 0; i < 112; i++) {
-
         debugged_buffer[i] = buffer[j];
-
         j++;
-
     }
 
     return debugged_buffer;

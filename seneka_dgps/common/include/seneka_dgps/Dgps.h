@@ -63,14 +63,15 @@
 /*************** includes ***************/
 /****************************************/
 
-#include <seneka_dgps/SerialIO.h>
+#include <boost/asio/serial_port.hpp>
 
 #include <sstream>
 #include <string>
-#include <cstring>
+#include <iomanip>
 #include <vector>
 #include <iostream>
-#include <iomanip>
+/*
+#include <cstring>
 #include <stdio.h>
 #include <math.h>
 #include <endian.h>
@@ -81,7 +82,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/ioctl.h>
-#include <linux/serial.h>
+#include <linux/serial.h>*/
 
 /******************************************/
 /*************** DGPS class ***************/
@@ -131,22 +132,22 @@ class Dgps {
         struct PacketData {
 
             // header;
-            char stx;
-            char status;
-            char packet_type;
-            char length;
+            uint8_t stx;
+            uint8_t status;
+            uint8_t packet_type;
+            uint8_t length;
             
             // data part;
-            char record_type;
-            char page_counter;                  // see user guide for bit interpretation!;
-            char reply_number;
-            char record_interpretation_flags;
+            uint8_t record_type;
+            uint8_t page_counter;                  // see user guide for bit interpretation!;
+            uint8_t reply_number;
+            uint8_t record_interpretation_flags;
 
-            std::vector<char> data_bytes;                  // maximum of 244 bytes for data; concatenate pages if needed!;
+            std::vector<uint8_t> data_bytes;                  // maximum of 244 bytes for data; concatenate pages if needed!;
             
             // footer;
-            char checksum;                      // calculated over: all bytes between stx and checksum;
-            char etx;
+            uint8_t checksum;                      // calculated over: all bytes between stx and checksum;
+            uint8_t etx;
         
         };
 
@@ -228,7 +229,8 @@ class Dgps {
     private:
 
         // serial input/output instance;
-        SerialIO m_SerialIO;
+        boost::asio::io_service io_service_;
+        boost::asio::serial_port m_SerialIO;
 
         /*********************************************/
         /*************** data handling ***************/

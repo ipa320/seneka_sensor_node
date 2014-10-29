@@ -419,13 +419,16 @@ void Sony_Camera_Node::publishImage()
             out_msg.encoding = sensor_msgs::image_encodings::RGB8;
             out_msg.image    = image;
 
-            publish_rgb_image.publish(out_msg.toImageMsg());
+            sensor_msgs::ImagePtr img = out_msg.toImageMsg();
+            img->header.frame_id = "sony_image_view";
+            publish_rgb_image.publish(img);
 
             if (debug_screen_param)
                 cv::imshow("Current Image",image);
 
             cv::waitKey(30);
         }
+        else ROS_WARN("Operation unsuccessful. %s %s", lOperationResult.GetCodeString().GetAscii(), lOperationResult.GetDescription().GetAscii());
         // re-queue the buffer in the stream object
 
         lStream.QueueBuffer( lBuffer );

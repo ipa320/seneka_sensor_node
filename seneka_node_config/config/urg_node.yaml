@@ -12,7 +12,7 @@ ip_address: '192.168.0.10'
 #~frame_id (string, default: laser)
 #The frame in which laser scans will be returned.
 #This frame should be at the optical center of the laser, with the x-axis along the zero degree ray, and the y-axis along the 90 degree ray. 
-#frame_id:
+frame_id: 'link_laser'
 
 #~calibrate_time (bool, default: false)
 #Whether the node should calibrate the device's time offset on startup.
@@ -35,7 +35,7 @@ ip_address: '192.168.0.10'
 #If false, the laser will publish sensor_msgs/LaserScan.
 #(If supported by the hardware; otherwise, please use a support library to convert MultiEchoLaserScans to LaserScans.)
 #This parameter is only valid for multiecho laserscanners. 
-#publish_multiecho:
+publish_multiecho: false
 
 #~angle_min (double, default: -&pi)
 #Controls the angle of the first range measurement in radians.

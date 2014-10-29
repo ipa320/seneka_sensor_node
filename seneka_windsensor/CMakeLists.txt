@@ -61,7 +61,7 @@ include_directories(
 )
 
 ## Declare a cpp executable
-add_executable(seneka_windsensor ros/src/seneka_windsensor.cpp common/src/windsensor.cpp common/src/SerialIO.cpp)
+add_executable(seneka_windsensor ros/src/seneka_windsensor.cpp common/src/windsensor.cpp)
 
 ## Add cmake target dependencies of the executable/library
 add_dependencies(seneka_windsensor ${PROJECT_NAME}_gencpp)

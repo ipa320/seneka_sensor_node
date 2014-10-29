@@ -56,6 +56,7 @@
 ****************************************************************/
 
 #include <ros/ros.h>
+#include <actionlib/server/simple_action_server.h>
 #include <seneka_socketcan/SocketCAN.h>
 #include <seneka_laser_scan/SenekaLaserScan.h>
 #include <seneka_leg/SenekaLeg.h>
@@ -64,7 +65,9 @@
 #include <std_msgs/Bool.h>
 #include <diagnostic_msgs/DiagnosticArray.h>
 #include <trajectory_msgs/JointTrajectory.h>
-#include <seneka_srv/JointTrajectory.h>
+#include <seneka_control_interface/JointTrajectoryAction.h>
+#include <control_msgs/FollowJointTrajectoryAction.h>
+#include <control_msgs/FollowJointTrajectoryFeedback.h>
 
 #include <iostream>
 #include <boost/thread/mutex.hpp>
@@ -80,14 +83,17 @@ class ControlNode {
 	ros::Publisher pub_joints_, pub_diag_;
 	std::vector<boost::shared_ptr<ros::Publisher> > pub_btns_;
 	ros::Subscriber sub_joint_path_command_;///< subscriber for a trajectory
-	ros::ServiceServer srv_joint_path_command_;
 	sensor_msgs::JointState joint_state_;
+	actionlib::SimpleActionServer<control_msgs::FollowJointTrajectoryAction> as_joint_; 
+	actionlib::ActionServer<seneka_control_interface::JointTrajectoryAction> as_joint_path_; 
 	
 	std::vector<SenekaGeneralCANDevice*> devices_;
 	std::vector<bool> btns_;
 	
 	double max_tolerance_;
 	boost::mutex lock_;
+
+	bool testing_, updated_;
 	
 	/// reorder a vector with a given list of indices, if not possible returns false
 	template< class T >
@@ -133,14 +139,24 @@ class ControlNode {
 	}
 public:
 	
-	ControlNode() {
+	ControlNode():
+		as_joint_("/tilt_controller/follow_joint_trajectory", false),	//hacky
+		as_joint_path_(nh_, "/ex_joint_trajectory", false),	//hacky
+		updated_(false)
+	{
 		pub_joints_  = nh_.advertise<sensor_msgs::JointState>("/joint_states", 10);
 		pub_diag_ = nh_.advertise<diagnostic_msgs::DiagnosticArray> ("/diagnostics", 1);
 		sub_joint_path_command_ = nh_.subscribe("joint_path_command", 1, &ControlNode::cb_joint_path_command, this);
-		srv_joint_path_command_ = nh_.advertiseService("joint_path_command", &ControlNode::cb_joint_path_srv, this);
 		
 		ros::NodeHandle pnh("~");	//parameter lookup in local namespace
 		pnh.param<double>("max_tolerance", max_tolerance_, 0.01);
+		pnh.param<bool>("testing", testing_, false);
+		
+		as_joint_.registerGoalCallback(boost::bind(&ControlNode::cb_follow_joint_traj, this));
+		as_joint_.start();
+		
+		as_joint_path_.registerGoalCallback(boost::bind(&ControlNode::cb_follow_joint_path_traj, this, _1));
+		as_joint_path_.start();
 	}
 	
 	void add(SenekaGeneralCANDevice &dev, const std::string &name) {
@@ -168,7 +184,14 @@ public:
 		for(size_t i=0; i<dev.getNumJoints(); i++) {
 			const std::string fullname = name+(dev.getNumJoints()>1?boost::lexical_cast<std::string>(i):"");
 			joint_state_.position.push_back(0.);
-			joint_state_.name.push_back(fullname);
+			
+			std::string joint_name;
+			pnh.param<std::string>(fullname+"/alias", joint_name, fullname);
+			joint_state_.name.push_back(joint_name);
+			
+			bool in_rad;
+			pnh.param<bool>(fullname+"/in_rad", in_rad, false);
+			dev.setInRad(i, in_rad);
 			
 			double off, fact;
 			pnh.param<double>(fullname+"/offset", off, 0.);
@@ -177,19 +200,47 @@ public:
 		}
 		lock_.unlock();
 	}
+
+	void cb_follow_joint_path_traj(actionlib::ActionServer<seneka_control_interface::JointTrajectoryAction>::GoalHandle gh)
+	{		
+		seneka_control_interface::JointTrajectoryGoal goal = *gh.getGoal();
+		gh.setAccepted();
 	
-	bool cb_joint_path_srv(seneka_srv::JointTrajectory::Request  &req, seneka_srv::JointTrajectory::Response &res)
-	{
-		res.success = _cb_joint_path_command(req.traj, req.check_switch);
-		return true;
+		boost::thread(&ControlNode::__cb_follow_joint_path_traj, this, goal, gh);
+	}
+
+	void __cb_follow_joint_path_traj(seneka_control_interface::JointTrajectoryGoal &goal, actionlib::ActionServer<seneka_control_interface::JointTrajectoryAction>::GoalHandle gh)
+	{		
+		seneka_control_interface::JointTrajectoryResult result;
+
+		result.success = _cb_joint_path_command(goal.traj, goal.check_switch);
+		
+		gh.setSucceeded(result);
 	}
 	
 	void cb_joint_path_command(const trajectory_msgs::JointTrajectory &jt)
 	{
-		_cb_joint_path_command(jt, seneka_srv::JointTrajectory::Request::_check_switch_type());
+		_cb_joint_path_command(jt, seneka_control_interface::JointTrajectoryGoal::_check_switch_type());
+	}
+
+	void cb_follow_joint_traj()
+	{
+		control_msgs::FollowJointTrajectoryGoalConstPtr goal_ptr = as_joint_.acceptNewGoal();
+		if(!goal_ptr) {
+			ROS_ERROR("missing goal");
+			return;
+		}
+		
+		control_msgs::FollowJointTrajectoryGoal goal = *goal_ptr;
+		control_msgs::FollowJointTrajectoryResult result;
+		
+		_cb_joint_path_command(goal.trajectory, seneka_control_interface::JointTrajectoryGoal::_check_switch_type());
+		
+		result.error_code = control_msgs::FollowJointTrajectoryResult::INVALID_GOAL;
+		as_joint_.setSucceeded(result);
 	}
 	
-	bool _cb_joint_path_command(const trajectory_msgs::JointTrajectory &jt, const seneka_srv::JointTrajectory::Request::_check_switch_type &check_switch)
+	bool _cb_joint_path_command(const trajectory_msgs::JointTrajectory &jt, const seneka_control_interface::JointTrajectoryGoal::_check_switch_type &check_switch)
 	{
 		for(size_t p=0; p<jt.points.size(); p++) {
 			if(jt.joint_names.size()!=jt.points[p].positions.size()) {
@@ -222,24 +273,35 @@ public:
 					if(j>=joint_state_.name.size()) continue;
 					
 					bool check = true;
-					boost::mutex::scoped_lock lock(lock_);						
-					if(p<check_switch.size() && check_switch[p]) {
-						size_t jj=j;
-						for(size_t d=0; d<devices_.size(); d++) {
-							if(jj<devices_[d]->getNumJoints()) {
+					boost::mutex::scoped_lock lock(lock_);					
+	
+					bool in_rad = false;
+					double  tmp_max_tolerance = max_tolerance_;
+					size_t jj=j;
+					for(size_t d=0; d<devices_.size(); d++) {
+						if(jj<devices_[d]->getNumJoints()) {
+							tmp_max_tolerance = devices_[d]->getTolerance(max_tolerance_, jj);
+							in_rad = devices_[d]->isInRad(jj);
+								
+							if(p<check_switch.size() && check_switch[p]) {
 								check_was_ok = false;
 								if(btns_[d]) {
 									devices_[d]->setTarget(jj, joint_state_.position[j]);
 									check = false;
 									check_was_ok = true;
 								}
-								break;
 							}
-							jj-=devices_[d]->getNumJoints();
+								
+							break;
 						}
+						jj-=devices_[d]->getNumJoints();
 					}
+
+//std::cout<<jt.joint_names[i]<<" "<<jt.points[p].positions[i]<<" "<<joint_state_.position[j]<<" "<<tmp_max_tolerance<<std::endl;
 					
-					if(check && std::abs(joint_state_.position[j]-jt.points[p].positions[i])>max_tolerance_)
+					double dist = std::abs(joint_state_.position[j]-jt.points[p].positions[i]);
+					if(in_rad && dist>M_PI && dist<=2*M_PI) dist=2*M_PI-dist;
+					if(check && dist>tmp_max_tolerance)
 						out = true;
 				}
 				
@@ -252,6 +314,23 @@ public:
 			
 			if(!ok) {
 				ROS_ERROR("timeout");
+				
+				//stop all used motors
+				for(size_t i=0; i<jt.points[p].positions.size(); i++) {
+					const size_t j = std::distance(joint_state_.name.begin(), std::find_if(joint_state_.name.begin(), joint_state_.name.end(), std::bind2nd(std::equal_to<std::string>(), jt.joint_names[i])));
+					if(j>=joint_state_.name.size()) continue;
+					
+					boost::mutex::scoped_lock lock(lock_);					
+	
+					size_t jj=j;
+					for(size_t d=0; d<devices_.size(); d++) {
+						if(jj<devices_[d]->getNumJoints()) {
+							devices_[d]->setTarget(jj, joint_state_.position[j]);
+							break;
+						}
+						jj-=devices_[d]->getNumJoints();
+					}
+				}
 				return false;
 			}
 			if(!check_was_ok) {
@@ -264,19 +343,49 @@ public:
 	}
 	
 	void publishState() {
+		if(updated_) {
+			boost::mutex::scoped_lock lock(lock_);
+			if(pub_joints_.getNumSubscribers()>0) pub_joints_.publish(joint_state_);
+			for(size_t id=0; id<pub_btns_.size(); id++) {
+				if(pub_btns_[id] && pub_btns_[id]->getNumSubscribers()>0) {
+					std_msgs::Bool msg;
+					msg.data = btns_[id];
+					pub_btns_[id]->publish(msg);
+				}
+			}
+			updated_ = false;
+		}
 		// publishing diagnotic messages
 		diagnostic_msgs::DiagnosticArray diagnostics;
-		diagnostics.status.resize(devices_.size());
+		diagnostics.status.resize(joint_state_.name.size());
 
 		// set data to diagnostics
+		size_t j=0;
 		for(size_t i=0; i<devices_.size(); i++) {
-			diagnostics.status[i].level = devices_[i]->error()?2:1;
-			diagnostics.status[i].name = joint_state_.name[i];
-			diagnostics.status[i].message = devices_[i]->error()?"error":"ok";
+			for(size_t k=0; k<devices_[i]->getNumJoints(); k++) {
+				diagnostics.status[j].level = devices_[i]->error()?2:1;
+				diagnostics.status[j].name = joint_state_.name[j];
+				diagnostics.status[j].message = devices_[i]->error()?"error":"ok";
+				++j;
+			}
 		}
 		
 		// publish diagnostic message
 		pub_diag_.publish(diagnostics);
+
+		if(testing_) {
+			std::cout<<"testing..."<<std::endl;
+			boost::mutex::scoped_lock lock(lock_);
+			for(size_t i=0; i<joint_state_.position.size(); i++)
+				std::cout<<joint_state_.name[i]<<": \t"<<joint_state_.position[i]<<std::endl;
+			const double delta = 0.2;
+			switch(getchar()) {
+				case 'w': devices_[0]->setTarget(0, joint_state_.position[0]+delta); break;
+				case 's': devices_[0]->setTarget(0, joint_state_.position[0]-delta); break;
+				case 'a': devices_[0]->setTarget(1, joint_state_.position[1]-delta); break;
+				case 'd': devices_[0]->setTarget(1, joint_state_.position[1]+delta); break;
+			}
+		}
 	}
 	
 	void update_joint(const int id, const double val) {
@@ -285,20 +394,28 @@ public:
 			
 		boost::mutex::scoped_lock lock(lock_);
 		joint_state_.position[id] = val;
-		if(pub_joints_.getNumSubscribers()>0) pub_joints_.publish(joint_state_);
+		joint_state_.header.stamp = ros::Time::now();
+		updated_ = true;
 	}
 	
-	void update_button(const int id, const bool val) {
-		if(id<0 || id>=(int)pub_btns_.size() || !pub_btns_[id])
-			return;
-			
-		if(pub_btns_[id]->getNumSubscribers()>0) {
-			std_msgs::Bool msg;
-			msg.data = val;
-			pub_btns_[id]->publish(msg);
+	void update_button(const int _id, const bool val) {
+		int id=_id;
+		for(size_t d=0; d<devices_.size(); d++) {
+			if(id<(int)devices_[d]->getNumJoints()) {
+				id = (int)d;
+				break;
+			}
+			id-=(int)devices_[d]->getNumJoints();
 		}
+		
+		if(id<0 || id>=(int)pub_btns_.size() || !pub_btns_[id]) {
+			ROS_WARN("update_button: id %d is not present", id);
+			return;
+		}
+			
 		boost::mutex::scoped_lock lock(lock_);
 		btns_[id] = val;
+		updated_ = true;
 	}
 };
 
@@ -306,24 +423,23 @@ int main(int argc, char *argv[]) {
 
   // ROS initialization; apply "seneka_control_interface" as node name;
   ros::init(argc, argv, "seneka_control_interface");
-  ros::NodeHandle nh;
+  ros::NodeHandle nh("~");
 
   SenekaLaserScan laser_scan;
-  SenekaLeg    turret;
-  SenekaLeg      tilt;
-  SenekaLeg       leg1;
-  SenekaLeg       leg2;
-  SenekaLeg       leg3;
   
   ControlNode node;
+  std::vector<boost::shared_ptr<SenekaLeg> > devices;
+  {
+	std::vector<std::string> l;
+	nh.param<std::vector<std::string> >("devices", l, l);
+	devices.resize(l.size());
+	for(size_t i=0; i<l.size(); i++) {
+		devices[i].reset(new SenekaLeg());
+		node.add(*devices[i], l[i]);
+	}
+  }
   
-  node.add(turret, "turret");
-  node.add(tilt, "tilt");
-  node.add(leg1, "leg1");
-  node.add(leg2, "leg2");
-  node.add(leg3, "leg3");
-  
-  ros::Rate rate(20);
+  ros::Rate rate(30);
   while(ros::ok()) {
 	  node.publishState();
 	  ros::spinOnce();

@@ -2,7 +2,7 @@
 
 #~fixed_frame (string)
 #[Required] Stationary frame into which received scans (or clouds) are transformed.
-fixed_frame: 'base_link'
+fixed_frame: 'laser'
 
 #~tf_cache_time_secs (double, default: 10.0)
 #The cache time (seconds) to store past transforms. 

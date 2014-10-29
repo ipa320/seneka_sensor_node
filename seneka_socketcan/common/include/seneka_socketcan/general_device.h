@@ -72,6 +72,7 @@ class SenekaGeneralCANDevice {
 
     SenekaGeneralCANDevice(const size_t num_joints=1, const std::string &can_interface = "can0") :
     error_(false), joint_id_(-1), can_id_(-1), num_joints_(num_joints), corr_(num_joints) {
+		in_rad_.resize(num_joints, false);
 	  // open socket for CAN communication; respect optionally given differing CAN interface;
 	  if(!SocketCAN::openRAW(socket_, can_interface))
 		error_ = true;
@@ -123,7 +124,7 @@ class SenekaGeneralCANDevice {
 		update_callback tmp = update_cb_;
 		lock_.unlock();
 		
-		tmp(id, val);
+		if(tmp) tmp(id, val);
 	}
 	
 	void updated(bool val) {
@@ -132,7 +133,7 @@ class SenekaGeneralCANDevice {
 		update_callback tmp = update_cb_btn_;
 		lock_.unlock();
 		
-		tmp(id, val);
+		if(tmp) tmp(id, val);
 	}
 	
 	virtual void _setTarget(const int joint, const double val) = 0;
@@ -187,6 +188,12 @@ class SenekaGeneralCANDevice {
 		}
 	}
 	
+	virtual double getTolerance(const double tol, const size_t joint) const {
+		 if(joint>=num_joints_) return tol;
+		
+		 return std::abs(tol * corr_[joint].corr_factor_);
+	}
+	
 	virtual void init(const int can_id) = 0;
 	virtual void setTarget(const int joint, double val) {
 		if(joint>=num_joints_) return;
@@ -198,6 +205,15 @@ class SenekaGeneralCANDevice {
 	int getNumJoints() const {return num_joints_;}
 	int getCanID() const {return can_id_;}
 	bool error() const {return error_/*.load()*/;}
+	
+	bool isInRad(const int joint) const {
+		if(joint>=num_joints_) return false;
+		return in_rad_[joint];
+	}
+	void setInRad(const int joint, const bool b) {
+		if(joint>=num_joints_) return;
+		in_rad_[joint]=b;
+	}
 
   private:
 
@@ -210,6 +226,7 @@ class SenekaGeneralCANDevice {
     boost::mutex lock_;
     boost::shared_ptr<boost::thread> thread_;
     bool running_;
+    std::vector<bool> in_rad_;
     
     //comm funcs
     int joint_id_, can_id_;

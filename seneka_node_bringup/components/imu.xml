@@ -1,0 +1,10 @@
+<?xml version="1.0"?>
+<launch>
+
+  <!-- start  -->
+  <node name="imu_brick_node" pkg="tinkerforge_imu_brick" type="imu_brick_node" respawn="true" output="screen" >
+    <param name="autodetect_uid" value="true"/>
+    <param name="frame_id" value="tower_axis"/>
+  </node>
+
+</launch>

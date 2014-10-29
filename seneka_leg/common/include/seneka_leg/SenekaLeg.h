@@ -92,10 +92,12 @@ class SenekaLeg : public SenekaGeneralCANDevice {
 		const bool sw = (frame.data[BN_STATUS]&0x02)!=0;
 		updated(_read16(frame.data+BN_M0), 0);
 		updated(_read16(frame.data+BN_M1), 1);
+		updated(_read16(frame.data+BN_SERVO), 2);
+		updated(!sw);
 	}
 	
 	virtual void _setTarget(const int joint, const double val) {
-		_write16(send_frame_.data+(joint*2+1), (uint16_t)std::floor(val));
+		_write16(send_frame_.data+(joint*2+1), (uint16_t)std::max(0., std::min((double)0xffff, std::floor(val))));
 		sendFrame(send_frame_);
 		
 		if(joint==2)	//servo cannot be read!
@@ -109,8 +111,9 @@ class SenekaLeg : public SenekaGeneralCANDevice {
 	}
 	
 	virtual void init(const int can_id = LEG_RX_POSITION_ID) {
-		addListener(can_id, boost::bind(&SenekaLeg::readPosition, this, _1));
+		addListener(can_id+1, boost::bind(&SenekaLeg::readPosition, this, _1));
 		send_frame_ = fillFrame(can_id);
+		memset(send_frame_.data, 0xff, sizeof(send_frame_.data)); //set to "stop"-value
 	}
 };
 

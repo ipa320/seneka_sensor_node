@@ -7,6 +7,8 @@
 	<include file="$(find seneka_node_bringup)/launch/termo_video_manager.launch" />
 	<include file="$(find seneka_node_bringup)/launch/video_manager.launch" />
 	<include file="$(find seneka_node_bringup)/launch/windsensor.launch" />
+	<include file="$(find seneka_node_bringup)/components/imu.xml" />
 	<include file="$(find seneka_node_bringup)/launch/control_interface.launch" />
 	
+	<include file="$(find rosbridge_server)/launch/rosbridge_websocket.launch" />
 </launch>

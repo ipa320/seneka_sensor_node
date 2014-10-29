@@ -6,9 +6,9 @@
 	<param name="robot_description" command="$(find xacro)/xacro.py '$(find seneka_sensor_node_description)/urdf/seneka_sensor_node_description.urdf.xacro'" />
 
 	<node name="robot_state_publisher" pkg="robot_state_publisher" type="state_publisher" />
-	<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
 
 	<group if="$(arg rviz)">
+		<node name="joint_state_publisher" pkg="joint_state_publisher" type="joint_state_publisher" />
 		<node name="rviz" pkg="rviz" type="rviz" args="-d $(find seneka_sensor_node_description)/config/urdf.rviz" required="true" />
 	</group>
 

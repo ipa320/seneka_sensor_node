@@ -52,9 +52,10 @@
  * If not, see <http://www.gnu.org/licenses/>.
  *
  ****************************************************************/
-#ifndef _windsensor_H
-#define _windsensor_H
-#include "SerialIO.h"
+#pragma once
+
+#include <boost/asio/serial_port.hpp>
+
 #include <math.h>
 #include <iostream>
 #include <errno.h>
@@ -65,8 +66,8 @@
 #include <linux/serial.h>
 #include <cstdlib>
 #include <string>
-#include<stdio.h>
-#include<stdlib.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <cstring>
 using namespace std;
 
@@ -102,9 +103,8 @@ public:
         void close();
 
 private:
-
-	SerialIO m_SerialIO;
-
+        // serial input/output instance;
+        boost::asio::io_service io_service_;
+        boost::asio::serial_port m_SerialIO;
 };
-#endif //
 

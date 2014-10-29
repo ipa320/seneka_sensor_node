@@ -20,6 +20,11 @@
   <xacro:property name="param_distance_knee_to_foot" value="${-0.32}"/>
   <!-- distance/[m] base_link origin to tower_rotation_axis_joint origin -->
   <xacro:property name="param_distance_base_to_tower_axis" value="${0.21+0.96}"/>
+  
+  <xacro:property name="param_distance_camera_to_tower_axis" value="${0.21}"/> <!--TODO-->
+  <xacro:property name="param_distance_camera_base_to_axis" value="${0.03}"/> <!--TODO-->
+  <xacro:property name="param_distance_camera_to_thermal_camera" value="${0.03}"/> <!--TODO-->
+  <xacro:property name="param_distance_camera_to_sony_camera" value="${-0.03}"/> <!--TODO-->
 
   <!-- ***************************************************** -->
   <!-- ##### ##### XACRO:PARAMETERS:JOINT_LIMITS ##### ##### -->
@@ -33,6 +38,9 @@
   <xacro:property name="param_lower_angle_limit_knee_joints" value="0.00"/>
   <!-- knee joints upper angle limit/[rad] -->
   <xacro:property name="param_upper_angle_limit_knee_joints" value="1.57"/>
+  
+  <xacro:property name="param_lower_angle_limit_camera_joint" value="-1.57"/> <!--TODO-->
+  <xacro:property name="param_upper_angle_limit_camera_joint" value="1.57"/> <!--TODO-->
 
   <!-- parameters effort/velocity only necessary for revolute/prismatic joints -->
   <xacro:property name="param_effort" value="1000.00"/>
@@ -100,6 +108,11 @@
   <xacro:macro_link name="foot_1"/>
   <xacro:macro_link name="foot_2"/>
   <xacro:macro_link name="foot_3"/>
+  <xacro:macro_link name="camera_base"/>
+  <xacro:macro_link name="camera_axis"/>
+  <xacro:macro_link name="thermal_image_view"/>
+  <xacro:macro_link name="sony_image_view"/>
+  <xacro:macro_link name="laser"/>
 
   <!-- ************************************ -->
   <!-- ##### ##### ROBOT:JOINTS ##### ##### -->
@@ -134,4 +147,11 @@
   <xacro:macro_joint_fixed name="foot_2" type="fixed" parent="link_leg_2" child="link_foot_2" origin="0 0 ${param_distance_knee_to_foot}" rpy="0 0 0"/>
   <xacro:macro_joint_fixed name="foot_3" type="fixed" parent="link_leg_3" child="link_foot_3" origin="0 0 ${param_distance_knee_to_foot}" rpy="0 0 0"/>
 
+  <!--TODO-->
+  <xacro:macro_joint_revolute name="camera_axis" type="revolute" parent="link_camera_base" child="link_camera_axis" origin="${param_distance_camera_base_to_axis} 0 0" rpy="0 0 0" axis="0 1 0" lower="${param_lower_angle_limit_camera_joint}" upper="${param_upper_angle_limit_camera_joint}"/>
+  <xacro:macro_joint_fixed name="camera_base" type="fixed" parent="link_tower_axis" child="link_camera_base" origin="${param_distance_camera_to_tower_axis} 0 0" rpy="0 0 0"/>
+  <xacro:macro_joint_fixed name="thermal_image_view" type="fixed" parent="link_camera_axis" child="link_thermal_image_view" origin="0 ${param_distance_camera_to_thermal_camera} 0" rpy="0 0 0"/>
+  <xacro:macro_joint_fixed name="sony_image_view" type="fixed" parent="link_camera_axis" child="link_sony_image_view" origin="0 ${param_distance_camera_to_sony_camera} 0" rpy="0 0 0"/>
+  <xacro:macro_joint_fixed name="laser" type="fixed" parent="link_tower_axis" child="link_laser" origin="0 0 0" rpy="0 0 0"/>
+  
 </robot>

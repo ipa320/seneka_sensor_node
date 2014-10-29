@@ -19,6 +19,16 @@
   <link name="tower_axis_link">
   </link>
 
+  <link name="camera_link">
+    <visual>
+      <origin xyz="0.0 0 0" rpy="0 1.57 0"/>
+      <geometry>
+        <box size="0.05 0.05 0.05"/>
+      </geometry>
+      <material name="default"/>
+    </visual>
+  </link>
+
   <link name="hip_link_1">
     <visual>
       <origin xyz="0.25 0 0" rpy="0 1.57 0"/>
@@ -152,6 +162,12 @@
     <child link="tower_axis_link"/>
     <origin xyz="0 0 0.75" rpy="0 0 0"/>
     <axis xyz="0 0 1"/>
+  </joint>
+
+  <joint name="camera_joint" type="fixed">
+    <parent link="tower_axis_link"/>
+    <child link="camera_link"/>
+    <origin xyz="0.15 0 0" rpy="0 0 0"/>
   </joint>
 
   <joint name="base_joint_1" type="fixed">
